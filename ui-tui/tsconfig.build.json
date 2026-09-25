@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@fulilian/ink": ["src/types/fulilian-ink.d.ts"]
+    }
+  }
+}
