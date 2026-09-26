@@ -64,8 +64,8 @@ async function stampExeIdentity(exe, desktopRoot = resolve(import.meta.dirname, 
     'version-string': {
       ProductName: 'Fulilian',
       FileDescription: 'Fulilian',
-      CompanyName: 'Nous Research',
-      LegalCopyright: 'Copyright (c) 2026 Nous Research'
+      CompanyName: 'xujuan-cyber',
+      LegalCopyright: 'Copyright (c) 2026 xujuan-cyber'
     }
   })
 

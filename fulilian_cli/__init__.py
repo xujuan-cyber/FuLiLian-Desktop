@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     )
     from .commands import resolve_command, COMMAND_REGISTRY
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __release_date__ = "2026.8.30"
 
 __all__ = [

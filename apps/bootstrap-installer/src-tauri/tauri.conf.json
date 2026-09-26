@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Fulilian",
   "version": "0.0.1",
-  "identifier": "com.nousresearch.fulilian.setup",
+  "identifier": "com.xujuancyber.fulilian.setup",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:5175",
@@ -36,8 +36,8 @@
     "category": "DeveloperTool",
     "shortDescription": "Fulilian",
     "longDescription": "Installs FuLiLian on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
-    "publisher": "Nous Research",
-    "copyright": "Copyright © 2026 Nous Research",
+    "publisher": "xujuan-cyber",
+    "copyright": "Copyright © 2026 xujuan-cyber",
     "targets": [
       "app",
       "dmg",
