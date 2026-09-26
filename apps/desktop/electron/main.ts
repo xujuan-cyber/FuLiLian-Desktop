@@ -347,6 +347,7 @@ import { collectSshConfigHosts, parseSshGOutput } from './ssh-config'
 import { createSshProbeConnection, pickLocalPort, redactSecrets, SshConnection } from './ssh-connection'
 import { createStreamThrottle } from './stream-throttle'
 import { registerTerminalIpc } from './terminal-ipc'
+import { registerWslCliIpc } from './wsl-cli-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
 import {
   backgroundMaterialFor,
@@ -16846,6 +16847,9 @@ const terminalIpc = registerTerminalIpc({
   ensureBackend: webContentsId => ensureTerminalBackend(webContentsId),
   getSshConnectionState: scope => sshConnections.get(scope)
 })
+
+// WSL CLI probe / opt-in (fulilian:wsl-cli:*) — see wsl-cli-ipc.ts.
+registerWslCliIpc({ rememberLog })
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession
 

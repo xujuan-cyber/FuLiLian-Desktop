@@ -419,8 +419,19 @@ declare global {
         onData: (id: string, callback: (payload: string) => void) => () => void
         onExit: (id: string, callback: (payload: FulilianTerminalExit) => void) => () => void
         resize: (id: string, size: { cols: number; rows: number }) => Promise<boolean>
-        start: (options?: { cols?: number; cwd?: string; rows?: number }) => Promise<FulilianTerminalSession>
+        start: (options?: {
+          cols?: number
+          cwd?: string
+          rows?: number
+          /** 非空即走 WSL 本地目标；null / 缺省 = 沿用现有 local / ssh 路径（step09 契约 §四 C）。 */
+          wsl?: null | { distro: string; cli: WslCliName }
+        }) => Promise<FulilianTerminalSession>
         write: (id: string, data: string) => Promise<boolean>
+      }
+      wslCli: {
+        probe: (options?: { distro?: string; force?: boolean }) => Promise<WslCliProbeResult>
+        getOptin: () => Promise<WslCliOptinState>
+        setOptin: (payload: { optin: Partial<WslCliOptin> }) => Promise<WslCliOptinState>
       }
       reachPreviewUrl?: (url: string) => Promise<string>
       setActiveConnectionRoute?: (
@@ -543,6 +554,34 @@ export interface FulilianTerminalSession {
 export interface FulilianTerminalExit {
   code: number | null
   signal: string | null
+}
+
+// WSL CLI probe / opt-in contract (step09 v1) — renderer-side mirror of
+// electron/wsl-cli-probe.ts. The renderer cannot import electron/ modules, so
+// these must stay field-for-field identical to the main-process types.
+export const WSL_CLI_NAMES = ['claude', 'codex', 'codebuddy', 'hermes', 'fulilian'] as const
+export type WslCliName = (typeof WSL_CLI_NAMES)[number]
+
+export interface WslCliProbeEntry {
+  name: WslCliName
+  available: boolean
+  posixPath: null | string // `command -v <name>` 的结果（去首尾空白）；不可用为 null
+  version: null | string // `<name> --version` 首行（去首尾空白）；不可用为 null
+}
+
+export interface WslCliProbeResult {
+  distro: string // 实际探测的发行版（显式 -d；缺省 = resolveDefaultWslDistro()）
+  distros: string[] // `wsl.exe -l -q` 得到的全量发行版清单（NUL 已剥离）
+  entries: WslCliProbeEntry[] // 恒 5 项，顺序恒等于 WSL_CLI_NAMES
+  error: null | string // 降级原因；成功为 null
+  probedAt: number // epoch ms
+}
+
+export type WslCliOptin = Record<WslCliName, boolean> // 默认五键全 false
+
+export interface WslCliOptinState {
+  optin: WslCliOptin
+  probedAt: null | number // 最近一次探测快照时间；从未探测为 null
 }
 
 export interface DesktopVersionInfo {
