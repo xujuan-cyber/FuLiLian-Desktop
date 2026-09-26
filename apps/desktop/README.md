@@ -213,7 +213,7 @@ rm "$HOME/.fulilian/fulilian-agent/.fulilian-bootstrap-complete"
 # Rebuild a broken Python venv
 rm -rf "$HOME/.fulilian/fulilian-agent/venv"
 # Reset a stuck macOS microphone prompt (macOS only)
-tccutil reset Microphone com.nousresearch.fulilian
+tccutil reset Microphone com.xujuancyber.fulilian
 ```
 
 **Windows (PowerShell):**

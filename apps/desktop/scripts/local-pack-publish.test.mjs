@@ -88,8 +88,8 @@ describe('local desktop pack stays out of the publish path', () => {
 
     assert.ok(Array.isArray(configs) && configs.length > 0)
     assert.equal(configs[0].provider, 'github')
-    assert.equal(configs[0].owner, 'NousResearch')
-    assert.equal(configs[0].repo, 'fulilian-agent')
+    assert.equal(configs[0].owner, 'xujuan-cyber')
+    assert.equal(configs[0].repo, 'fulilian')
   })
 
   test('a package without the repository field is what breaks resolution', async () => {

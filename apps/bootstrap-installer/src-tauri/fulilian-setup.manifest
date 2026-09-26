@@ -19,7 +19,7 @@
     <assemblyIdentity
         version="0.0.1.0"
         processorArchitecture="*"
-        name="NousResearch.Fulilian.Setup"
+        name="com.xujuancyber.fulilian.setup"
         type="win32"
     />
     <description>Fulilian Setup</description>
