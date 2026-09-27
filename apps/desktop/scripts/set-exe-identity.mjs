@@ -36,7 +36,7 @@
 // otherwise-good build (worst case: stock icon, not a broken app).
 
 import { resolve, join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 import { rcedit } from 'rcedit'
 
@@ -59,8 +59,22 @@ async function stampExeIdentity(exe, desktopRoot = resolve(import.meta.dirname, 
   console.log(`[set-exe-identity] stamping ${exe}`)
   console.log(`[set-exe-identity] icon: ${icon}`)
 
+  // App version comes from package.json — the single source of truth (never
+  // hardcode it here, or the next version bump silently drifts). Without
+  // file-version/product-version the exe keeps the stock Electron values
+  // (e.g. 40.10.2): build.win.signAndEditExecutable=false disables
+  // electron-builder's own rcedit pass, so this script is the only writer.
+  const pkgPath = join(desktopRoot, 'package.json')
+  const { version } = JSON.parse(readFileSync(pkgPath, 'utf8'))
+  if (!version) {
+    throw new Error(`no "version" field in ${pkgPath}`)
+  }
+  console.log(`[set-exe-identity] version: ${version}`)
+
   await rcedit(exe, {
     icon,
+    'file-version': version,
+    'product-version': version,
     'version-string': {
       ProductName: 'Fulilian',
       FileDescription: 'Fulilian',
