@@ -252,7 +252,17 @@ test('E12 EACCES is also classified as spawn-failed, not as an empty result', ()
   })
   configureWslCliProbeExec(deps)
 
-  assert.equal(probeWslClis({ distro: 'Ubuntu' }).error, WSL_CLI_PROBE_ERROR.spawnFailed)
+  const result = probeWslClis({ distro: 'Ubuntu' })
+
+  assert.equal(result.error, WSL_CLI_PROBE_ERROR.spawnFailed)
+  assert.equal(result.entries.length, 5)
+  assert.deepEqual(
+    result.entries.map(entry => entry.name),
+    FROZEN_ORDER
+  )
+  for (const entry of result.entries) {
+    assert.equal(entry.available, false)
+  }
 })
 
 test('an unknown exec failure classifies as probe-failed, not as success', () => {

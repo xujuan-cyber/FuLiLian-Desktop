@@ -209,7 +209,8 @@ export function createTerminal(cwd: string = $currentCwd.get(), wsl?: null | Wsl
  *  shell (local bash → a CLI TUI, or distro A → distro B) would surface as if the
  *  new target had produced it. `''` is falsy for the replay guard and for the
  *  persist serializer, so the wipe stays in memory and nothing is rewritten. This
- *  is the only writer of `wsl`, so CLI ↔ local ↔ distro switches are all covered. */
+ *  is the only re-target writer of `wsl` (createTerminal seeds it on creation), so
+ *  CLI ↔ local ↔ distro switches are all covered. */
 export function setTerminalWslCli(id: string, target: null | WslCliTarget): void {
   $terminals.set(
     $terminals.get().map(term =>
