@@ -8,16 +8,27 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Tip, TipHintLabel } from '@/components/ui/tooltip'
+import type { WslCliName } from '@/global'
 import { useI18n } from '@/i18n'
 import { formatCombo } from '@/lib/keybinds/combo'
 import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
 import { cn } from '@/lib/utils'
 import { $bindings } from '@/store/keybinds'
+import { $wslCliEnabledClis, $wslCliProbe, selectWslCli, type WslCliTarget } from '@/store/wsl-cli'
 
 import { setTerminalTakeover } from '../store'
 
 import {
+  $activeTerminal,
   $activeTerminalId,
   $terminals,
   closeAllTerminals,
@@ -25,6 +36,7 @@ import {
   closeTerminal,
   createTerminal,
   selectTerminal,
+  setTerminalWslCli,
   type TerminalEntry
 } from './terminals'
 
@@ -38,9 +50,33 @@ export function TerminalRail() {
   const { t } = useI18n()
   const terminals = useStore($terminals)
   const activeId = useStore($activeTerminalId)
+  const activeTerminal = useStore($activeTerminal)
+  const enabledClis = useStore($wslCliEnabledClis)
+  const probe = useStore($wslCliProbe)
   const bindings = useStore($bindings)
   const toggleHint = bindings['view.showTerminal']?.[0]
   const newHint = bindings['view.newTerminal']?.[0]
+  const currentCli = activeTerminal?.wsl?.cli ?? 'local'
+
+  // The switcher re-targets the ACTIVE tab only. The workspace keys each
+  // instance on its CLI, so the tab's PTY is re-created inside WSL by remount
+  // (and re-created again when the same CLI is picked in another distro, since
+  // the `wsl` prop itself is in the mount effect's deps).
+  function switchCli(value: string) {
+    if (!activeTerminal) {
+      return
+    }
+
+    const target: null | WslCliTarget =
+      value === 'local' ? null : probe?.distro ? { cli: value as WslCliName, distro: probe.distro } : null
+
+    if (value !== 'local' && !target) {
+      return
+    }
+
+    setTerminalWslCli(activeTerminal.id, target)
+    selectWslCli(target)
+  }
 
   return (
     <div
@@ -83,7 +119,29 @@ export function TerminalRail() {
         </li>
       </ul>
 
-      <div className="flex shrink-0 flex-col items-center pb-1.5">
+      <div className="flex shrink-0 flex-col items-center gap-0.5 pb-1.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              aria-label={`${t.rightSidebar.wslCliSwitcher}: ${currentCli}`}
+              className={cn(RAIL_ACTION, 'size-7')}
+              type="button"
+            >
+              <Codicon name="vm-active" size="0.8125rem" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-40" side="left">
+            <DropdownMenuLabel>{t.rightSidebar.wslCliMenuLabel}</DropdownMenuLabel>
+            <DropdownMenuRadioGroup onValueChange={switchCli} value={currentCli}>
+              <DropdownMenuRadioItem value="local">{t.rightSidebar.wslCliLocal}</DropdownMenuRadioItem>
+              {enabledClis.map(cli => (
+                <DropdownMenuRadioItem key={cli} value={cli}>
+                  {cli}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Tip label={t.rightSidebar.terminalHide} side="left">
           <button
             aria-label={t.rightSidebar.terminalHide}

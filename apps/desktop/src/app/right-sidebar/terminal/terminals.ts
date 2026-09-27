@@ -2,6 +2,7 @@ import { atom, computed } from 'nanostores'
 
 import { readKey, writeKey } from '@/lib/storage'
 import { $currentCwd } from '@/store/session'
+import type { WslCliTarget } from '@/store/wsl-cli'
 
 import { setTerminalTakeover } from '../store'
 
@@ -33,6 +34,10 @@ export interface TerminalEntry {
    *  background process (`terminal(background=true)`), keyed by `procId`. */
   kind: 'user' | 'agent'
   procId?: string
+  /** WSL CLI this tab's PTY runs (step09 contract §四 C). `null`/absent = the
+   *  local shell, so pre-WSL tabs and local sessions are unaffected. Changing it
+   *  re-creates the PTY (the workspace keys the instance on the CLI). */
+  wsl?: null | WslCliTarget
 }
 
 interface PersistedTerminalEntry {
@@ -42,6 +47,8 @@ interface PersistedTerminalEntry {
   restoreCwd?: string
   reviveBuffer?: string
   title: string
+  /** Persisted WSL CLI target (contract §四 C); absent for legacy entries. */
+  wsl?: null | WslCliTarget
 }
 
 interface PersistedTerminalState {
@@ -56,6 +63,24 @@ const TERMINALS_STORAGE_KEY = 'fulilian.desktop.terminals.v1'
 // default (100 lines) once the serialized escape codes are counted in.
 const MAX_REVIVE_BUFFER_CHARS = 48_000
 
+/**
+ * Defensive parse of a persisted WSL target. Legacy entries (written before WSL
+ * support) simply lack the field and stay local; a malformed value is dropped
+ * rather than trusted. Membership in the frozen CLI set is not re-validated —
+ * the value only ever originates from a probe entry (see store/wsl-cli.ts).
+ */
+function sanitizePersistedWslTarget(value: unknown): null | WslCliTarget {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+  const distro = typeof record.distro === 'string' ? record.distro.trim() : ''
+  const cli = typeof record.cli === 'string' ? record.cli.trim() : ''
+
+  return distro && cli ? { cli: cli as WslCliTarget['cli'], distro } : null
+}
+
 function sanitizePersistedTerminal(value: unknown): PersistedTerminalEntry | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
@@ -67,6 +92,7 @@ function sanitizePersistedTerminal(value: unknown): PersistedTerminalEntry | nul
   const cwd = typeof record.cwd === 'string' ? record.cwd : ''
   const restoreCwd = typeof record.restoreCwd === 'string' && record.restoreCwd ? record.restoreCwd : undefined
   const reviveBuffer = typeof record.reviveBuffer === 'string' ? record.reviveBuffer : undefined
+  const wsl = sanitizePersistedWslTarget(record.wsl)
 
   if (!id) {
     return null
@@ -78,6 +104,7 @@ function sanitizePersistedTerminal(value: unknown): PersistedTerminalEntry | nul
     id,
     ...(restoreCwd ? { restoreCwd } : {}),
     ...(reviveBuffer ? { reviveBuffer } : {}),
+    ...(wsl ? { wsl } : {}),
     title: title || 'Terminal'
   }
 }
@@ -126,6 +153,7 @@ function persistTerminals(list: readonly TerminalEntry[], activeTerminalId: null
       id: term.id,
       ...(term.restoreCwd ? { restoreCwd: term.restoreCwd } : {}),
       ...(term.reviveBuffer ? { reviveBuffer: term.reviveBuffer } : {}),
+      ...(term.wsl ? { wsl: term.wsl } : {}),
       title: term.title
     }))
 
@@ -158,13 +186,27 @@ const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `term-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 
 /** Append a fresh terminal and focus it. Captures the current cwd once (its only
- *  tie to session/project state); pass an explicit cwd to override. Returns the id. */
-export function createTerminal(cwd: string = $currentCwd.get()): string {
+ *  tie to session/project state); pass an explicit cwd to override. `wsl` opens
+ *  the tab straight onto a WSL CLI (step09 contract §四 C) instead of the local
+ *  shell. Returns the id. */
+export function createTerminal(cwd: string = $currentCwd.get(), wsl?: null | WslCliTarget): string {
   const id = newId()
-  $terminals.set([...$terminals.get(), { id, title: 'Terminal', auto: true, cwd, kind: 'user' }])
+  $terminals.set([
+    ...$terminals.get(),
+    { id, title: 'Terminal', auto: true, cwd, kind: 'user', ...(wsl ? { wsl } : {}) }
+  ])
   $activeTerminalId.set(id)
 
   return id
+}
+
+/** Point a user tab at a WSL CLI, or back at the local shell with null. The
+ *  workspace keys each instance on its CLI, so the tab's PTY is re-created on the
+ *  next render (a null target therefore survives persistence as "no field"). */
+export function setTerminalWslCli(id: string, target: null | WslCliTarget): void {
+  $terminals.set(
+    $terminals.get().map(term => (term.id === id && term.kind === 'user' ? { ...term, wsl: target } : term))
+  )
 }
 
 // Procs we've already surfaced a tab for — so closing an agent tab doesn't

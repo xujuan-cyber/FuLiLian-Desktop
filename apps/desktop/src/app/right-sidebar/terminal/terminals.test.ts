@@ -122,6 +122,56 @@ describe('terminal store persistence', () => {
     expect($terminals.get().find(term => term.id === agentId)?.restoreCwd).toBeUndefined()
     expect($terminals.get().find(term => term.id === userId)?.restoreCwd).toBeUndefined()
   })
+
+  it('restores a persisted WSL tab and leaves legacy entries local', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        activeTerminalId: 'term-legacy',
+        terminals: [
+          { auto: true, cwd: '/repo', id: 'term-legacy', title: 'zsh' },
+          { auto: false, cwd: '/repo', id: 'term-wsl', title: 'claude', wsl: { cli: 'claude', distro: 'Ubuntu' } }
+        ]
+      })
+    )
+
+    const { $terminals } = await loadTerminalStore()
+
+    // Pre-WSL fixture loads exactly as before: no `wsl` field fabricated.
+    expect($terminals.get()[0]).toEqual({ auto: true, cwd: '/repo', id: 'term-legacy', kind: 'user', title: 'zsh' })
+    expect($terminals.get()[0]?.wsl).toBeUndefined()
+    expect($terminals.get()[1]?.wsl).toEqual({ cli: 'claude', distro: 'Ubuntu' })
+  })
+
+  it('drops a malformed persisted WSL target instead of trusting it', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        activeTerminalId: 'term-one',
+        terminals: [{ auto: true, cwd: '/repo', id: 'term-one', title: 'zsh', wsl: { cli: '', distro: '' } }]
+      })
+    )
+
+    const { $terminals } = await loadTerminalStore()
+
+    expect($terminals.get()[0]?.wsl).toBeUndefined()
+  })
+
+  it('persists a WSL tab target and clears it when the tab goes back to local', async () => {
+    const { $terminals, createTerminal, setTerminalWslCli } = await loadTerminalStore()
+
+    const id = createTerminal('/repo')
+    setTerminalWslCli(id, { cli: 'hermes', distro: 'Ubuntu' })
+
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').terminals[0].wsl).toEqual({
+      cli: 'hermes',
+      distro: 'Ubuntu'
+    })
+
+    setTerminalWslCli(id, null)
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').terminals[0].wsl).toBeUndefined()
+    expect($terminals.get()[0]?.wsl).toBeNull()
+  })
 })
 
 describe('session cwd → terminal tab linking', () => {

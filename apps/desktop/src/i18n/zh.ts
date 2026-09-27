@@ -1439,6 +1439,20 @@ export const zh: Translations = {
         selectedMessage: backend => `终端命令现在通过 ${backend} 运行。将应用于新会话。`,
         failedSelect: backend => `选择 ${backend} 失败`,
         needsSetupHint: '现在即可选择此后端——但在完成设置前命令将会失败。'
+      },
+      wslCli: {
+        sectionTitle: 'WSL 命令行工具',
+        hint: '探测到的 WSL 命令行工具可在终端面板中打开。探测在 WSL 内执行。',
+        loading: '正在探测 WSL CLI…',
+        reprobe: '重新探测',
+        available: '可用',
+        unavailable: '不可用',
+        unknown: '未知',
+        probeFailedTitle: '无法探测',
+        probeFailedBody: reason => `探测失败（${reason}），可用性未知。你的勾选已保留。`,
+        failedProbe: 'WSL CLI 探测失败',
+        failedOptin: cli => `更新 ${cli} 失败`,
+        bridgeUnavailable: '仅桌面端支持 WSL CLI 探测。'
       }
     }
   },
@@ -3156,6 +3170,9 @@ export const zh: Translations = {
     terminalHide: '隐藏终端',
     terminalsAria: '终端',
     terminalNew: '新建终端',
+    wslCliSwitcher: '终端 CLI',
+    wslCliMenuLabel: '终端运行于',
+    wslCliLocal: '本地 shell',
     terminalCloseOthers: '关闭其他',
     terminalCloseAll: '关闭全部',
     addToChat: '添加到对话'

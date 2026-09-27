@@ -54,10 +54,14 @@ export function TerminalWorkspace({ onAddSelectionToChat }: TerminalWorkspacePro
             active={term.id === activeId}
             cwd={term.cwd}
             id={term.id}
-            key={term.id}
+            // The key carries the tab's CLI: switching it remounts the instance,
+            // whose cleanup disposes the old PTY and whose mount replays
+            // reviveBuffer into the fresh session.
+            key={`${term.id}:${term.wsl?.cli ?? 'local'}`}
             onAddSelectionToChat={onAddSelectionToChat}
             restoreCwd={term.restoreCwd}
             reviveBuffer={term.reviveBuffer}
+            wsl={term.wsl}
           />
         )
       )}

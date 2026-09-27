@@ -1248,6 +1248,20 @@ export const en: Translations = {
         selectedMessage: backend => `Terminal commands now run via ${backend}. Applies to new sessions.`,
         failedSelect: backend => `Failed to select ${backend}`,
         needsSetupHint: 'You can select this backend now — commands will fail until setup is complete.'
+      },
+      wslCli: {
+        sectionTitle: 'WSL CLIs',
+        hint: 'Detected WSL command-line tools can be opened in the terminal pane. Detection runs inside WSL.',
+        loading: 'Detecting WSL CLIs…',
+        reprobe: 'Re-detect',
+        available: 'Available',
+        unavailable: 'Unavailable',
+        unknown: 'Unknown',
+        probeFailedTitle: 'Detection unavailable',
+        probeFailedBody: reason => `Detection failed (${reason}); availability is unknown. Your selections are kept.`,
+        failedProbe: 'WSL CLI detection failed',
+        failedOptin: cli => `Could not update ${cli}`,
+        bridgeUnavailable: 'WSL CLI detection is only available in the desktop app.'
       }
     }
   },
@@ -2996,6 +3010,9 @@ export const en: Translations = {
     terminalHide: 'Hide terminal',
     terminalsAria: 'Terminals',
     terminalNew: 'New terminal',
+    wslCliSwitcher: 'Terminal CLI',
+    wslCliMenuLabel: 'Run terminal via',
+    wslCliLocal: 'Local shell',
     terminalCloseOthers: 'Close others',
     terminalCloseAll: 'Close all',
     addToChat: 'Add to chat'

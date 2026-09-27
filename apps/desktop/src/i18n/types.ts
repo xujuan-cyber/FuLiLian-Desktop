@@ -1092,6 +1092,20 @@ export interface Translations {
         failedSelect: (backend: string) => string
         needsSetupHint: string
       }
+      wslCli: {
+        sectionTitle: string
+        hint: string
+        loading: string
+        reprobe: string
+        available: string
+        unavailable: string
+        unknown: string
+        probeFailedTitle: string
+        probeFailedBody: (reason: string) => string
+        failedProbe: string
+        failedOptin: (cli: string) => string
+        bridgeUnavailable: string
+      }
     }
   }
 
@@ -2557,6 +2571,9 @@ export interface Translations {
     terminalHide: string
     terminalsAria: string
     terminalNew: string
+    wslCliSwitcher: string
+    wslCliMenuLabel: string
+    wslCliLocal: string
     terminalCloseOthers: string
     terminalCloseAll: string
     addToChat: string
