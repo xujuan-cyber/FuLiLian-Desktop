@@ -36,8 +36,8 @@
     "category": "DeveloperTool",
     "shortDescription": "Fulilian",
     "longDescription": "Installs FuLiLian on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
-    "publisher": "xujuan-cyber",
-    "copyright": "Copyright © 2026 xujuan-cyber",
+    "publisher": "FuLiLian",
+    "copyright": "Copyright © 2026 FuLiLian",
     "targets": [
       "app",
       "dmg",

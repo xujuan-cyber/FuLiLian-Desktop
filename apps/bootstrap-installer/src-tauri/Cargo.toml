@@ -2,7 +2,7 @@
 name = "fulilian-bootstrap"
 version = "0.0.1"
 description = "Fulilian Setup — signed installer that drives scripts/install.ps1"
-authors = ["xujuan-cyber <3147580860@qq.com>"]
+authors = ["FuLiLian <3147580860@qq.com>"]
 edition = "2021"
 rust-version = "1.77"
 

@@ -1308,7 +1308,7 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveFulilianVersion(),
-  copyright: 'Copyright © 2026 xujuan-cyber'
+  copyright: 'Copyright © 2026 FuLiLian'
 })
 
 // Custom scheme for streaming audio/video into the renderer. Local paths read
@@ -16929,7 +16929,7 @@ function showAboutPanelFresh() {
       applicationVersion: skew.outOfSync
         ? `${resolveFulilianVersion()} — app build out of date, update the desktop app`
         : resolveFulilianVersion(),
-      copyright: 'Copyright © 2026 xujuan-cyber'
+      copyright: 'Copyright © 2026 FuLiLian'
     })
     app.showAboutPanel()
   })
