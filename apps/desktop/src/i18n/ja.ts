@@ -1142,7 +1142,7 @@ export const ja = defineLocale({
         needsSetupHint: 'このバックエンドは今すぐ選択できますが、セットアップが完了するまでコマンドは失敗します。'
       },
       wslCli: {
-        sectionTitle: 'WSL CLI',
+        sectionTitle: 'WSL コマンドラインツール',
         hint: '検出された WSL コマンドラインツールはターミナルペインで開けます。検出は WSL 内で実行されます。',
         loading: 'WSL CLI を検出中…',
         reprobe: '再検出',
