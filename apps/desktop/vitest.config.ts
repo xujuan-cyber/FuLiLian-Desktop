@@ -21,7 +21,12 @@ const electronNative: TestProjectConfiguration = {
     name: 'electron',
     environment: 'node',
     include: ['electron/**/*.test.ts', 'scripts/**.test.{ts,mjs}'],
-    exclude: ['scripts/run-short-session-hang-repro.test.mjs']
+    exclude: ['scripts/run-short-session-hang-repro.test.mjs'],
+    // Electron-side suites do real fs / child-process work (persist round-
+    // trips, probe spawns) whose cost exceeds vitest's 5000ms default under
+    // CI/load — the 6000ms probe probe in step 11-A reproduced it. 30s gives
+    // that headroom without masking genuinely hung tests.
+    testTimeout: 30_000
   }
 }
 
