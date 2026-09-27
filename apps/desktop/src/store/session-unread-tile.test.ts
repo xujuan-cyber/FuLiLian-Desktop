@@ -4,6 +4,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // one. A tile is never $selectedStoredSessionId, so keying either half on the
 // selection left a tiled session's dot green with no way to clear it.
 
+// `setup()` reaches its modules through dynamic import() so that vi.resetModules()
+// can hand every test a freshly evaluated graph. Vite transforms each module lazily
+// on first request — and because that first request happens inside the first test
+// body, the cold transform of the whole graph was charged against `testTimeout`
+// (15s for the `ui` project). Measured on an idle machine, that bill was ~7.5s for
+// @/lib/chat-runtime alone and ~9.5s in total: 76% of the budget idle, past it under
+// load, which is exactly how this file went flaky (tech debt D-1).
+//
+// So warm the graph here instead. This top-level await runs during COLLECTION, which
+// `testTimeout` does not govern; the timed part of every test is then only module
+// evaluation (~tens of ms). The tests themselves are untouched: resetModules() still
+// gives each one a fresh instance, and no assertion or timeout override is involved.
+await import('@/components/pane-shell/tree/store')
+await import('@/components/pane-shell/tree/model')
+await import('@/contrib/registry')
+await import('@/lib/chat-runtime')
+await import('@/store/session')
+await import('@/store/session-states')
+
 describe('completed-unread dot follows the focused session', () => {
   beforeEach(() => {
     vi.resetModules()
