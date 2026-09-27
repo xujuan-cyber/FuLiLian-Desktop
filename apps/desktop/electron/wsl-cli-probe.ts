@@ -14,7 +14,7 @@
 // Style follows backend-command.ts: pure, injectable, unit-testable without
 // Electron. The exec-mode discipline (encoding / WSL_UTF8 / stdio / timeout /
 // windowsHide) is copied from wsl-path-bridge.ts:resolveDefaultWslDistro.
-import { execFileSync } from 'node:child_process'
+import { execFileSync, type ExecFileSyncOptions } from 'node:child_process'
 
 import { resolveDefaultWslDistro } from './wsl-path-bridge'
 import {
@@ -91,19 +91,35 @@ const PROBE_SCRIPT = [
   'done'
 ].join('\n')
 
-function defaultExec(file: string, args: string[]): string {
-  return execFileSync(file, args, {
+/**
+ * The exact `execFileSync` options the real probe spawn uses. Extracted from
+ * the former private `defaultExec` (semantics verbatim) and exported so tests
+ * can assert the option contract — including `timeout` — without waiting out
+ * the real 8s. `overrides.timeout` exists for tests only; the default value is
+ * unchanged.
+ */
+export function buildWslProbeExecOptions(overrides?: { timeout?: number }): ExecFileSyncOptions {
+  return {
     encoding: 'utf8',
     env: { ...process.env, WSL_UTF8: '1' },
     // stdin ignored / stderr discarded: never `pipe` stdin (EBUSY against a
     // synchronous spawn), and never let the WSL-not-installed banner leak.
     stdio: ['ignore', 'pipe', 'ignore'],
-    timeout: PROBE_TIMEOUT_MS,
+    timeout: overrides?.timeout ?? PROBE_TIMEOUT_MS,
     windowsHide: true
-  }) as string
+  }
 }
 
-let execImpl: WslCliProbeExecDeps['exec'] = defaultExec
+/**
+ * The real probe exec: plain `execFileSync` under the wsl-path-bridge
+ * discipline. Exported so the real-spawn seam tests can drive it directly
+ * with a controlled fake executable (`process.execPath`) — never wsl.exe.
+ */
+export function defaultWslCliProbeExec(file: string, args: string[]): string {
+  return execFileSync(file, args, buildWslProbeExecOptions()) as string
+}
+
+let execImpl: WslCliProbeExecDeps['exec'] = defaultWslCliProbeExec
 
 /**
  * Swap the probe's exec implementation. Tests inject a synthetic exec here so
@@ -111,7 +127,7 @@ let execImpl: WslCliProbeExecDeps['exec'] = defaultExec
  * real `execFileSync` implementation (used by `afterEach`).
  */
 export function configureWslCliProbeExec(deps?: WslCliProbeExecDeps): void {
-  execImpl = deps && typeof deps.exec === 'function' ? deps.exec : defaultExec
+  execImpl = deps && typeof deps.exec === 'function' ? deps.exec : defaultWslCliProbeExec
 }
 
 /**

@@ -8,7 +8,7 @@
 // un-injected probe fails loudly instead of spawning.
 import assert from 'node:assert/strict'
 
-import { afterEach, beforeEach, test, vi } from 'vitest'
+import { describe, afterEach, beforeEach, test, vi } from 'vitest'
 
 // The one path that could still reach a real `wsl.exe` is the default-distro
 // fallback, which lives in wsl-path-bridge.ts and spawns `wsl.exe -l -q`.
@@ -19,8 +19,10 @@ vi.mock('./wsl-path-bridge', () => ({
 }))
 
 import {
+  buildWslProbeExecOptions,
   configureWslCliOptinPersistence,
   configureWslCliProbeExec,
+  defaultWslCliProbeExec,
   parseDistroList,
   probeCacheInvalidate,
   probeWslClis,
@@ -416,4 +418,109 @@ test('a probe failure is classified but never surfaces as a thrown IPC error', (
   assert.doesNotThrow(() => probeWslClis({ distro: undefined }))
   assert.doesNotThrow(() => probeWslClis({ force: true }))
   assert.equal(readWslCliOptinState().optin.claude, false, 'failure never fabricates availability or opt-in')
+})
+
+// ── real spawn seam (step 11-A T1) ───────────────────────────────────────────
+//
+// The injected-exec tests above cover everything *after* the exec seam; the
+// real `execFileSync` option contract and the real error mapping had zero
+// coverage (DEV-A v2 receipt §遗留风险 3). This describe drives the exported
+// `defaultWslCliProbeExec` — the plain `execFileSync` implementation — with
+// `process.execPath` (node) as a controlled fake executable, then routes the
+// result through the unchanged `probeWslClis` chain. wsl.exe itself is never
+// spawned (command blacklist; also pointless here).
+
+/** base64 so the payload (which contains NUL bytes) can cross argv safely. */
+function base64Payload(text: string): string {
+  return Buffer.from(text, 'latin1').toString('base64')
+}
+
+/** Insert a NUL between every character, mimicking wsl.exe's UTF-16LE-ish output. */
+function nulInterleave(text: string): string {
+  return text
+    .split('')
+    .join('\0')
+}
+
+describe('real spawn seam', () => {
+  afterEach(() => {
+    configureWslCliProbeExec()
+    probeCacheInvalidate()
+  })
+
+  test('(c) buildWslProbeExecOptions exposes the exact execFileSync option contract', () => {
+    const options = buildWslProbeExecOptions()
+
+    assert.equal(options.encoding, 'utf8')
+    assert.equal(options.env?.WSL_UTF8, '1')
+    assert.deepEqual(options.stdio, ['ignore', 'pipe', 'ignore'])
+    assert.equal(options.timeout, 8000)
+    assert.equal(options.windowsHide, true)
+  })
+
+  test('(c) buildWslProbeExecOptions: test-only timeout override changes timeout only', () => {
+    const overridden = buildWslProbeExecOptions({ timeout: 50 })
+
+    assert.equal(overridden.timeout, 50)
+    assert.equal(overridden.encoding, 'utf8')
+    assert.equal(overridden.env?.WSL_UTF8, '1')
+    assert.deepEqual(overridden.stdio, ['ignore', 'pipe', 'ignore'])
+    assert.equal(overridden.windowsHide, true)
+    // The default call is unaffected — the default value must not drift.
+    assert.equal(buildWslProbeExecOptions().timeout, 8000)
+  })
+
+  test('(a) real spawn: NUL-padded UTF-8 output survives the real exec and parses', () => {
+    const lines = FROZEN_ORDER.map(name => `${name}\t/usr/bin/${name}\t${name}-1.0`)
+    const script = `process.stdout.write(Buffer.from('${base64Payload(nulInterleave(lines.join('\n')))}', 'base64').toString('latin1'))`
+
+    // Route both probe calls through the REAL exec, with node as the fake
+    // wsl.exe: the probe call replays NUL-padded TAB-delimited lines, the
+    // distro-list call replays a plain list.
+    configureWslCliProbeExec({
+      exec: (file, args) =>
+        defaultWslCliProbeExec(
+          process.execPath,
+          ['-e', isDistroListCall(args) ? "process.stdout.write('kali\\n')" : script]
+        )
+    })
+
+    const result = probeWslClis({ distro: 'kali', force: true })
+
+    assert.equal(result.error, null)
+    assert.deepEqual(
+      result.entries,
+      FROZEN_ORDER.map(name => ({ available: true, name, posixPath: `/usr/bin/${name}`, version: `${name}-1.0` }))
+    )
+  })
+
+  test('(b) real spawn: non-zero exit maps to non-zero-exit:<status>', () => {
+    configureWslCliProbeExec({
+      exec: (file, args) => defaultWslCliProbeExec(process.execPath, ['-e', 'process.exit(3)'])
+    })
+
+    const result = probeWslClis({ distro: 'kali', force: true })
+
+    // Actual token shape from classifyProbeFailure: `non-zero-exit: 3`
+    // (space after the colon). Recorded verbatim, not re-shaped for the test.
+    assert.equal(result.error, `${WSL_CLI_PROBE_ERROR.nonZeroExit}: 3`)
+    assert.deepEqual(
+      result.entries,
+      FROZEN_ORDER.map(name => ({ available: false, name, posixPath: null, version: null }))
+    )
+  })
+
+  test('(d) real spawn: missing executable maps to spawn-failed', () => {
+    configureWslCliProbeExec({
+      exec: () => defaultWslCliProbeExec('no-such-binary-11a-x.exe', [])
+    })
+
+    const result = probeWslClis({ distro: 'kali', force: true })
+
+    assert.equal(result.error, WSL_CLI_PROBE_ERROR.spawnFailed)
+    assert.deepEqual(
+      result.entries,
+      FROZEN_ORDER.map(name => ({ available: false, name, posixPath: null, version: null }))
+    )
+  })
 })
