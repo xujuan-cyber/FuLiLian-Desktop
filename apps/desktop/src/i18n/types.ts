@@ -2574,6 +2574,7 @@ export interface Translations {
     wslCliSwitcher: string
     wslCliMenuLabel: string
     wslCliLocal: string
+    wslCliDistroLabel: string
     terminalCloseOthers: string
     terminalCloseAll: string
     addToChat: string

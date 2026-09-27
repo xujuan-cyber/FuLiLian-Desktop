@@ -23,7 +23,7 @@ import { formatCombo } from '@/lib/keybinds/combo'
 import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
 import { cn } from '@/lib/utils'
 import { $bindings } from '@/store/keybinds'
-import { $wslCliEnabledClis, $wslCliProbe, selectWslCli, type WslCliTarget } from '@/store/wsl-cli'
+import { $wslCliDistro, $wslCliEnabledClis, $wslCliProbe, selectWslCli, selectWslCliDistro, type WslCliTarget } from '@/store/wsl-cli'
 
 import { setTerminalTakeover } from '../store'
 
@@ -53,10 +53,13 @@ export function TerminalRail() {
   const activeTerminal = useStore($activeTerminal)
   const enabledClis = useStore($wslCliEnabledClis)
   const probe = useStore($wslCliProbe)
+  const distroPref = useStore($wslCliDistro)
   const bindings = useStore($bindings)
   const toggleHint = bindings['view.showTerminal']?.[0]
   const newHint = bindings['view.newTerminal']?.[0]
   const currentCli = activeTerminal?.wsl?.cli ?? 'local'
+  const distros = probe?.distros ?? []
+  const currentDistro = activeTerminal?.wsl?.distro ?? distroPref ?? probe?.distro ?? ''
 
   // The switcher re-targets the ACTIVE tab only. The workspace keys each
   // instance on its CLI, so the tab's PTY is re-created inside WSL by remount
@@ -67,12 +70,32 @@ export function TerminalRail() {
       return
     }
 
+    const distro = currentDistro
+
     const target: null | WslCliTarget =
-      value === 'local' ? null : probe?.distro ? { cli: value as WslCliName, distro: probe.distro } : null
+      value === 'local' ? null : distro ? { cli: value as WslCliName, distro } : null
 
     if (value !== 'local' && !target) {
       return
     }
+
+    setTerminalWslCli(activeTerminal.id, target)
+    selectWslCli(target)
+  }
+
+  // The distro picker only re-targets an existing CLI tab. On the local shell it
+  // merely records the preference, so picking a distro never forces a tab into
+  // WSL; the next CLI pick then lands in that distro.
+  function switchDistro(distro: string) {
+    selectWslCliDistro(distro)
+
+    const cli = activeTerminal?.wsl?.cli
+
+    if (!activeTerminal || !cli) {
+      return
+    }
+
+    const target: WslCliTarget = { cli, distro }
 
     setTerminalWslCli(activeTerminal.id, target)
     selectWslCli(target)
@@ -140,6 +163,20 @@ export function TerminalRail() {
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
+            {/* A second level only earns its place when the probe found a real
+                choice; a single-distro machine sees the menu exactly as before. */}
+            {distros.length > 1 ? (
+              <>
+                <DropdownMenuLabel>{t.rightSidebar.wslCliDistroLabel}</DropdownMenuLabel>
+                <DropdownMenuRadioGroup onValueChange={switchDistro} value={currentDistro}>
+                  {distros.map(distro => (
+                    <DropdownMenuRadioItem key={distro} value={distro}>
+                      {distro}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
         <Tip label={t.rightSidebar.terminalHide} side="left">

@@ -2550,6 +2550,7 @@ export const zhHant = defineLocale({
     wslCliSwitcher: '終端 CLI',
     wslCliMenuLabel: '終端執行於',
     wslCliLocal: '本機 shell',
+    wslCliDistroLabel: '發行版',
     terminalCloseOthers: '關閉其他',
     terminalCloseAll: '全部關閉',
     addToChat: '新增至聊天'

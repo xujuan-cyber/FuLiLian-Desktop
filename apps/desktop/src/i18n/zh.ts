@@ -3173,6 +3173,7 @@ export const zh: Translations = {
     wslCliSwitcher: '终端 CLI',
     wslCliMenuLabel: '终端运行于',
     wslCliLocal: '本地 shell',
+    wslCliDistroLabel: '发行版',
     terminalCloseOthers: '关闭其他',
     terminalCloseAll: '关闭全部',
     addToChat: '添加到对话'

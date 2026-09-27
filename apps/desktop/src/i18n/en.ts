@@ -3013,6 +3013,7 @@ export const en: Translations = {
     wslCliSwitcher: 'Terminal CLI',
     wslCliMenuLabel: 'Run terminal via',
     wslCliLocal: 'Local shell',
+    wslCliDistroLabel: 'Distribution',
     terminalCloseOthers: 'Close others',
     terminalCloseAll: 'Close all',
     addToChat: 'Add to chat'

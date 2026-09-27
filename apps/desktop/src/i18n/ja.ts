@@ -2639,6 +2639,7 @@ export const ja = defineLocale({
     wslCliSwitcher: 'ターミナル CLI',
     wslCliMenuLabel: 'ターミナルの実行先',
     wslCliLocal: 'ローカルシェル',
+    wslCliDistroLabel: 'ディストリビューション',
     terminalCloseOthers: '他を閉じる',
     terminalCloseAll: 'すべて閉じる',
     addToChat: 'チャットに追加'

@@ -125,3 +125,13 @@ export async function setWslCliOptin(patch: Partial<WslCliOptin>): Promise<null 
 export function selectWslCli(target: null | WslCliTarget): void {
   $wslCliSelected.set(target)
 }
+
+/** Preferred WSL distro for the next CLI target. The terminal rail's distro
+ *  picker records it here, so a distro chosen while the active tab is still the
+ *  local shell is remembered instead of forcing that tab onto a CLI. */
+export const $wslCliDistro = atom<null | string>(null)
+
+/** Record the distro picked in the switcher (a falsy value clears it). */
+export function selectWslCliDistro(distro: null | string): void {
+  $wslCliDistro.set(distro || null)
+}

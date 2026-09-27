@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { WslCliName, WslCliOptin, WslCliProbeResult } from '@/global'
 import { $bindings } from '@/store/keybinds'
-import { $wslCliOptin, $wslCliProbe, $wslCliSelected } from '@/store/wsl-cli'
+import { $wslCliDistro, $wslCliOptin, $wslCliProbe, $wslCliSelected } from '@/store/wsl-cli'
 
 import { TerminalRail } from './rail'
 import { $activeTerminalId, $terminals } from './terminals'
@@ -46,6 +46,7 @@ describe('TerminalRail', () => {
     // probe did NOT find it, so it must never be offered.
     $wslCliOptin.set({ optin: { ...optinAll(false), claude: true, codex: true, hermes: true }, probedAt: 1 })
     $wslCliSelected.set(null)
+    $wslCliDistro.set(null)
   })
 
   afterEach(() => {
@@ -55,6 +56,7 @@ describe('TerminalRail', () => {
     $wslCliProbe.set(null)
     $wslCliOptin.set(null)
     $wslCliSelected.set(null)
+    $wslCliDistro.set(null)
   })
 
   it('keeps a hotkey label inline inside the portaled tooltip decoration', async () => {
@@ -137,5 +139,63 @@ describe('TerminalRail', () => {
     // No CLI may be offered while availability is unknown, but the local shell
     // stays reachable so a WSL tab can always be brought back.
     expect(options.map(option => option.textContent)).toEqual(['Local shell'])
+  })
+
+  it('hides the distro picker when the probe found a single distribution', async () => {
+    // The default fixture reports `distros: ['Ubuntu']` — the placeholder shape
+    // DEV-A v2 ships before real multi-distro data lands.
+    render(<TerminalRail />)
+
+    await openMenu(screen.getByRole('button', { name: /Terminal CLI/ }))
+
+    await screen.findAllByRole('menuitemradio')
+
+    expect(screen.queryByRole('menuitemradio', { name: 'Ubuntu' })).toBeNull()
+    expect(screen.queryByText('Distribution')).toBeNull()
+  })
+
+  it('re-targets the active CLI tab into the chosen distribution', async () => {
+    $wslCliProbe.set({ ...probeResult(['claude', 'hermes']), distros: ['Ubuntu', 'Debian'] })
+    $terminals.set([
+      { auto: true, cwd: 'C:\\repo', id: 'term-1', kind: 'user', title: 'claude', wsl: { cli: 'claude', distro: 'Ubuntu' } }
+    ])
+
+    render(<TerminalRail />)
+
+    await openMenu(screen.getByRole('button', { name: 'Terminal CLI: claude' }))
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Debian' }))
+
+    // Same CLI, new distro: the frozen target shape travels to the tab, which
+    // the workspace keys on — the PTY restarts in the other distribution.
+    expect($terminals.get()[0]?.wsl).toEqual({ cli: 'claude', distro: 'Debian' })
+    expect($wslCliSelected.get()).toEqual({ cli: 'claude', distro: 'Debian' })
+    expect($wslCliDistro.get()).toBe('Debian')
+  })
+
+  it('only records the distro preference while the active tab is the local shell', async () => {
+    $wslCliProbe.set({ ...probeResult(['claude', 'hermes']), distros: ['Ubuntu', 'Debian'] })
+
+    render(<TerminalRail />)
+
+    await openMenu(screen.getByRole('button', { name: /Terminal CLI/ }))
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Debian' }))
+
+    // The local tab is never dragged into WSL...
+    expect($terminals.get()[0]?.wsl).toBeUndefined()
+    expect($wslCliSelected.get()).toBeNull()
+    // ...but the pick is remembered for the next CLI switch.
+    expect($wslCliDistro.get()).toBe('Debian')
+  })
+
+  it('lands the next CLI pick in the preferred distribution', async () => {
+    $wslCliProbe.set({ ...probeResult(['claude', 'hermes']), distros: ['Ubuntu', 'Debian'] })
+    $wslCliDistro.set('Debian')
+
+    render(<TerminalRail />)
+
+    await openMenu(screen.getByRole('button', { name: /Terminal CLI/ }))
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'claude' }))
+
+    expect($terminals.get()[0]?.wsl).toEqual({ cli: 'claude', distro: 'Debian' })
   })
 })
