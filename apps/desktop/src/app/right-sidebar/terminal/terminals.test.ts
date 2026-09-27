@@ -172,6 +172,36 @@ describe('terminal store persistence', () => {
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').terminals[0].wsl).toBeUndefined()
     expect($terminals.get()[0]?.wsl).toBeNull()
   })
+
+  it('wipes the tab scrollback on every WSL target change, never persisting the empty buffer', async () => {
+    const { $terminals, createTerminal, setTerminalWslCli, updateTerminalReviveBuffer } = await loadTerminalStore()
+
+    const id = createTerminal('/repo')
+
+    const storedEntry = () => JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').terminals[0]
+
+    // local → CLI: the old local-shell history must not replay over the TUI.
+    updateTerminalReviveBuffer(id, 'local scrollback')
+    expect(storedEntry().reviveBuffer).toBe('local scrollback')
+
+    setTerminalWslCli(id, { cli: 'claude', distro: 'Ubuntu' })
+    expect($terminals.get()[0]?.reviveBuffer).toBe('')
+    // `''` is falsy, so the serializer drops the field entirely (no disk churn).
+    expect('reviveBuffer' in storedEntry()).toBe(false)
+
+    // same CLI, another distro: also a different shell, so also wiped.
+    updateTerminalReviveBuffer(id, 'claude scrollback')
+    setTerminalWslCli(id, { cli: 'claude', distro: 'Debian' })
+    expect($terminals.get()[0]?.reviveBuffer).toBe('')
+    expect('reviveBuffer' in storedEntry()).toBe(false)
+
+    // CLI → back to the local shell.
+    updateTerminalReviveBuffer(id, 'debian scrollback')
+    setTerminalWslCli(id, null)
+    expect($terminals.get()[0]?.reviveBuffer).toBe('')
+    expect('reviveBuffer' in storedEntry()).toBe(false)
+    expect($terminals.get()[0]?.wsl).toBeNull()
+  })
 })
 
 describe('session cwd → terminal tab linking', () => {

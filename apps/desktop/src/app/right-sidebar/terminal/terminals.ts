@@ -202,10 +202,19 @@ export function createTerminal(cwd: string = $currentCwd.get(), wsl?: null | Wsl
 
 /** Point a user tab at a WSL CLI, or back at the local shell with null. The
  *  workspace keys each instance on its CLI, so the tab's PTY is re-created on the
- *  next render (a null target therefore survives persistence as "no field"). */
+ *  next render (a null target therefore survives persistence as "no field").
+ *
+ *  Re-targeting also drops the tab's replayed scrollback. The remount replays
+ *  `reviveBuffer` into the FRESH session, so a buffer captured under another
+ *  shell (local bash → a CLI TUI, or distro A → distro B) would surface as if the
+ *  new target had produced it. `''` is falsy for the replay guard and for the
+ *  persist serializer, so the wipe stays in memory and nothing is rewritten. This
+ *  is the only writer of `wsl`, so CLI ↔ local ↔ distro switches are all covered. */
 export function setTerminalWslCli(id: string, target: null | WslCliTarget): void {
   $terminals.set(
-    $terminals.get().map(term => (term.id === id && term.kind === 'user' ? { ...term, wsl: target } : term))
+    $terminals.get().map(term =>
+      term.id === id && term.kind === 'user' ? { ...term, reviveBuffer: '', wsl: target } : term
+    )
   )
 }
 
