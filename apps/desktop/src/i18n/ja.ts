@@ -1140,6 +1140,20 @@ export const ja = defineLocale({
         selectedMessage: backend => `ターミナルコマンドは ${backend} で実行されます。新しいセッションに適用されます。`,
         failedSelect: backend => `${backend} の選択に失敗しました`,
         needsSetupHint: 'このバックエンドは今すぐ選択できますが、セットアップが完了するまでコマンドは失敗します。'
+      },
+      wslCli: {
+        sectionTitle: 'WSL CLI',
+        hint: '検出された WSL コマンドラインツールはターミナルペインで開けます。検出は WSL 内で実行されます。',
+        loading: 'WSL CLI を検出中…',
+        reprobe: '再検出',
+        available: '利用可能',
+        unavailable: '利用不可',
+        unknown: '不明',
+        probeFailedTitle: '検出できません',
+        probeFailedBody: reason => `検出に失敗しました（${reason}）。利用可否は不明です。選択内容は保持されます。`,
+        failedProbe: 'WSL CLI の検出に失敗しました',
+        failedOptin: cli => `${cli} を更新できませんでした`,
+        bridgeUnavailable: 'WSL CLI の検出はデスクトップアプリでのみ利用できます。'
       }
     }
   },
@@ -2622,6 +2636,9 @@ export const ja = defineLocale({
     terminalHide: 'ターミナルを非表示',
     terminalsAria: 'ターミナル',
     terminalNew: '新しいターミナル',
+    wslCliSwitcher: 'ターミナル CLI',
+    wslCliMenuLabel: 'ターミナルの実行先',
+    wslCliLocal: 'ローカルシェル',
     terminalCloseOthers: '他を閉じる',
     terminalCloseAll: 'すべて閉じる',
     addToChat: 'チャットに追加'

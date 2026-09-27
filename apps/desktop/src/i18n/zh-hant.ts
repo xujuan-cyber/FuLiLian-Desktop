@@ -1102,6 +1102,20 @@ export const zhHant = defineLocale({
         selectedMessage: backend => `終端命令現在透過 ${backend} 執行。將套用於新工作階段。`,
         failedSelect: backend => `選擇 ${backend} 失敗`,
         needsSetupHint: '現在即可選擇此後端——但在完成設定前命令將會失敗。'
+      },
+      wslCli: {
+        sectionTitle: 'WSL 命令列工具',
+        hint: '偵測到的 WSL 命令列工具可在終端面板中開啟。偵測會在 WSL 內執行。',
+        loading: '正在偵測 WSL CLI…',
+        reprobe: '重新偵測',
+        available: '可用',
+        unavailable: '不可用',
+        unknown: '未知',
+        probeFailedTitle: '無法偵測',
+        probeFailedBody: reason => `偵測失敗（${reason}），可用性未知。你的勾選已保留。`,
+        failedProbe: 'WSL CLI 偵測失敗',
+        failedOptin: cli => `更新 ${cli} 失敗`,
+        bridgeUnavailable: '僅桌面端支援 WSL CLI 偵測。'
       }
     }
   },
@@ -2533,6 +2547,9 @@ export const zhHant = defineLocale({
     terminalHide: '隱藏終端機',
     terminalsAria: '終端機',
     terminalNew: '新增終端機',
+    wslCliSwitcher: '終端 CLI',
+    wslCliMenuLabel: '終端執行於',
+    wslCliLocal: '本機 shell',
     terminalCloseOthers: '關閉其他',
     terminalCloseAll: '全部關閉',
     addToChat: '新增至聊天'
