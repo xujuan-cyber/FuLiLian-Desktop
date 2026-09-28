@@ -91,6 +91,49 @@
   src: url('./fonts/JetBrainsMono-Italic.woff2') format('woff2');
 }
 
+/* Fulilian UI faces (step 13 · U4 档 A) — Sarasa Gothic SC (UI) and Sarasa Term
+   SC (mono), subset to ASCII + Latin-1 + GB2312 一二级 + CJK punctuation and
+   bundled locally. Bundled rather than a remote `fontUrl` on purpose (pit-N2).
+   OFL-1.1 — licence text kept at src/fonts/OFL.txt.
+   Emoji are deliberately NOT in the subset; EMOJI_FALLBACK in presets.ts
+   carries them at the end of every stack. */
+/* Ligatures OFF for sans, ON for mono (step 13 · §5.4).
+   Sarasa ships programming ligatures (`!=` → ≠). They belong to code, not to UI
+   prose: on chat body text they make copy-paste return something other than
+   what was typed. The switch lives on the sans *face* rather than on `body`
+   because `font-feature-settings` inherits — a body-level reset would reach
+   every `.font-mono` descendant and strip ligatures off the terminal too. */
+@font-face {
+  font-family: 'Fulilian Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+  src: url('./fonts/FulilianSans-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fulilian Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+  src: url('./fonts/FulilianSans-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fulilian Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/FulilianMono-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fulilian Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/FulilianMono-Bold.woff2') format('woff2');
+}
+
 @theme inline {
   --color-background: var(--dt-background);
   --color-foreground: var(--dt-foreground);
@@ -170,20 +213,20 @@
   :root {
     color-scheme: light;
 
-    --theme-foreground: #17171a;
-    --theme-primary: #0053fd;
-    --theme-secondary: color-mix(in srgb, #0053fd 7%, #ffffff);
-    --theme-accent-soft: color-mix(in srgb, #0053fd 10%, #ffffff);
-    --theme-midground: #0053fd;
-    --theme-warm: #cf806d;
-    --theme-background-seed: #f8faff;
-    --theme-sidebar-seed: #f3f7ff;
-    --theme-card-seed: #ffffff;
-    --theme-elevated-seed: #ffffff;
-    --theme-bubble-seed: color-mix(in srgb, #0053fd 6%, #ffffff);
-    --theme-neutral-chrome: #f3f3f3;
-    --theme-neutral-sidebar: #f3f3f3;
-    --theme-neutral-card: #fcfcfc;
+    --theme-foreground: #2A241C;
+    --theme-primary: #9A6528;
+    --theme-secondary: #F0E5D3;
+    --theme-accent-soft: #F1E7D6;
+    --theme-midground: #9A6528;
+    --theme-warm: #9A6528;
+    --theme-background-seed: #FAF5EA;
+    --theme-sidebar-seed: #F3EADC;
+    --theme-card-seed: #FFFCF5;
+    --theme-elevated-seed: #FFFEFA;
+    --theme-bubble-seed: #F1E7D6;
+    --theme-neutral-chrome: #EAE0CE;
+    --theme-neutral-sidebar: #EEE4D3;
+    --theme-neutral-card: #FBF6EC;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
@@ -207,13 +250,13 @@
     --ui-accent: var(--theme-midground);
     --ui-accent-secondary: var(--theme-primary);
     --ui-warm: var(--theme-warm);
-    --ui-red: #cf2d56;
-    --ui-orange: #db704b;
-    --ui-yellow: #c08532;
-    --ui-green: #1f8a65;
-    --ui-cyan: #4c7f8c;
-    --ui-blue: #0053fd;
-    --ui-purple: #9e94d5;
+    --ui-red: #B3324B;
+    --ui-orange: #A5582B;
+    --ui-yellow: #96661A;
+    --ui-green: #4F7A3A;
+    --ui-cyan: #3E7A78;
+    --ui-blue: #9A6528;
+    --ui-purple: #7E5C9E;
     --context-usage-system: color-mix(in srgb, var(--ui-base) 55%, transparent);
     --context-usage-tools: var(--ui-purple);
     --context-usage-rules: var(--ui-green);
@@ -428,24 +471,29 @@
        own surfaces — chroma 0 is the only thing removed. */
     --dt-scrollbar-thumb: oklch(from var(--dt-midground) l 0 h);
     --dt-composer-ring: var(--ui-base);
-    --dt-destructive: #cf2d56;
-    --dt-destructive-foreground: #ffffff;
+    /* First-frame fallback only (pre-hydration) — the live value is written by
+       applyTheme() from the active theme. Aligned to apricot so boot doesn't
+       flash the old cool crimson, matching the --dt-primary-solid pair above. */
+    --dt-destructive: #B3324B;
+    --dt-destructive-foreground: #FFFCF5;
     --dt-sidebar-bg: var(--ui-bg-sidebar);
     --dt-sidebar-border: var(--ui-stroke-secondary);
     --dt-user-bubble: var(--ui-chat-bubble-background);
     --dt-user-bubble-border: var(--ui-stroke-tertiary);
 
     --dt-font-sans:
-      'Segoe WPC', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif,
-      'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji;
+      'Fulilian Sans', 'Sarasa Gothic SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC',
+      'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+      'Segoe UI Symbol', 'Noto Color Emoji', emoji;
     /* Key caps always use the native UI face — never theme typography overrides. */
     --dt-font-kbd: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
-    /* Menlo/Monaco first — Apple's native monospace faces — so code/diff read
-       in the system mono on macOS, with SF Mono and bundled Courier Prime as
-       fallbacks. */
+    /* Same chain as presets.ts FULILIAN_MONO — keep the two in step, or the
+       pre-hydration paint renders a different mono than the hydrated one.
+       Bundled Fulilian Mono leads; the native faces stay behind it so a
+       missing/blocked webfont degrades to the platform mono, not to nothing. */
     --dt-font-mono:
-      Menlo, Monaco, 'SF Mono', 'Courier Prime', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-      'Noto Color Emoji', emoji;
+      'Fulilian Mono', 'Sarasa Term SC', 'JetBrains Mono', Menlo, Monaco, 'SF Mono', 'Courier Prime', monospace,
+      'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji;
     --dt-base-size: 1rem;
     --dt-line-height: 1.5;
     --dt-letter-spacing: 0;
@@ -548,14 +596,28 @@
     --theme-mix-card: 38%;
     --theme-mix-elevated: 46%;
     --theme-mix-bubble: 46%;
-    --theme-neutral-chrome: #0d0d0e;
-    --theme-neutral-sidebar: #0a0a0b;
-    --theme-neutral-card: #161618;
+    --theme-neutral-chrome: #221D18;
+    --theme-neutral-sidebar: #1A1612;
+    --theme-neutral-card: #2A2420;
 
-    /* Dark-only accent palette overrides. */
-    --ui-red: #e75e78;
-    --ui-green: #55a583;
-    --ui-cyan: #6f9ba6;
+    /* Dark never had a `--dt-destructive` of its own, so the cool light value
+       leaked into dark's first frame (3.50 against #1C1814). Pinned per
+       appearance like the light pair; the live value still comes from the
+       active theme via `applyTheme()`. */
+    --dt-destructive: #E4677F;
+    --dt-destructive-foreground: #241F1A;
+
+    /* Dark-only accent palette overrides. The full warm set is restated, not
+       just the three the old cool palette happened to need — otherwise orange,
+       yellow, blue and purple would keep falling back to :root's light-tuned
+       hues and read as cold spots on the dark page. */
+    --ui-red: #E4677F;
+    --ui-orange: #E0955F;
+    --ui-yellow: #D9B153;
+    --ui-green: #8FBF74;
+    --ui-cyan: #7FBDB8;
+    --ui-blue: #D9A56A;
+    --ui-purple: #B79BD6;
     --ui-diff-add-foreground: color-mix(in srgb, var(--ui-green) 62%, #fff);
     --ui-diff-remove-foreground: color-mix(in srgb, var(--ui-red) 62%, #fff);
 

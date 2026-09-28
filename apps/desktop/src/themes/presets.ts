@@ -32,7 +32,29 @@ const SYSTEM_SANS =
 
 const SYSTEM_MONO = 'Menlo, Monaco, "SF Mono", "Courier Prime", monospace, ' + EMOJI_FALLBACK
 
-export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: SYSTEM_SANS, fontMono: SYSTEM_MONO }
+/**
+ * Fulilian UI stacks (step 13 · U4 档 A) — Sarasa Gothic SC / Sarasa Term SC,
+ * subset + bundled locally under `src/fonts/` and declared via `@font-face`
+ * in `styles.css`. Local rather than a remote `fontUrl` on purpose (pit-N2).
+ *
+ * Each stack MUST end with EMOJI_FALLBACK — `presets.test.ts` asserts it for
+ * every built-in that declares typography.
+ *
+ * Referenced from exactly two places — `DEFAULT_TYPOGRAPHY` and
+ * `nousTheme.typography` — through these constants rather than as repeated
+ * literals. `context.tsx` merges `nousTheme.typography` as a *middle* layer,
+ * so two hand-maintained copies would drift and silently undo the other.
+ */
+export const FULILIAN_SANS =
+  `"Fulilian Sans", "Sarasa Gothic SC", "HarmonyOS Sans SC", "Microsoft YaHei", ` +
+  `"PingFang SC", "Noto Sans SC", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif, ` +
+  EMOJI_FALLBACK
+
+export const FULILIAN_MONO =
+  `"Fulilian Mono", "Sarasa Term SC", "JetBrains Mono", Menlo, Monaco, "SF Mono", "Courier Prime", monospace, ` +
+  EMOJI_FALLBACK
+
+export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: FULILIAN_SANS, fontMono: FULILIAN_MONO }
 
 /**
  * Nous — the canonical Fulilian desktop identity, forked from the GitHub VS Code
@@ -114,8 +136,8 @@ export const githubTheme: DesktopTheme = {
     userBubbleBorder: '#30363d'
   },
   typography: {
-    fontSans: SYSTEM_SANS,
-    fontMono: SYSTEM_MONO,
+    fontSans: FULILIAN_SANS,
+    fontMono: FULILIAN_MONO,
     fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
   },
   terminal: {
@@ -232,8 +254,8 @@ export const nousTheme: DesktopTheme = {
     userBubbleBorder: '#30363d'
   },
   typography: {
-    fontSans: SYSTEM_SANS,
-    fontMono: SYSTEM_MONO,
+    fontSans: FULILIAN_SANS,
+    fontMono: FULILIAN_MONO,
     fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
   },
   terminal: {
@@ -657,8 +679,8 @@ export const nousAltTheme: DesktopTheme = {
     userBubbleBorder: '#3A63BD'
   },
   typography: {
-    fontSans: SYSTEM_SANS,
-    fontMono: SYSTEM_MONO,
+    fontSans: FULILIAN_SANS,
+    fontMono: FULILIAN_MONO,
     fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
   }
 }
@@ -845,7 +867,131 @@ export const slateTheme: DesktopTheme = {
   }
 }
 
+/**
+ * Apricot — Fulilian's default skin (step 13 · U2). A warm rice-apricot light
+ * and a warm brown-black dark; the name is the colour, not a pun.
+ *
+ * Reference points, not copies: light sits between Rosé Pine Dawn's `base`
+ * (#faf4ed) and Everforest Light's `bg` (#fdf6e3), and every neutral keeps a
+ * warm cast so chrome never reads as "premium warm surface, cheap cool-grey
+ * edge". Dark is the same family at night.
+ *
+ * Two values here deliberately overrule the original proposal, because the
+ * proposed hexes measured below AA against these surfaces — do not revert:
+ *   · primary #9A6528  (proposal #B07A3C measured 3.39 — under body AA)
+ *   · border  #D8C7AC  (proposal #E3D6C2 measured 1.32 — invisible hairline)
+ *
+ * No `typography` on purpose. `context.tsx` merges `nousTheme.typography` as a
+ * *middle* layer, so a third copy of the font chain here would be a drift risk
+ * with no upside: the chain lives in DEFAULT_TYPOGRAPHY + nousTheme.typography
+ * only, and apricot inherits that merged result.
+ *
+ * The ANSI palettes are the theme's own, not `nous`'s cool set — a cool
+ * terminal against a warm page is the loudest way to break the illusion. Every
+ * slot clears 3.0:1 against the theme background (terminal text is large-scale).
+ */
+export const apricotTheme: DesktopTheme = {
+  name: 'apricot',
+  label: 'Apricot',
+  description: 'Warm rice-apricot light and warm brown-black dark',
+  colors: {
+    background: '#FAF5EA',
+    foreground: '#2A241C',
+    card: '#FFFCF5',
+    cardForeground: '#2A241C',
+    muted: '#EFE6D6',
+    mutedForeground: '#6B5B49',
+    popover: '#FFFEFA',
+    popoverForeground: '#2A241C',
+    primary: '#9A6528',
+    primaryForeground: '#FFFCF5',
+    secondary: '#F0E5D3',
+    secondaryForeground: '#2A241C',
+    accent: '#F1E7D6',
+    accentForeground: '#2A241C',
+    border: '#D8C7AC',
+    input: '#F5EEE0',
+    ring: '#9A6528',
+    midground: '#9A6528',
+    midgroundForeground: '#FFFCF5',
+    composerRing: '#9A6528',
+    destructive: '#B3324B',
+    destructiveForeground: '#FFFCF5',
+    sidebarBackground: '#F3EADC',
+    sidebarBorder: '#D8C7AC',
+    userBubble: '#F1E7D6',
+    userBubbleBorder: '#D8C7AC'
+  },
+  darkColors: {
+    background: '#1C1814',
+    foreground: '#EDE4D6',
+    card: '#241F1A',
+    cardForeground: '#EDE4D6',
+    muted: '#2A2420',
+    mutedForeground: '#A79A88',
+    popover: '#241F1A',
+    popoverForeground: '#EDE4D6',
+    primary: '#D9A56A',
+    primaryForeground: '#241F1A',
+    secondary: '#2E2823',
+    secondaryForeground: '#EDE4D6',
+    accent: '#312A24',
+    accentForeground: '#EDE4D6',
+    border: '#3F372E',
+    input: '#3F372E',
+    ring: '#D9A56A',
+    midground: '#D9A56A',
+    midgroundForeground: '#241F1A',
+    composerRing: '#D9A56A',
+    destructive: '#E4677F',
+    destructiveForeground: '#241F1A',
+    sidebarBackground: '#17130F',
+    sidebarBorder: '#3F372E',
+    userBubble: '#312A24',
+    userBubbleBorder: '#3F372E'
+  },
+  terminal: {
+    foreground: '#4A4034',
+    black: '#3F372C',
+    red: '#B3324B',
+    green: '#4F7A3A',
+    yellow: '#8A5D14',
+    blue: '#39628A',
+    magenta: '#8E4A66',
+    cyan: '#37706E',
+    white: '#8A7A63',
+    brightBlack: '#6B5B49',
+    brightRed: '#A8435A',
+    brightGreen: '#4A7434',
+    brightYellow: '#96661A',
+    brightBlue: '#456F9C',
+    brightMagenta: '#8A5480',
+    brightCyan: '#3E7A78',
+    brightWhite: '#9A8B75'
+  },
+  darkTerminal: {
+    foreground: '#EDE4D6',
+    black: '#7A6D5A',
+    red: '#E4677F',
+    green: '#8FBF74',
+    yellow: '#D9B153',
+    blue: '#7FA8D4',
+    magenta: '#C98BB6',
+    cyan: '#7FBDB8',
+    white: '#A79A88',
+    brightBlack: '#8A7C6A',
+    brightRed: '#F07E93',
+    brightGreen: '#A5D18A',
+    brightYellow: '#E6C46B',
+    brightBlue: '#93B8DF',
+    brightMagenta: '#D8A0C6',
+    brightCyan: '#93CBC6',
+    brightWhite: '#F5EEE2'
+  }
+}
+
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
+  apricot: apricotTheme,
   nous: nousTheme,
   github: githubTheme,
   catppuccin: catppuccinTheme,
@@ -862,4 +1008,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'nous'
+export const DEFAULT_SKIN_NAME = 'apricot'

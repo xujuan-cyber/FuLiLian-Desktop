@@ -175,8 +175,11 @@ function renderedModeFor(colors: DesktopThemeColors, mode: 'light' | 'dark'): 'l
 // Per-mode mix knobs. Light/dark fallbacks live in styles.css `:root` /
 // `:root.dark`; setting them inline keeps active-skin overrides surviving
 // the boot-time paint.
-// styles.css --theme-neutral-chrome — keep in sync.
-const NEUTRAL_CHROME = { light: '#f3f3f3', dark: '#0d0d0e' } as const
+// styles.css --theme-neutral-chrome — keep in sync. Warm neutrals (step 13):
+// this value lands on the *native* title bar via chromeBackground() and
+// setTitleBarTheme(), so a cool grey here shows up as a cold frame around a
+// warm page. Must match the styles.css --theme-neutral-* family.
+const NEUTRAL_CHROME = { light: '#EAE0CE', dark: '#221D18' } as const
 
 // The one foreground --dt-primary-solid is built to carry. Fixed rather than
 // measured: the surface is derived to suit IT, not the other way round.
