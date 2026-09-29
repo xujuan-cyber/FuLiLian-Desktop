@@ -17,9 +17,10 @@ import { codiconIcon } from '@/components/ui/codicon'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { HighlightMatches } from '@/components/ui/highlight-matches'
 import { KbdCombo } from '@/components/ui/kbd'
+import { searchSessions } from '@/api/sessions'
 import { getFulilianConfigRecord, listAllProfileSessions } from '@/fulilian'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { useI18n } from '@/i18n'
+import { type Translations, useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
 import {
   Activity,
@@ -33,6 +34,7 @@ import {
   Cpu,
   Download,
   Egg,
+  FileText,
   GitBranch,
   Globe,
   type IconComponent,
@@ -47,6 +49,7 @@ import {
   PawPrint,
   Plus,
   RefreshCw,
+  Search,
   Settings,
   Settings2,
   SlidersHorizontal,
@@ -57,6 +60,7 @@ import {
   Zap
 } from '@/lib/icons'
 import { normalize } from '@/lib/text'
+import { coarseElapsed } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
 import { $repoWorktrees } from '@/store/coding-status'
@@ -73,6 +77,7 @@ import { openPetGenerate } from '@/store/pet-generate'
 import { openBrowserTab } from '@/store/preview'
 import { $projectTree, goToProject, openFolderAsProject, requestStartWorkSession } from '@/store/projects'
 import { $connection } from '@/store/session'
+import { openSessionChanges } from '@/store/session-changes'
 import { runGatewayRestart } from '@/store/system-actions'
 import {
   $backendUpdateApply,
@@ -86,6 +91,7 @@ import { canOpenNewWindow, openNewWindow } from '@/store/windows'
 import { luminance } from '@/themes/color'
 import { type ThemeMode, useTheme } from '@/themes/context'
 import { isUserTheme, resolveTheme } from '@/themes/user-themes'
+import type { SessionSearchResult } from '@/types/fulilian'
 
 import { openSession, openSessionIntentFromModifiers } from '../open-session'
 import {
@@ -375,6 +381,91 @@ const PaletteRow = memo(function PaletteRow({
 // Fulilian session ids: <YYYYMMDD>_<HHMMSS>_<6 hex>. Used to offer a direct
 // "Go to session ‹id›" jump for ids that aren't in the recent-200 list.
 const SESSION_ID_RE = /^\d{8}_\d{6}_[a-f0-9]{6}$/
+
+// Same relative-age keys the sidebar rows use (search page detail column).
+const SEARCH_AGE_KEY = { day: 'ageDay', hour: 'ageHour', minute: 'ageMin' } as const
+
+/**
+ * Groups for the sessions deep-search page (step14 R6): a title/preview/branch
+ * filter over the local recent-200 list, unioned with the backend's
+ * full-library search results (deduped against the local hits). Exported pure
+ * so the A5 fixture assertions (title hit / keyword hit / no-hit empty) test
+ * the actual ranking, not a mock of it.
+ */
+export function buildSessionSearchGroups({
+  needle,
+  openSession,
+  results,
+  sessions,
+  t
+}: {
+  needle: string
+  openSession: (sessionId: string) => (event?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => void
+  results?: SessionSearchResult[]
+  sessions: SessionEntry[]
+  t: Translations
+}): PaletteGroup[] {
+  const local = needle
+    ? sessions.filter(session =>
+        [session.title, session.preview ?? '', session.git_branch ?? '']
+          .map(normalize)
+          .some(text => text.includes(needle))
+      )
+    : sessions.slice(0, 20)
+
+  const seen = new Set(local.map(session => session.id))
+  const remote = (results ?? []).filter(result => !seen.has(result.session_id)).slice(0, 30)
+
+  const row = (id: string, key: string, label: string, detail?: string, keywords?: string[]): PaletteItem => ({
+    detail,
+    icon: MessageCircle,
+    id: `search-session-${key}`,
+    keywords,
+    label,
+    runWithEvent: openSession(id)
+  })
+
+  const localItems = local.map(session =>
+    row(
+      session.id,
+      `local-${session.id}`,
+      session.title,
+      session.preview || undefined,
+      ['chat', 'session', ...(session.git_branch ? [session.git_branch] : [])]
+    )
+  )
+
+  // Remote hits carry a matched-content excerpt (no title field on the wire)
+  // and the conversation's start time — the deep-reach complement to the
+  // title/preview rows above.
+  const remoteItems = remote.map(result => {
+    const startedAt = result.session_started
+    const age = !startedAt
+      ? undefined
+      : (() => {
+          const { unit, value } = coarseElapsed(Date.now() - startedAt * 1000)
+
+          return unit === 'second' ? t.sidebar.row.ageNow : `${value}${t.sidebar.row[SEARCH_AGE_KEY[unit]]}`
+        })()
+
+    return row(
+      result.session_id,
+      `remote-${result.session_id}`,
+      result.snippet.split('\n')[0]?.trim() || result.session_id,
+      age,
+      ['chat', 'session', result.source ?? '', result.model ?? '']
+    )
+  })
+
+  if (localItems.length === 0 && remoteItems.length === 0) {
+    return []
+  }
+
+  return [
+    ...(localItems.length > 0 ? [{ heading: t.commandCenter.sections.sessions, items: localItems }] : []),
+    ...(remoteItems.length > 0 ? [{ heading: t.commandCenter.sessionSearchRemote, items: remoteItems }] : [])
+  ]
+}
 
 // A typed/pasted folder path: absolute (`/…`) or a Windows drive (`C:\…`).
 // Deliberately NOT `~/…`: the upsert's membership check (projectIdForCwd)
@@ -670,6 +761,29 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   const sessions = useMemo(() => (sessionsQuery.data?.sessions ?? []).map(toSessionEntry), [sessionsQuery.data])
   const archivedSessions = useMemo(() => (archivedQuery.data?.sessions ?? []).map(toSessionEntry), [archivedQuery.data])
 
+  // ── Session deep search (step14 R6) ────────────────────────────────────────
+  // The nested page unions two sources: the local recent-200 list (title/
+  // preview/branch filter, instant) and the backend's full-library search
+  // (`GET /api/sessions/search`, debounced — it reads every session, so the
+  // keystroke must not fire it per character). Existing root-list session
+  // group untouched; this page is the deep-reach complement.
+  const [searchSessionsQuery, setSearchSessionsQuery] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchSessionsQuery(search), 250)
+
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const trimmedSearchQuery = searchSessionsQuery.trim()
+
+  const sessionSearchQuery = useQuery({
+    enabled: page === 'search-sessions' && trimmedSearchQuery.length > 0,
+    queryKey: ['command-palette', 'session-search', trimmedSearchQuery],
+    queryFn: () => searchSessions(trimmedSearchQuery),
+    staleTime: 15_000
+  })
+
   // Search/sub-page are local to a mount, and this component remounts per open
   // (keyed by open count), so each open starts clean without a reset effect.
 
@@ -710,6 +824,20 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       openSession(sessionId, navigate, openSessionIntentFromModifiers(event, 'stack'))
     },
     [navigate]
+  )
+
+  const sessionSearchPage = useMemo<PaletteGroup[]>(
+    () =>
+      page === 'search-sessions'
+        ? buildSessionSearchGroups({
+            needle: normalize(trimmedSearchQuery),
+            openSession: goSession,
+            results: sessionSearchQuery.data?.results,
+            sessions,
+            t
+          })
+        : [],
+    [goSession, page, sessionSearchQuery.data, sessions, t, trimmedSearchQuery]
   )
 
   // Step up one nested page (or back to the root list), clearing the filter so
@@ -828,6 +956,13 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             run: go(SETTINGS_ROUTE)
           },
           {
+            icon: Search,
+            id: 'nav-search-sessions',
+            keywords: ['sessions', 'search', 'find', 'history', 'chats', 'conversation'],
+            label: cc.searchSessions,
+            to: 'search-sessions'
+          },
+          {
             action: 'nav.skills',
             icon: Wrench,
             id: 'nav-skills',
@@ -900,6 +1035,13 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             keywords: ['command center', 'sessions', 'pin'],
             label: cc.sections.sessions,
             run: go(`${COMMAND_CENTER_ROUTE}?section=sessions`)
+          },
+          {
+            icon: FileText,
+            id: 'cc-session-changes',
+            keywords: ['changes', 'diff', 'review', 'session', 'files', 'touched'],
+            label: cc.sessionChanges,
+            run: () => openSessionChanges()
           },
           {
             icon: Activity,
@@ -1410,6 +1552,13 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         placeholder: t.commandCenter.pets.placeholder,
         groups: []
       },
+      // Session deep search (step14 R6): recent-200 title/preview filter ∪
+      // debounced backend search; groups are built above.
+      'search-sessions': {
+        title: t.commandCenter.searchSessions,
+        placeholder: t.commandCenter.searchSessionsPlaceholder,
+        groups: sessionSearchPage
+      },
       // Server-driven page: items come from the Marketplace, rendered by
       // <MarketplaceThemePage> (loader + live search + per-row install).
       'install-theme': {
@@ -1431,6 +1580,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       previewTheme,
       resolvedMode,
       resolveThemeMode,
+      sessionSearchPage,
       setMode,
       setTheme,
       settingsPageGroups,
@@ -1443,6 +1593,16 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   const unrankedGroups = activePage ? activePage.groups : groups
   const visibleGroups = useMemo(() => rankGroups(unrankedGroups, search), [unrankedGroups, search])
   const placeholder = activePage ? activePage.placeholder : t.commandCenter.searchPlaceholder
+
+  // Page-scoped empty state (step14 R6): the sessions search page says "no
+  // matching sessions" instead of the generic palette empty line — and only
+  // once the (debounced) query settled, not while a fetch is in flight.
+  const noResultsLabel =
+    page === 'search-sessions' && sessionSearchQuery.isFetching
+      ? t.commandCenter.searchSessionsSearching
+      : page === 'search-sessions'
+        ? t.commandCenter.noMatchingSessions
+        : t.commandCenter.noResults
 
   // The HighlightWatcher inside <Command> reports the highlighted row (arrows
   // or hover) from the cmdk store. Resolve it back to its PaletteItem so
@@ -1601,7 +1761,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
                 bindings={bindings}
                 groups={visibleGroups}
                 modHeld={modHeld}
-                noResultsLabel={t.commandCenter.noResults}
+                noResultsLabel={noResultsLabel}
                 onSelectItem={handleSelect}
                 onSelectMods={noteSelectMods}
                 search={search}
