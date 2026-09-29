@@ -53,15 +53,16 @@ const normalizeSkin = (name: string | null): string =>
   name && resolveTheme(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
 
 /**
- * A stored mode, or `system` when there isn't one.
+ * A stored mode, or `light` when there isn't one.
  *
- * A fresh profile follows the OS. Defaulting to `light` meant someone whose
- * desktop is dark got a white window on first launch and had to go find the
- * setting — and with per-appearance translucency it also handed them light's
- * much heavier tint, tuned for a bright desktop they don't have.
+ * The default skin is a white one (github), so a fresh install reads as a white
+ * app — that IS the product's default look now. Previously this fell back to
+ * `system`, which meant a dark-OS user got the dark palette on first launch and
+ * never saw the white default at all. Anyone who has actually picked an
+ * appearance keeps it; only the "never touched appearance" state changed.
  */
 const normalizeMode = (value: string | null): ThemeMode =>
-  value === 'light' || value === 'dark' || value === 'system' ? value : 'system'
+  value === 'light' || value === 'dark' || value === 'system' ? value : 'light'
 
 // ─── Per-profile appearance persistence ─────────────────────────────────────
 // Skin and mode are each stored per profile. "default" isn't a real profile —
@@ -175,11 +176,12 @@ function renderedModeFor(colors: DesktopThemeColors, mode: 'light' | 'dark'): 'l
 // Per-mode mix knobs. Light/dark fallbacks live in styles.css `:root` /
 // `:root.dark`; setting them inline keeps active-skin overrides surviving
 // the boot-time paint.
-// styles.css --theme-neutral-chrome — keep in sync. Warm neutrals (step 13):
-// this value lands on the *native* title bar via chromeBackground() and
-// setTitleBarTheme(), so a cool grey here shows up as a cold frame around a
-// warm page. Must match the styles.css --theme-neutral-* family.
-const NEUTRAL_CHROME = { light: '#EAE0CE', dark: '#221D18' } as const
+// styles.css --theme-neutral-chrome — keep in sync. Cool neutrals (the default
+// skin moved to github's white; was apricot's warm #EAE0CE family): this value
+// lands on the *native* title bar via chromeBackground() and
+// setTitleBarTheme(), so a warm cream here shows up as a toasty frame around a
+// white page. Must match the styles.css --theme-neutral-* family.
+const NEUTRAL_CHROME = { light: '#F6F8FA', dark: '#221D18' } as const
 
 // The one foreground --dt-primary-solid is built to carry. Fixed rather than
 // measured: the surface is derived to suit IT, not the other way round.
@@ -394,7 +396,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 
   const [mode, setModeState] = useState<ThemeMode>(() =>
-    typeof window === 'undefined' ? 'system' : modePref.resolve(readBootProfileKey())
+    typeof window === 'undefined' ? 'light' : modePref.resolve(readBootProfileKey())
   )
 
   // Follow profile switches: paint the profile's assigned skin + mode and

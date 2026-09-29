@@ -4,13 +4,14 @@ import { useTheme } from './context'
 
 // Retired skin names land on the canonical Nous skin so old muscle memory works.
 // `default` and `fulilian` now resolve to the shipped default skin (step 13 ·
-// U2 moved the default to apricot) — `gold` / `nous-light` stay pinned to
-// `nous`, since they name that skin rather than the default one.
+// U2 moved the default to apricot; a later pass moved it to github's white) —
+// `gold` / `nous-light` stay pinned to `nous`, since they name that skin rather
+// than the default one.
 const ALIASES: Record<string, string> = {
   ares: 'ember',
-  default: 'apricot',
+  default: 'github',
   gold: 'nous',
-  fulilian: 'apricot',
+  fulilian: 'github',
   'nous-light': 'nous'
 }
 

@@ -45,11 +45,11 @@ describe('theme typography emoji fallback (#40364)', () => {
 })
 
 // The pre-GitHub Nous palette stays available as nous-alt, and `nous` itself
-// is still a registered skin — but since step 13 (U2) it no longer holds the
-// default, which moved to `apricot`.
+// is still a registered skin — since step 13 (U2) it stopped holding the
+// default (which went to `apricot`, then on to `github`'s white).
 describe('nous-alt is the retired Nous, and no longer the default skin', () => {
-  it('is registered under its own name while apricot holds the default', () => {
-    expect(DEFAULT_SKIN_NAME).toBe('apricot')
+  it('is registered under its own name while github holds the default', () => {
+    expect(DEFAULT_SKIN_NAME).toBe('github')
     expect(BUILTIN_THEMES['nous-alt']).toBe(nousAltTheme)
     expect(BUILTIN_THEMES.nous).not.toBe(nousAltTheme)
     expect(nousAltTheme.darkColors?.background).toBe('#0D2F86')
@@ -57,21 +57,25 @@ describe('nous-alt is the retired Nous, and no longer the default skin', () => {
   })
 })
 
-// step 13 (U2/U4). DEFAULT_SKIN_NAME has to name a registered theme: it is the
-// fallback for retired persisted skins, and user-themes.test.ts asserts
+// DEFAULT_SKIN_NAME has to name a registered theme: it is the fallback for
+// retired persisted skins, and user-themes.test.ts asserts
 // resolveTheme(DEFAULT_SKIN_NAME) === BUILTIN_THEMES[DEFAULT_SKIN_NAME].
-describe('apricot is the shipped default skin (step 13)', () => {
+describe('github is the shipped default skin', () => {
   it('is registered under DEFAULT_SKIN_NAME', () => {
-    expect(DEFAULT_SKIN_NAME).toBe('apricot')
-    expect(BUILTIN_THEMES[DEFAULT_SKIN_NAME]).toBe(apricotTheme)
-    expect(BUILTIN_THEMES.apricot?.label).toBe('Apricot')
+    expect(DEFAULT_SKIN_NAME).toBe('github')
+    expect(BUILTIN_THEMES[DEFAULT_SKIN_NAME]).toBe(githubTheme)
+    expect(BUILTIN_THEMES.github?.label).toBe('GitHub')
+  })
+
+  it('paints white in light mode', () => {
+    expect(BUILTIN_THEMES.github.colors.background).toBe('#ffffff')
+    expect(BUILTIN_THEMES.github.colors.sidebarBackground).toBe('#f6f8fa')
   })
 
   it('ships both appearances plus its own terminal palettes', () => {
-    expect(BUILTIN_THEMES.apricot.colors.background).toBe('#FAF5EA')
-    expect(BUILTIN_THEMES.apricot.darkColors?.background).toBe('#1C1814')
-    expect(BUILTIN_THEMES.apricot.terminal?.foreground).toBe('#4A4034')
-    expect(BUILTIN_THEMES.apricot.darkTerminal?.foreground).toBe('#EDE4D6')
+    expect(BUILTIN_THEMES.github.darkColors?.background).toBe('#0d1117')
+    expect(BUILTIN_THEMES.github.terminal?.foreground).toBe('#1f2328')
+    expect(BUILTIN_THEMES.github.darkTerminal?.foreground).toBe('#e6edf3')
   })
 
   // §5.3: apricot deliberately declares no typography. context.tsx merges

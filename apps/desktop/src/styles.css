@@ -228,20 +228,24 @@
   :root {
     color-scheme: light;
 
-    --theme-foreground: #2A241C;
-    --theme-primary: #9A6528;
-    --theme-secondary: #F0E5D3;
-    --theme-accent-soft: #F1E7D6;
-    --theme-midground: #9A6528;
-    --theme-warm: #9A6528;
-    --theme-background-seed: #FAF5EA;
-    --theme-sidebar-seed: #F3EADC;
-    --theme-card-seed: #FFFCF5;
-    --theme-elevated-seed: #FFFEFA;
-    --theme-bubble-seed: #F1E7D6;
-    --theme-neutral-chrome: #EAE0CE;
-    --theme-neutral-sidebar: #EEE4D3;
-    --theme-neutral-card: #FBF6EC;
+    /* First-frame fallback for the DEFAULT skin (github light). applyTheme()
+       overwrites every one of these from the active theme once it runs; this
+       block only decides what the very first paint looks like. Cool neutrals —
+       was apricot's warm #FAF5EA family before the default moved to github. */
+    --theme-foreground: #1f2328;
+    --theme-primary: #196d31;
+    --theme-secondary: #dfebe2;
+    --theme-accent-soft: #e3ede6;
+    --theme-midground: #196d31;
+    --theme-warm: #196d31;
+    --theme-background-seed: #ffffff;
+    --theme-sidebar-seed: #f6f8fa;
+    --theme-card-seed: #f6f8fa;
+    --theme-elevated-seed: #ffffff;
+    --theme-bubble-seed: #dbe7e2;
+    --theme-neutral-chrome: #F6F8FA;
+    --theme-neutral-sidebar: #EDF0F3;
+    --theme-neutral-card: #FBFCFD;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
