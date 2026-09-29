@@ -8,8 +8,10 @@ import { startSessionDrag } from '@/app/chat/session-drag'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { openSession } from '@/app/open-session'
 import { formatMessageTimestamp } from '@/components/assistant-ui/thread/timestamp'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { OverflowTip, Tip } from '@/components/ui/tooltip'
 import type { SessionInfo } from '@/fulilian'
 import { type Translations, useI18n } from '@/i18n'
@@ -258,6 +260,23 @@ function SidebarSessionRowImpl({
   const dotState = useStoreSelector($sessionDotStateById, states => states[session.id] ?? 'idle')
   const liveTurn = hasLiveTurn(dotState)
 
+  // Live-turn spinner (Ekko#1): a small rotating glyph in the row's trailing
+  // slot while the session is authoritatively running. The lead dot stays —
+  // it owns state identity — and the arc owns the row edge; this slot is the
+  // Ekko-style "it is moving right now" cue. Hidden the moment the turn ends.
+  if (showsRunningArc(dotState)) {
+    trailing.unshift({
+      key: 'running',
+      node: (
+        <GlyphSpinner
+          ariaLabel={t.statusStack.running}
+          className="shrink-0 text-[0.7rem] leading-none text-muted-foreground/80"
+          spinner="braille"
+        />
+      )
+    })
+  }
+
   // Card header line: the workspace this belongs to — the project when it
   // resolves (same function the session color reads, so name and tint agree;
   // a worktree reports its repo, not the scratch dir it sits in), else the
@@ -272,10 +291,12 @@ function SidebarSessionRowImpl({
     card ? (sessionProjectLabel(session, projects) ?? (pathLeaf(session.cwd) || t.sidebar.projects.home)) : null
   )
 
-  // Card footer line: which model worked on it and how big it got. Rendered
-  // as separate spans with a flex gap — a joined string can't put real space
-  // between them (HTML collapses runs of whitespace to one).
+  // Card title line: which model worked on it — displayed as a small chip at
+  // the title's right (Ekko#1). Empty when the row has no model (the footer
+  // and the title line both stay silent rather than placeholder).
   const model = card && session.model ? displayModelName(session.model) : ''
+  // Card footer line: how big the conversation got (message count); live plan
+  // progress sits at the far right of the same line.
   const size = card && session.message_count > 0 ? r.messageCount(session.message_count) : ''
   // Live plan progress ("3/7"), far right of the footer. A selector keyed to
   // this row: only rows whose own fraction changes repaint on todo events.
@@ -551,20 +572,30 @@ function SidebarSessionRowImpl({
                   {actionsNode}
                 </div>
                 {/* Title + preview: ONE grouped cell with its own tight
-                    internal gap — it does not inherit the card's rhythm. */}
+                    internal gap — it does not inherit the card's rhythm. The
+                    model rides the title line as a small chip (Ekko#1): the
+                    footer keeps size/progress, and a session without a model
+                    renders no placeholder at all. */}
                 <div className="flex min-w-0 flex-col gap-[0.15rem]">
-                  <OverflowTip label={title}>
-                    <SidebarRowLabel
-                      className={cn(
-                        'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
-                        SIDEBAR_TRUNCATED_LEADING
-                      )}
-                      onPointerEnter={armMarquee}
-                      onPointerLeave={disarmMarquee}
-                    >
-                      <span className="hover-marquee-inner">{title}</span>
-                    </SidebarRowLabel>
-                  </OverflowTip>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <OverflowTip label={title}>
+                      <SidebarRowLabel
+                        className={cn(
+                          'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
+                          SIDEBAR_TRUNCATED_LEADING
+                        )}
+                        onPointerEnter={armMarquee}
+                        onPointerLeave={disarmMarquee}
+                      >
+                        <span className="hover-marquee-inner">{title}</span>
+                      </SidebarRowLabel>
+                    </OverflowTip>
+                    {model ? (
+                      <Badge className="text-[0.5625rem]" size="xs" variant="muted">
+                        {model}
+                      </Badge>
+                    ) : null}
+                  </div>
                   {session.preview && rowMeta.includes('preview') ? (
                     <span
                       className={cn(
@@ -576,14 +607,15 @@ function SidebarSessionRowImpl({
                     </span>
                   ) : null}
                 </div>
-                {model || size || todoProgress ? (
+                {/* Footer: size (+ live plan progress). The model moved up to
+                    the title-line chip; nothing here placeholders for it. */}
+                {size || todoProgress ? (
                   <span
                     className={cn(
                       'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
                       SIDEBAR_TRUNCATED_LEADING
                     )}
                   >
-                    {model ? <span className="min-w-0 truncate">{model}</span> : null}
                     {size ? <span className="shrink-0 tabular-nums">{size}</span> : null}
                     {todoProgress ? (
                       <span className="ml-auto shrink-0 tabular-nums" title={r.todoProgress}>

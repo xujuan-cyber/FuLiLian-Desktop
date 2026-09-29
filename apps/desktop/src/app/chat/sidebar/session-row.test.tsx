@@ -45,6 +45,9 @@ vi.mock('@/i18n', () => ({
           today: (time: string) => `Today at ${time}`,
           yesterday: (time: string) => `Yesterday at ${time}`
         }
+      },
+      statusStack: {
+        running: 'Running'
       }
     }
   })
@@ -425,17 +428,63 @@ describe('Inbox-style session card', () => {
 
     const workspace = screen.getByText('pursuit-support-agent')
     const title = screen.getByText('Ruff lint and pytest verification').parentElement
-    const footer = screen.getByText('GPT-4.1').parentElement
 
     expect(title).toBeTruthy()
-    expect(footer).toBeTruthy()
 
-    for (const el of [workspace, title!, footer!]) {
+    for (const el of [workspace, title!]) {
       expect(el.className).not.toMatch(/\bleading-none\b/)
       expect(el.className).toMatch(/leading-\[1\.35\]/)
     }
 
     expect(workspace.className).toMatch(/\btruncate\b/)
     expect(screen.getByText('133 messages')).toBeTruthy()
+  })
+
+  // R1 (step14): the model moved from the footer to a small chip on the title
+  // line. The chip is a Badge primitive (its leading-none is primitive-owned,
+  // not a truncated card line) carrying the display model name.
+  it('shows the session model as a chip on the card title line', () => {
+    renderRow(makeSession({ message_count: 3, model: 'gpt-4.1', title: 'Modeled' }), { card: true })
+
+    const chip = screen.getByText('GPT-4.1').closest('[data-slot="badge"]')
+
+    expect(chip).toBeTruthy()
+    expect(chip!.textContent).toBe('GPT-4.1')
+  })
+
+  // A8 honesty: a session without a model renders NO placeholder — no chip,
+  // and the footer stays silent about the model too.
+  it('renders no model chip (and no placeholder) when the session has no model', () => {
+    const { container } = renderRow(
+      makeSession({ message_count: 0, model: null, title: 'Unmodeled' }),
+      { card: true }
+    )
+
+    expect(container.querySelector('[data-slot="badge"]')).toBeNull()
+    expect(screen.queryByText(/gpt/i)).toBeNull()
+  })
+})
+
+describe('SidebarSessionRow live-turn spinner (R1)', () => {
+  afterEach(() => {
+    clearAllSessionStates()
+  })
+
+  // The status DOT also carries role="status" + the same aria-label ("Running"),
+  // so select the spinner by its animation hook class instead.
+  const spinner = (container: HTMLElement) => container.querySelector('.glyph-spinner')
+
+  it('shows a rotating glyph while the session is running', () => {
+    publishSessionState('rt1', { ...createClientSessionState('s1'), busy: true })
+
+    const { container } = renderRow(makeSession({ title: 'Running' }))
+
+    expect(spinner(container)).toBeTruthy()
+  })
+
+  it('shows nothing when the session is settled', () => {
+    const { container } = renderRow(makeSession({ title: 'Settled' }))
+
+    expect(spinner(container)).toBeNull()
   })
 })
