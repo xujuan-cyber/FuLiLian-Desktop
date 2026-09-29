@@ -70,6 +70,14 @@ def _(rid, params: dict) -> dict:
             "priority" if is_truthy_value(params.get("fast")) else ""
         )
 
+    # Phase-13 capability preset: an optional session-scoped toolset whitelist.
+    # Omitted (the whole pre-phase-13 contract) ⇒ this session resolves its
+    # toolsets from ``platform_toolsets`` exactly as before. Present ⇒ it wins
+    # over the platform config for THIS session only — the frozen priority rule
+    # in the step-13 decision record §7.3 — and is resolved as a closed list in
+    # ``_load_enabled_toolsets``, so a preset's excluded toolset is genuinely
+    # unavailable, not merely discouraged by the prompt.
+    session_toolsets = _coerce_session_toolsets(params.get("toolsets"))
     ready = threading.Event()
     now = time.time()
     lease = None  # claimed lazily on the first turn (_ensure_active_session_slot)
@@ -107,6 +115,8 @@ def _(rid, params: dict) -> dict:
             "slash_worker": None,
             "tool_progress_mode": _load_tool_progress_mode(),
             "tool_started_at": {},
+            # Capability-preset whitelist (None = no preset).
+            "toolsets": session_toolsets,
             "transport": current_transport() or _stdio_transport,
         }
         _register_session_cwd(_sessions[sid])

@@ -50,6 +50,12 @@ interface AuxTaskCopy {
   hint: string
 }
 
+/** A capability preset's user-visible copy (phase-13 preset picker). */
+interface PresetCopy {
+  name: string
+  description: string
+}
+
 export interface Translations {
   common: {
     apply: string
@@ -1266,6 +1272,29 @@ export interface Translations {
     durationSeconds: (seconds: string) => string
     durationMinutes: (minutes: number, seconds: number) => string
     tokens: (value: number | string) => string
+  }
+
+  presets: {
+    title: string
+    subtitle: string
+    badgeBuiltin: string
+    badgeActive: string
+    none: string
+    applyNote: string
+    searchPlaceholder: string
+    emptyTitle: string
+    emptyDesc: string
+    chipAriaLabel: (name: string) => string
+    chipTitle: string
+    toolsetCount: (count: number) => string
+    toolsetList: (names: string) => string
+    names: {
+      'sec-audit': PresetCopy
+      dev: PresetCopy
+      orchestrator: PresetCopy
+      research: PresetCopy
+      review: PresetCopy
+    }
   }
 
   commandCenter: {

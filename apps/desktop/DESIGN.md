@@ -256,6 +256,27 @@ Sizes: `default`, `xs`, `overlay` (titlebar glyph counts).
   `nous-girl` mark on a white tile, softly rounded, identical in light/dark.
   It replaced scattered Sparkles glyphs in updates / onboarding / about. Use it
   for hero/brand moments; don't reintroduce decorative star/sparkle icons.
+- **Wordmark** (`src/components/chat/intro.tsx`, `WORDMARK = 'FULILIAN AGENT'`)
+  is set in **Fraunces**, a display serif bundled as a fixed-axis static subset
+  (`src/fonts/Fraunces-Bold.woff2`, 11,272 B; `@font-face 'Fraunces'` in
+  `styles.css`). Its contract:
+  - **Axes are pinned**, never live: `wght 700 / opsz 144 / SOFT 0 / WONK 0`.
+    Upstream is a variable font, so a live one would follow each platform's own
+    defaults and render different shapes per OS. Re-instancing means re-running
+    `协同编程/留档/step13-deva-v2-subset-fraunces.py` **and** updating this entry.
+  - **`tracking-[0.02em]`**, deliberately not the previous face's `0.08em`.
+    `.fit-text` auto-scales the mark to the container width, so tracking trades
+    directly against glyph size — 0.02em costs ~3.4 % of the fitted size vs 0em,
+    where 0.08em would cost ~12 %.推演表见
+    `协同编程/留档/step13-deva-v2-tracking-推演.txt`.
+  - **The blend is dark-only**: `dark:mix-blend-plus-lighter`. `plus-lighter` is
+    additive, so on the light apricot surface it clamps the mark to pure white —
+    measured **1.11:1** (invisible) against **4.50:1** with plain
+    `text-midground`. On the dark surface it lifts **12.66:1** against 10.09:1,
+    so it stays there. Do not re-apply the blend unconditionally.
+  - `aria-label={WORDMARK}` plus the `aria-hidden` duplicate is what lets
+    `.fit-text` measure the string without a screen reader announcing it twice —
+    keep both.
 
 ## Motion
 

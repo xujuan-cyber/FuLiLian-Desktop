@@ -1121,6 +1121,26 @@ agent:
   # Entries here ADD new personalities or OVERRIDE a built-in by name.
   # The active selection is stored in display.personality (never here, and
   # never in agent.system_prompt — that field is your manual system prompt).
+  #
+  # Capability presets live in the same map. Besides their tone, each of the
+  # five names below is bound to a toolset whitelist in
+  # fulilian_cli/personality.py PRESET_TOOLSETS, so selecting one genuinely
+  # changes which tools the session may call (a session-scoped `toolsets`
+  # override on session.create beats platform_toolsets; omitting it leaves the
+  # platform resolution untouched). A preset that did not change the tool
+  # surface would not be a capability:
+  #   orchestrator  read + search + ledger tools (no file writes, no terminal)
+  #   dev           the full coding toolset
+  #   review        read-only adversarial review
+  #   sec-audit     read-only + dependency/secret scanning
+  #   research      web + repository reads, no writes
+  # Overriding one of these names here replaces only its prompt text; the tool
+  # whitelist is code-owned and cannot be widened from config.
+  # Unlike the platform default path, the preset path does NOT fold in enabled
+  # MCP servers — the whitelist is closed, so an unlisted server could not be
+  # folded in without leaking past the gate. A preset that needs MCP tools must
+  # name the server explicitly in PRESET_TOOLSETS (validate_toolset accepts
+  # discovered MCP server names alongside built-in toolsets).
   personalities: {}
   #   mentor: "You are a supportive mentor. Guide, don't lecture."
   #   reviewer:

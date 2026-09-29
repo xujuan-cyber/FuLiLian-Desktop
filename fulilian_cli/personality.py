@@ -32,7 +32,7 @@ This module deliberately has no module-level imports from ``fulilian_cli.config`
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 #: Names that mean "no personality overlay".
 NEUTRAL_PERSONALITY_NAMES = frozenset({"", "none", "default", "neutral"})
@@ -40,7 +40,18 @@ NEUTRAL_PERSONALITY_NAMES = frozenset({"", "none", "default", "neutral"})
 #: Built-in personalities, available on every surface (CLI, gateway, TUI,
 #: desktop) without any config. User entries in ``agent.personalities``
 #: overlay these by name.
-BUILTIN_PERSONALITIES: Dict[str, str] = {
+#:
+#: Two flavours live here and both are rendered by
+#: :func:`render_personality_prompt`:
+#:
+#: * the original 14 **tone** personalities — plain strings that override how
+#:   the assistant speaks;
+#: * the phase-13 **capability presets** (P1~P5, ``CAPABILITY_PRESETS``) —
+#:   structured definitions whose point is not tone but the *tool surface*
+#:   they are paired with in :data:`PRESET_TOOLSETS`. A preset that did not
+#:   change the available toolset set would not be a capability at all, which
+#:   is why every entry there has a corresponding (and different) row below.
+BUILTIN_PERSONALITIES: Dict[str, Any] = {
     "helpful": "You are a helpful, friendly AI assistant.",
     "concise": "You are a concise assistant. Keep responses brief and to the point.",
     "technical": "You are a technical expert. Provide detailed, accurate technical information.",
@@ -55,7 +66,162 @@ BUILTIN_PERSONALITIES: Dict[str, str] = {
     "uwu": "hewwo! i'm your fwiendwy assistant uwu~ i wiww twy my best to hewp you! *nuzzles your code* OwO what's this? wet me take a wook! i pwomise to be vewy hewpful >w<",
     "philosopher": "Greetings, seeker of wisdom. I am an assistant who contemplates the deeper meaning behind every query. Let us examine not just the 'how' but the 'why' of your questions. Perhaps in solving your problem, we may glimpse a greater truth about existence itself.",
     "hype": "YOOO LET'S GOOOO!!! I am SO PUMPED to help you today! Every question is AMAZING and we're gonna CRUSH IT together! This is gonna be LEGENDARY! ARE YOU READY?! LET'S DO THIS!",
+    # ---- Phase-13 capability presets (structured; P1~P5) ----
+    "orchestrator": {
+        "system_prompt": (
+            "You are the orchestrating agent of a multi-agent workflow. Break the "
+            "request into discrete, verifiable subtasks, dispatch them to specialist "
+            "workers, and hold the evidence chain together. Read the repository and "
+            "any existing artifacts before deciding anything, and record decisions, "
+            "findings and verdicts in the task ledger so a later reviewer can "
+            "reconstruct your reasoning without asking you. You do not implement: the "
+            "tools available to you cover reading, retrieval and ledger writes — file "
+            "edits and terminal execution are deliberately outside your grant. When a "
+            "subtask's evidence is incomplete, say so and ask for it instead of "
+            "filling the gap with a guess."
+        ),
+        "description": "Orchestrate: read, search and ledger tools only — no file writes, no terminal",
+    },
+    "dev": {
+        "system_prompt": (
+            "You are an implementation agent. Take the assigned subtask to a working, "
+            "tested state: read the surrounding code first, make the smallest change "
+            "that satisfies the requirement, then prove it with the project's own test "
+            "and typecheck commands. Keep edits scoped to the files the task names, and "
+            "report exactly what you changed, what you ran, and what you left "
+            "unverified."
+        ),
+        "description": "Implement and test code with the full coding toolset",
+    },
+    "review": {
+        "system_prompt": (
+            "You are an adversarial reviewer. Your job is to falsify the change under "
+            "review, not to endorse it. Read the diff and the code it touches, look for "
+            "the failure the author did not consider, and try to produce a concrete "
+            "counterexample or a red test. You have read-only access — you cannot edit "
+            "files or run terminal commands — so every claim must be grounded in what "
+            "you can actually read. Report findings with file:line evidence and an "
+            "explicit verdict, and say plainly when something cannot be verified with "
+            "the access you have."
+        ),
+        "description": "Adversarial review with read-only tools",
+    },
+    "sec-audit": {
+        "system_prompt": (
+            "You are a security auditor. Work from the dependency surface inward: "
+            "enumerate what the project pulls in, look for known-vulnerable ranges, and "
+            "sweep the tree for hard-coded credentials, tokens and secrets before "
+            "reasoning about application logic. You may run read-only scanners in the "
+            "terminal; the repository itself is not yours to modify. Every finding needs "
+            "an exact path and line, a severity you can defend, and a concrete "
+            "remediation — and an unverified suspicion must be labelled as one."
+        ),
+        "description": "Security audit: read-only plus dependency and secret scanning",
+    },
+    "research": {
+        "system_prompt": (
+            "You are a research agent. Answer the question from sources rather than "
+            "from memory: gather primary material from the web and from the repository, "
+            "prefer the upstream specification or the actual source file over secondary "
+            "summaries, and say where the sources disagree. You have no write access to "
+            "files or the terminal — deliver findings as a structured report with the "
+            "evidence attached to each claim, and mark clearly what you could not "
+            "confirm."
+        ),
+        "description": "Research with web and repository reads, no writes",
+    },
 }
+
+#: Ordered capability presets (phase-13, P1~P5). P6 ``doc`` and P7 ``minimal``
+#: are deliberately NOT implemented — they were deferred by decision U6.
+CAPABILITY_PRESETS: Tuple[str, ...] = (
+    "orchestrator",
+    "dev",
+    "review",
+    "sec-audit",
+    "research",
+)
+
+#: The tool-surface half of each capability preset: the **closed** toolset
+#: whitelist a session gets when the preset is selected. This is data, not a
+#: framework — see the phase-13 decision record §7.3. Every name here is a real
+#: toolset as enumerated by ``python cli.py chat --list-toolsets`` /
+#: ``toolsets.TOOLSETS``; ``fulilian_cli.personality`` is the single owner, and
+#: the desktop mirrors it in ``src/lib/personalities.ts``.
+#:
+#: Known granularity gaps (recorded, not papered over — the platform exposes
+#: toolsets, not individual tools, so a preset can only be as precise as the
+#: bundle it is forced to name):
+#:
+#: * ``file`` bundles ``read_file``/``write_file``/``patch``/``search_files``
+#:   and ``skills`` bundles ``skill_manage`` next to its two read tools, so the
+#:   read-only presets (``orchestrator``, ``review``, ``sec-audit``,
+#:   ``research``) cannot express "read but never write". Dropping either
+#:   toolset outright would remove repository/skill *reading*, which is the
+#:   core of those four jobs, so both stay and the over-grant is reported.
+#: * ``sec-audit`` needs to *execute* audit tooling (``npm audit``,
+#:   ``pip-audit``, ``gitleaks``) and no narrower executor toolset exists, so it
+#:   is granted ``terminal`` — the only row that differs from ``review``.
+#:   Read-only applies to the repository, not to the process table.
+#: * ``research`` differs from ``review`` by ``x_search``: X/Twitter discovery
+#:   is a first-class research source that ``web`` does not cover.
+#: * ``research`` excludes ``browser`` on purpose: its read tools
+#:   (``browser_snapshot``/``browser_vision``) ship inseparable from
+#:   ``browser_click``/``browser_type``/``browser_exec``, which is not a
+#:   "no writes" surface.
+PRESET_TOOLSETS: Dict[str, List[str]] = {
+    "orchestrator": [
+        "file",
+        "web",
+        "session_search",
+        "todo",
+        "delegation",
+        "kanban",
+        "skills",
+        "memory",
+        "clarify",
+        "vision",
+    ],
+    "dev": [
+        "coding",
+    ],
+    "review": [
+        "file",
+        "web",
+        "vision",
+        "session_search",
+        "skills",
+        "todo",
+    ],
+    "sec-audit": [
+        "file",
+        "web",
+        "vision",
+        "session_search",
+        "skills",
+        "todo",
+        "terminal",
+    ],
+    "research": [
+        "file",
+        "web",
+        "vision",
+        "session_search",
+        "skills",
+        "todo",
+        "x_search",
+    ],
+}
+
+
+def preset_toolsets(name: Any) -> Optional[List[str]]:
+    """The toolset whitelist for a capability preset (``None`` when not one).
+
+    Returns a copy so callers cannot mutate the table.
+    """
+    key = normalize_personality_name(name)
+    toolsets = PRESET_TOOLSETS.get(key)
+    return list(toolsets) if toolsets else None
 
 
 def _get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> Any:

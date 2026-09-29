@@ -17,6 +17,7 @@ import {
   Info,
   Keyboard,
   KeyRound,
+  Layers3,
   Package,
   RefreshCw,
   Search,
@@ -49,6 +50,7 @@ import { KeybindSettings } from './keybind-settings'
 import { KEYS_VIEWS, KeysSettings, type KeysView } from './keys-settings'
 import { NotificationsSettings } from './notifications-settings'
 import { PluginsSettings } from './plugins-settings'
+import { PresetsSettings } from './presets-settings'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
 import { SessionsSettings } from './sessions-settings'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
@@ -65,6 +67,7 @@ const SETTINGS_VIEWS: readonly SettingsViewId[] = [
   'notifications',
   'billing',
   'plugins',
+  'presets',
   'sessions',
   'about'
 ]
@@ -270,6 +273,17 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         onSelect: () => setActiveView('plugins')
       },
       {
+        // Phase-13 capability presets. The label reuses `t.presets.title`
+        // rather than adding a `settings.nav.presets` key: it is the same
+        // string the page renders as its heading, and a second copy in another
+        // group is exactly the drift the four-locale rule exists to avoid.
+        active: activeView === 'presets',
+        icon: Layers3,
+        id: 'presets',
+        label: t.presets.title,
+        onSelect: () => setActiveView('presets')
+      },
+      {
         active: activeView === 'sessions',
         icon: Archive,
         id: 'sessions',
@@ -375,6 +389,8 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       <AppearanceSettings />
     ) : activeView === 'about' ? (
       <AboutSettings />
+    ) : activeView === 'presets' ? (
+      <PresetsSettings />
     ) : activeView === 'gateway' || activeView === 'connections' ? (
       // 'connections' renders the unified page too so the frame before
       // the alias redirect lands doesn't flash the fallback view.

@@ -1261,6 +1261,47 @@ export const ja = defineLocale({
     tokens: value => `${value} トーク`
   },
 
+  presets: {
+    title: 'Agent プリセット',
+    subtitle:
+      'プリセットは Agent パッケージです。ツール面・指示・能力をひとまとめにします。ツールのゲートはプロンプトの文言ではなくバックエンドが強制します。',
+    badgeBuiltin: '組み込み',
+    badgeActive: '使用中',
+    none: '既定（プリセットなし）',
+    applyNote: '新しいセッションに適用されます。作成済みのセッションは作成時のプリセットを保持します。',
+    searchPlaceholder: 'プリセットを検索',
+    emptyTitle: '一致するプリセットがありません',
+    emptyDesc: '別の名前や説明で試してください。',
+    chipAriaLabel: name => `能力プリセット: ${name}`,
+    chipTitle: '能力プリセット',
+    toolsetCount: count => `${count} ツールセット`,
+    toolsetList: names => names,
+    names: {
+      orchestrator: {
+        name: 'オーケストレーター',
+        description:
+          '作業を検証可能なサブタスクに分割し、ワーカーへ配分し、証跡の台帳を保ちます。読み取りと検索のみ — ファイル書き込みもターミナルもありません。'
+      },
+      dev: {
+        name: '開発',
+        description: 'コーディング用の全ツール面: ファイル、シェル、検索、Web、Skills、計画、委譲。'
+      },
+      review: {
+        name: 'レビュー',
+        description: '読み取り専用ツールによる対抗的検証 — 作者が見落とした失敗を探します。'
+      },
+      'sec-audit': {
+        name: 'セキュリティ監査',
+        description:
+          '読み取り専用の監査に加えて依存関係と秘密情報のスキャン。アプリケーションロジックより先にサプライチェーンを辿ります。'
+      },
+      research: {
+        name: 'リサーチ',
+        description: '出典から答えます。Web とリポジトリの読み取りのみ、書き込みなし、結論には証拠を添えます。'
+      }
+    }
+  },
+
   commandCenter: {
     close: 'コマンドセンターを閉じる',
     paletteTitle: 'コマンドパレット',

@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Sequence, Set
 
 
 from fulilian_cli.config import (
@@ -2625,13 +2625,84 @@ def _enable_recently_shipped_toolsets(
         enabled_toolsets.add(ts_key)
 
 
+def _resolve_toolsets_override(
+    config: dict,
+    platform: str,
+    toolsets_override: Sequence[str],
+) -> Set[str]:
+    """Resolve a session-scoped toolset whitelist (capability preset).
+
+    Phase-13 contract: a per-session ``toolsets`` list shipped on
+    ``session.create`` beats the per-platform ``platform_toolsets`` config
+    (``session > platform``). The list is a **closed** whitelist — it is NOT
+    run through the platform checklist's composite / subset inference, so a
+    preset that omits ``terminal`` cannot have it re-introduced as a side
+    effect of resolving a composite. Unknown names, and names the platform is
+    not allowed to carry, are dropped loudly instead of silently widening the
+    gate.
+
+    ``agent.disabled_toolsets`` still subtracts last: a preset may narrow the
+    session further, but it can never resurrect a globally suppressed toolset.
+    """
+    from toolsets import validate_toolset
+
+    requested = [toolsets_override] if isinstance(toolsets_override, str) else list(toolsets_override)
+
+    names: List[str] = []
+    dropped: List[str] = []
+    for raw in requested:
+        name = str(raw).strip()
+        if not name or name in names:
+            continue
+        if validate_toolset(name) and _toolset_allowed_for_platform(name, platform):
+            names.append(name)
+        else:
+            dropped.append(name)
+
+    if dropped:
+        logger.warning(
+            "[toolsets] ignoring unknown/unauthorised session toolsets for "
+            "platform %r: %s",
+            platform,
+            ", ".join(dropped),
+        )
+
+    enabled_toolsets: Set[str] = set(names)
+
+    agent_cfg = config.get("agent") or {}
+    disabled_toolsets = agent_cfg.get("disabled_toolsets") or []
+    if disabled_toolsets:
+        from agent.skill_utils import parse_config_string_list
+
+        enabled_toolsets -= {
+            name.strip() for name in parse_config_string_list(disabled_toolsets) if name.strip()
+        }
+
+    return enabled_toolsets
+
+
 def _get_platform_tools(
     config: dict,
     platform: str,
     *,
     include_default_mcp_servers: bool = True,
+    toolsets_override: Optional[Sequence[str]] = None,
 ) -> Set[str]:
-    """Resolve which individual toolset names are enabled for a platform."""
+    """Resolve which individual toolset names are enabled for a platform.
+
+    ``toolsets_override`` (phase-13) is a session-scoped whitelist supplied by
+    ``session.create`` for a capability preset. When present it wins over
+    ``platform_toolsets[platform]`` — the frozen priority rule —
+    and is resolved by :func:`_resolve_toolsets_override`. ``None`` (the
+    default, and what every pre-existing caller passes) leaves the platform
+    path below byte-identical to before.
+    """
+    # Session-level override wins over the platform config. This is the one
+    # priority judgement the phase-13 contract adds; everything below is the
+    # untouched platform resolver.
+    if toolsets_override is not None:
+        return _resolve_toolsets_override(config, platform, toolsets_override)
+
     from toolsets import resolve_toolset, TOOLSETS
 
     platform_toolsets = config.get("platform_toolsets") or {}

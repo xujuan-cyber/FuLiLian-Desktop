@@ -55,6 +55,8 @@ import type { ModelOptionsResponse } from '@/types/fulilian'
 import { primaryRouteSelectedSessionId, routeSessionId } from '../routes'
 import { titlebarHeaderBaseClass, titlebarHeaderShadowClass, titlebarHeaderTitleClass } from '../shell/titlebar'
 
+import { PresetChip } from './preset-chip'
+
 import { ChatDropOverlay } from './chat-drop-overlay'
 import { ChatSwapOverlay, ChatSyncBadge } from './chat-swap-overlay'
 import { ChatBar, ChatBarFallback } from './composer'
@@ -156,13 +158,13 @@ function ChatHeader({
   return (
     <header className={cn(titlebarHeaderBaseClass, isRoutedSessionView && titlebarHeaderShadowClass)}>
       <div
-        className={cn(titlebarHeaderTitleClass, showProfileTag && 'flex items-center')}
+        className={cn(titlebarHeaderTitleClass, 'flex items-center gap-1.5')}
         style={{
           maxWidth:
             'calc(100vw - var(--titlebar-content-inset,0px) - var(--titlebar-tools-right) - var(--titlebar-tools-width) - 1.5rem)'
         }}
       >
-        {showProfileTag && <ProfileTag className="pointer-events-auto mr-1.5" profile={activeStoredSession?.profile} />}
+        {showProfileTag && <ProfileTag className="pointer-events-auto" profile={activeStoredSession?.profile} />}
         <SessionActionsMenu
           align="start"
           onDelete={selectedSessionId ? onDeleteSelectedSession : undefined}
@@ -172,8 +174,11 @@ function ChatHeader({
           sideOffset={8}
           title={title}
         >
-          <TitleMenuTrigger>{title}</TitleMenuTrigger>
+          <TitleMenuTrigger className="flex-1">{title}</TitleMenuTrigger>
         </SessionActionsMenu>
+        {/* Phase-13: which capability preset (therefore which tool surface) this
+            chat actually runs with. Always on screen — see preset-chip.tsx. */}
+        <PresetChip storedSessionId={selectedSessionId} />
       </div>
     </header>
   )

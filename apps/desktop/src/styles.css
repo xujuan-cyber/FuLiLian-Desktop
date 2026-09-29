@@ -134,6 +134,21 @@
   src: url('./fonts/FulilianMono-Bold.woff2') format('woff2');
 }
 
+/* Fraunces — the wordmark face (step 13 v2 · 方案 §4.3.1, 用户 23:30 拍板).
+   Upstream is a variable font (SOFT / WONK / opsz / wght). Bundled here as a
+   FIXED-AXIS static instance — wght 700, opsz 144, SOFT 0, WONK 0 — because a
+   live variable font follows each platform's own default axis values, and the
+   mark would then render at different weights/contrasts per OS.
+   Subset to printable ASCII (the wordmark is all-Latin; no CJK needed).
+   OFL-1.1 — licence text at src/fonts/OFL-Fraunces.txt. */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/Fraunces-Bold.woff2') format('woff2');
+}
+
 @theme inline {
   --color-background: var(--dt-background);
   --color-foreground: var(--dt-foreground);

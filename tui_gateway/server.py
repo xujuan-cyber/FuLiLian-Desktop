@@ -5729,8 +5729,58 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
     return surfaces
 
 
-def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
+def _session_toolsets_override(sid: str) -> list[str] | None:
+    """The capability-preset toolset whitelist this session was created with.
+
+    ``None`` — the ordinary case — means "no preset", so the session resolves
+    its toolsets from the platform config exactly as before phase 13.
+    """
+    value = _sessions.get(sid, {}).get("toolsets")
+    return list(value) if isinstance(value, list) and value else None
+
+
+def _load_enabled_toolsets(
+    platform: str | None = None,
+    toolsets_override: list[str] | None = None,
+) -> list[str] | None:
     session_platform = platform or _resolve_session_platform()
+
+    # Phase-13 capability preset: a session-scoped whitelist shipped on
+    # ``session.create`` wins over every other source — the coding posture,
+    # the FULILIAN_TUI_TOOLSETS operator pin, and ``platform_toolsets``. The
+    # preset *is* the gate, so nothing below may re-expand it; resolving it
+    # through ``_get_platform_tools`` keeps the same name validation and
+    # ``agent.disabled_toolsets`` subtraction the platform path uses.
+    #
+    # Fail closed: an override that resolves to nothing yields [] (no tools),
+    # never None (all tools). Returning None here would silently turn a
+    # locked-down preset into an unrestricted session — the exact failure the
+    # real-gate requirement exists to prevent. MCP servers are deliberately
+    # NOT folded in: a preset may name one explicitly if it wants it.
+    if toolsets_override is not None:
+        try:
+            from fulilian_cli.config import load_config
+            from fulilian_cli.tools_config import _get_platform_tools
+
+            enabled = _get_platform_tools(
+                load_config(),
+                "cli",
+                toolsets_override=toolsets_override,
+            )
+        except Exception as exc:  # never fail open
+            print(
+                "[tui] capability preset toolset resolution failed "
+                f"({exc.__class__.__name__}); starting with no tools",
+                file=sys.stderr,
+                flush=True,
+            )
+            return []
+        # Same surface-capability fold as the platform path below: `project` /
+        # `desktop_ui` exist because the desktop is the client, carry no file
+        # or terminal writes, and dropping them would break the panes for
+        # every preset.
+        return sorted(enabled | _gui_surface_toolsets(session_platform))
+
     explicit = [
         item.strip()
         for item in os.environ.get("FULILIAN_TUI_TOOLSETS", "").split(",")
@@ -8606,7 +8656,13 @@ def _make_agent(
             if service_tier_override is not None
             else _load_service_tier()
         ),
-        enabled_toolsets=_load_enabled_toolsets(_resolve_agent_platform(platform_override)),
+        enabled_toolsets=_load_enabled_toolsets(
+            _resolve_agent_platform(platform_override),
+            # Phase-13: a capability preset selected at session.create is a
+            # session-scoped toolset whitelist; None (no preset) leaves the
+            # platform resolution untouched.
+            toolsets_override=_session_toolsets_override(sid),
+        ),
         # OpenRouter provider-routing prefs (config.yaml `provider_routing`).
         # Mirrors the messaging gateway + CLI so the desktop/TUI honors the same
         # routing instead of letting OpenRouter pick providers at random.
@@ -9199,6 +9255,32 @@ def _history_to_messages(history: list[dict]) -> list[dict]:
         messages.append(msg)
 
     return messages
+
+
+def _coerce_session_toolsets(value: Any) -> list[str] | None:
+    """Normalise ``session.create``'s optional ``toolsets`` parameter.
+
+    Phase-13 contract: omitted / null / [] means "no preset" — the session
+    keeps resolving from ``platform_toolsets`` and nothing about the previous
+    behaviour changes. A non-empty list is a session-scoped whitelist (the
+    tool-surface half of a capability preset) and wins over the platform
+    config for this session only.
+
+    Names are *not* validated here: resolution — which knows about plugins,
+    MCP servers and per-platform permissions — happens where toolsets are
+    actually resolved, so an invalid name can never be mistaken for "no
+    preset" and silently widen the session.
+    """
+    if not isinstance(value, list):
+        return None
+
+    names: list[str] = []
+    for item in value:
+        name = str(item).strip()
+        if name and name not in names:
+            names.append(name)
+
+    return names or None
 
 
 def _coerce_seed_history(value: Any) -> list[dict]:

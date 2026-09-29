@@ -1624,6 +1624,46 @@ export const zh: Translations = {
     tokens: value => `${value} 词元`
   },
 
+  presets: {
+    title: 'Agent 预设',
+    subtitle:
+      '预设是一个 Agent 包：它的工具面、指令与能力。工具门禁由后端强制执行，不靠提示词措辞。',
+    badgeBuiltin: '内置',
+    badgeActive: '当前使用',
+    none: '默认（不使用预设）',
+    applyNote: '对新会话生效。已创建的会话保持其创建时所选的预设。',
+    searchPlaceholder: '搜索预设',
+    emptyTitle: '没有匹配的预设',
+    emptyDesc: '换一个名称或描述试试。',
+    chipAriaLabel: name => `能力预设：${name}`,
+    chipTitle: '能力预设',
+    toolsetCount: count => `${count} 个工具集`,
+    toolsetList: names => names,
+    names: {
+      orchestrator: {
+        name: '编排',
+        description:
+          '把任务拆成可验证的子任务、派发给执行者，并维护证据台账。只读与检索——不写文件、不开终端。'
+      },
+      dev: {
+        name: '开发',
+        description: '完整编码工具面：文件、Shell、检索、网页、Skills、计划与委派。'
+      },
+      review: {
+        name: '审查',
+        description: '以只读工具做对抗式验证——专门找作者没想到的那个失败。'
+      },
+      'sec-audit': {
+        name: '安全审计',
+        description: '只读审计 + 依赖面扫描 + 密钥扫描：先走供应链，再看应用逻辑。'
+      },
+      research: {
+        name: '调研',
+        description: '从来源作答：网页与仓库读取，不写入，结论附证据。'
+      }
+    }
+  },
+
   commandCenter: {
     close: '关闭命令中心',
     paletteTitle: '命令面板',

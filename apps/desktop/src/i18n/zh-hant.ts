@@ -1222,6 +1222,46 @@ export const zhHant = defineLocale({
     tokens: value => `${value} 詞元`
   },
 
+  presets: {
+    title: 'Agent 預設',
+    subtitle:
+      '預設是一個 Agent 套件：它的工具面、指令與能力。工具門禁由後端強制執行，不靠提示詞措辭。',
+    badgeBuiltin: '內建',
+    badgeActive: '目前使用',
+    none: '標準（不使用預設）',
+    applyNote: '對新工作階段生效。已建立的工作階段維持其建立時所選的預設。',
+    searchPlaceholder: '搜尋預設',
+    emptyTitle: '沒有符合的預設',
+    emptyDesc: '換一個名稱或描述試試。',
+    chipAriaLabel: name => `能力預設：${name}`,
+    chipTitle: '能力預設',
+    toolsetCount: count => `${count} 個工具集`,
+    toolsetList: names => names,
+    names: {
+      orchestrator: {
+        name: '編排',
+        description:
+          '把任務拆成可驗證的子任務、派發給執行者，並維護證據台帳。只讀與檢索——不寫檔案、不開終端機。'
+      },
+      dev: {
+        name: '開發',
+        description: '完整編碼工具面：檔案、Shell、檢索、網頁、Skills、計畫與委派。'
+      },
+      review: {
+        name: '審查',
+        description: '以唯讀工具做對抗式驗證——專門找作者沒想到的那個失敗。'
+      },
+      'sec-audit': {
+        name: '安全稽核',
+        description: '唯讀稽核 + 相依面掃描 + 金鑰掃描：先走供應鏈，再看應用邏輯。'
+      },
+      research: {
+        name: '調研',
+        description: '從來源作答：網頁與倉庫讀取，不寫入，結論附證據。'
+      }
+    }
+  },
+
   commandCenter: {
     close: '關閉命令中心',
     paletteTitle: '命令面板',

@@ -24,6 +24,7 @@ import {
 } from '@/lib/chat-messages'
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { recoverInFlightTurnJournal } from '@/lib/inflight-turn-journal'
+import { presetToolsets } from '@/lib/personalities'
 import { setSessionYolo } from '@/lib/yolo-session'
 import { $clarifyRequests } from '@/store/clarify'
 import { migrateSessionDraft } from '@/store/composer'
@@ -37,6 +38,12 @@ import {
 import { $gatewaySwitching } from '@/store/gateway-switch'
 import { $pinnedSessionIds } from '@/store/layout'
 import { clearNotifications, notify, notifyError } from '@/store/notifications'
+import {
+  $activePreset,
+  $sessionPreset,
+  activePresetToolsets,
+  rememberSessionPreset
+} from '@/store/presets'
 import {
   $activeGatewayProfile,
   $gatewaySwapTarget,
@@ -259,6 +266,13 @@ async function desktopSessionCreateParams(
     await ensureGatewayProfile(profile)
   }
 
+  // Phase-13 capability preset. The whitelist is the tool-surface half of the
+  // preset; the backend resolves it in preference to `platform_toolsets` for
+  // this one session, which is what makes the gate real rather than decorative.
+  // Omitted — not sent as [] — when no preset is active, so the default path
+  // keeps byte-identical behaviour.
+  const presetToolsets = activePresetToolsets()
+
   return {
     cols: 96,
     source: 'desktop',
@@ -268,6 +282,7 @@ async function desktopSessionCreateParams(
       ? { model: selection.model, ...(selection.provider ? { provider: selection.provider } : {}) }
       : {}),
     ...(selection.effort ? { reasoning_effort: selection.effort } : {}),
+    ...(presetToolsets ? { toolsets: presetToolsets } : {}),
     fast: selection.fast
   }
 }
@@ -529,6 +544,10 @@ export function useSessionActions({
 
           stored = created.stored_session_id ?? null
 
+          // Phase-13: this chat's own preset — what the header chip must show
+          // for it, regardless of what the picker is set to now.
+          rememberSessionPreset(stored, $activePreset.get())
+
           // Record the EXACT owner the moment a routed create returns a stored
           // id — before the drift check, the optimistic row, navigation, or any
           // session-scoped RPC can resolve this session's owner. The route is
@@ -721,6 +740,9 @@ export function useSessionActions({
             : await requestGateway<SessionCreateResponse>('session.create', params)
 
           stored = created.stored_session_id
+
+          // Phase-13: see createBackendSessionForSend — the chip reads this.
+          rememberSessionPreset(stored, $activePreset.get())
 
           if (stored && capturedRoute) {
             // Same ownership transition as createBackendSessionForSend: the
@@ -1890,6 +1912,22 @@ export function useSessionActions({
         await ensureGatewayProfile(profile)
 
         // No title: the backend auto-names the branch from its parent's lineage.
+        // Phase-13 — preset wiring on this fork is only HALF-connected, and the
+        // two arms behave differently:
+        //   * a TRUE branch (sourceSessionId set) goes through `session.branch`,
+        //     which neither sends nor consumes `toolsets`, so the fork resolves
+        //     its toolsets from the platform config — it does NOT inherit the
+        //     parent's preset;
+        //   * the `session.create` fallback (no source session) is the only arm
+        //     that ships a preset: the recorded parent preset when there is one,
+        //     else the pending selection for a parent created before this change.
+        // Omitted entirely when neither is set, keeping the default path
+        // unchanged. Wiring `session.branch` up to carry/consume `toolsets` is
+        // backlog (see 步骤13-决策记录.md §9.4).
+        const inheritedPreset =
+          (parentStoredId ? $sessionPreset.get()[parentStoredId] : undefined) ?? $activePreset.get()
+        const branchToolsets = presetToolsets(inheritedPreset) ?? undefined
+
         const branched = sourceSessionId
           ? await requestGateway<SessionCreateResponse>('session.branch', {
               session_id: sourceSessionId,
@@ -1900,6 +1938,7 @@ export function useSessionActions({
               source: 'desktop',
               ...(cwd && { cwd }),
               ...(profile ? { profile } : {}),
+              ...(branchToolsets ? { toolsets: branchToolsets } : {}),
               messages: branchMessages.map(({ content, role }) => ({ content, role })),
               ...(parentStoredId && { parent_session_id: parentStoredId })
             })
@@ -1909,6 +1948,8 @@ export function useSessionActions({
 
         const effectiveBranchMessages = responseBranchMessages.length ? responseBranchMessages : branchMessages
         const routedSessionId = branched.stored_session_id ?? branched.session_id
+        // Phase-13: the chip reads this for the new branch's tab.
+        rememberSessionPreset(routedSessionId, inheritedPreset)
         const preview = effectiveBranchMessages.map(({ content }) => content).find(Boolean) ?? null
         // Draft until submit: nest under the parent at the parent's recency so it
         // doesn't bubble to the top until a real message lands (backend persists

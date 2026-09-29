@@ -1436,6 +1436,47 @@ export const en: Translations = {
     tokens: value => `${value} tok`
   },
 
+  presets: {
+    title: 'Agent preset',
+    subtitle:
+      'A preset is an agent package: its tool surface, instructions and capability. The toolset gate is enforced by the backend, not by prompt wording.',
+    badgeBuiltin: 'Built-in',
+    badgeActive: 'In use',
+    none: 'Default (no preset)',
+    applyNote: 'Applies to new sessions. A session keeps the preset it was created with.',
+    searchPlaceholder: 'Search presets',
+    emptyTitle: 'No matching preset',
+    emptyDesc: 'Try a different name or description.',
+    chipAriaLabel: name => `Capability preset: ${name}`,
+    chipTitle: 'Capability preset',
+    toolsetCount: count => `${count} ${count === 1 ? 'toolset' : 'toolsets'}`,
+    toolsetList: names => names,
+    names: {
+      orchestrator: {
+        name: 'Orchestrator',
+        description:
+          'Breaks work into verifiable subtasks, dispatches workers and keeps the evidence ledger. Reads and searches only — no file writes, no terminal.'
+      },
+      dev: {
+        name: 'Developer',
+        description: 'The full coding surface: files, shell, search, web, skills, planning and delegation.'
+      },
+      review: {
+        name: 'Reviewer',
+        description: 'Adversarial verification with read-only tools — finds the failure the author did not consider.'
+      },
+      'sec-audit': {
+        name: 'Security audit',
+        description:
+          'Read-only audit plus dependency and secret scanning: walks the supply chain before application logic.'
+      },
+      research: {
+        name: 'Researcher',
+        description: 'Answers from sources: web and repository reads, no writes, findings reported with evidence.'
+      }
+    }
+  },
+
   commandCenter: {
     close: 'Close command center',
     paletteTitle: 'Command palette',
