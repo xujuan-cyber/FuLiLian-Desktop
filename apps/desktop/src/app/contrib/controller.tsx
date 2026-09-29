@@ -69,6 +69,7 @@ import {
   REVIEW_PANE_ID
 } from '@/store/review'
 import { $currentCwd, $selectedStoredSessionId, $sessions, $yoloActive, sessionMatchesStoredId } from '@/store/session'
+import { $sessionChangesOpen, closeSessionChanges, openSessionChanges } from '@/store/session-changes'
 import { watchSessionPins } from '@/store/session-pin-sync'
 import { watchUnreadWriteGuard } from '@/store/session-unread-remote'
 import { $statusbarVisible } from '@/store/statusbar-prefs'
@@ -78,6 +79,7 @@ import { BrowserPopoutShell } from '../chat/browser-popout-shell'
 import type { SessionDragPayload } from '../chat/composer/inline-refs'
 import { watchPreviewTiles } from '../chat/preview-tile'
 import { watchRouteTiles } from '../chat/route-tile'
+import { SessionChangesPanel } from '../chat/right-rail/session-changes'
 import { startSessionDrag } from '../chat/session-drag'
 import {
   SessionTileCloseConfirm,
@@ -242,6 +244,23 @@ registry.registerMany([
       maxWidth: FILE_BROWSER_MAX_WIDTH
     },
     render: () => idle(<ReviewPaneContent />)
+  },
+  {
+    id: 'session-changes',
+    area: 'panes',
+    title: 'session-changes',
+    // Session-scoped changes review (step14 R2): the files the focused
+    // conversation's tool calls touched, each expanding to its
+    // working-tree-vs-HEAD diff. Palette-opened ($sessionChangesOpen, bound
+    // below like review); its zone collapses while closed.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      width: FILE_BROWSER_DEFAULT_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: FILE_BROWSER_MAX_WIDTH
+    },
+    render: () => idle(<SessionChangesPanel />)
   }
 ])
 
@@ -607,6 +626,14 @@ bindPaneVisibility(
   computed([$reviewOpen, $hasWorkspace], (open, workspace) => open && workspace),
   closeReview,
   () => openReview($reviewScopeCwd.get(), $reviewScopeTarget.get())
+)
+// Session changes review (step14 R2) — same workspace gate as review: a
+// detached chat has no transcript-anchored cwd to diff against.
+bindPaneVisibility(
+  'session-changes',
+  computed([$sessionChangesOpen, $hasWorkspace], (open, workspace) => open && workspace),
+  closeSessionChanges,
+  openSessionChanges
 )
 // ⌃` / statusbar toggle — the terminal COLLAPSES to a rail (tab stays), not
 // hides; PTYs stay alive while collapsed (see PersistentTerminal).

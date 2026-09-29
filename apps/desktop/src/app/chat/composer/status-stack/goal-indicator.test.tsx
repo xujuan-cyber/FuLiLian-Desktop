@@ -7,6 +7,13 @@ import { $goalsBySession, type SessionGoal } from '@/store/goals'
 
 import { ComposerStatusStack } from './index'
 
+// Step14 U5: the standing goal CONVERGED out of the composer status stack —
+// the resident GoalPanel (app/chat/goal-panel.tsx) owns goal display now.
+// This file is the regression guard for that convergence: a session with a
+// goal must NOT paint a goal group here anymore. The goal indicator's
+// behavioral assertions (title, status labels, session scoping) migrated to
+// app/chat/goal-panel.test.tsx.
+
 // The stack measures itself into a surface var — jsdom has no ResizeObserver.
 class ResizeObserverStub {
   observe() {}
@@ -35,7 +42,7 @@ function renderStack(sessionId: null | string = SID) {
   )
 }
 
-describe('ComposerStatusStack goal indicator', () => {
+describe('ComposerStatusStack goal convergence (U5)', () => {
   beforeEach(() => {
     $goalsBySession.set({})
   })
@@ -51,37 +58,31 @@ describe('ComposerStatusStack goal indicator', () => {
     expect(view.container.firstChild).toBeNull()
   })
 
-  it('shows an active goal with its title', () => {
+  it('does NOT render a goal group for a session with an active goal', () => {
     $goalsBySession.set({ [SID]: goal('active') })
-
-    renderStack()
-
-    expect(screen.getByText('Goal active')).toBeTruthy()
-    expect(screen.getByText('ship the feature')).toBeTruthy()
-  })
-
-  it('labels a paused goal as paused', () => {
-    $goalsBySession.set({ [SID]: goal('paused') })
-
-    renderStack()
-
-    expect(screen.getByText('Goal paused')).toBeTruthy()
-    expect(screen.getByText('ship the feature')).toBeTruthy()
-  })
-
-  it('shows the continuation detail line for an active goal', () => {
-    $goalsBySession.set({ [SID]: goal('active', 'ship it', 'Continuing toward goal (3/20)') })
-
-    renderStack()
-
-    expect(screen.getByText('Continuing toward goal (3/20)')).toBeTruthy()
-  })
-
-  it('scopes the indicator to the goal-owning session', () => {
-    $goalsBySession.set({ 'other-session': goal('active') })
 
     const view = renderStack()
 
     expect(view.container.firstChild).toBeNull()
+    expect(screen.queryByText('Goal active')).toBeNull()
+  })
+
+  it('does NOT render a goal group for a paused goal either', () => {
+    $goalsBySession.set({ [SID]: goal('paused') })
+
+    const view = renderStack()
+
+    expect(screen.queryByText('Goal paused')).toBeNull()
+  })
+
+  it('still renders other status groups beside a goal', () => {
+    $goalsBySession.set({ [SID]: goal('active') })
+
+    const view = renderStack()
+
+    // No goal label anywhere in the stack.
+    expect(screen.queryByText(/Goal (active|paused|done|waiting)/)).toBeNull()
+
+    return view.unmount()
   })
 })

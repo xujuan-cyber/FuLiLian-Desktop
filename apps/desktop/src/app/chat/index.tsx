@@ -55,6 +55,7 @@ import type { ModelOptionsResponse } from '@/types/fulilian'
 import { primaryRouteSelectedSessionId, routeSessionId } from '../routes'
 import { titlebarHeaderBaseClass, titlebarHeaderShadowClass, titlebarHeaderTitleClass } from '../shell/titlebar'
 
+import { GoalPanel } from './goal-panel'
 import { PresetChip } from './preset-chip'
 
 import { ChatDropOverlay } from './chat-drop-overlay'
@@ -176,9 +177,12 @@ function ChatHeader({
         >
           <TitleMenuTrigger className="flex-1">{title}</TitleMenuTrigger>
         </SessionActionsMenu>
-        {/* Phase-13: which capability preset (therefore which tool surface) this
-            chat actually runs with. Always on screen — see preset-chip.tsx. */}
-        <PresetChip storedSessionId={selectedSessionId} />
+          {/* Phase-13: which capability preset (therefore which tool surface) this
+              chat actually runs with. Always on screen — see preset-chip.tsx. */}
+          <PresetChip storedSessionId={selectedSessionId} />
+          {/* Standing-goal summary (step14 R3): the top-right resident panel —
+              renders nothing while the session has no goal. */}
+          <GoalPanel sessionId={activeSessionId} />
       </div>
     </header>
   )

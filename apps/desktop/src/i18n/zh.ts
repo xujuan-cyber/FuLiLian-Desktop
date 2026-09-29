@@ -1669,6 +1669,12 @@ export const zh: Translations = {
     paletteTitle: '命令面板',
     back: '返回',
     searchPlaceholder: '搜索会话、视图与操作',
+    searchSessions: '会话检索',
+    searchSessionsPlaceholder: '搜索全部会话…',
+    searchSessionsSearching: '正在搜索会话…',
+    noMatchingSessions: '无匹配会话',
+    sessionSearchRemote: '全库检索结果',
+    sessionChanges: '会话改动审查',
     goTo: '前往',
     goToSession: '前往会话',
     branches: '分支',
@@ -2736,6 +2742,28 @@ export const zh: Translations = {
         text: '请解释这是如何工作的，并指给我关键文件。'
       }
     }
+  },
+
+  goalPanel: {
+    aria: '会话目标',
+    goal: '目标',
+    tokens: 'Token',
+    cost: '成本',
+    context: '上下文',
+    calls: '调用数',
+    elapsed: '耗时',
+    elapsedNote: '本次启动内'
+  },
+
+  sessionChanges: {
+    aria: '会话改动审查',
+    title: '改动审查',
+    scopeNote: '本会话涉及文件 — 按工具调用聚合，非仓库级变更清单。',
+    empty: '本次会话没有文件改动',
+    noDiff: '无未提交改动',
+    loadingDiff: '正在读取差异…',
+    diffUnavailable: '无法读取差异',
+    refresh: '刷新'
   },
 
   statusStack: {

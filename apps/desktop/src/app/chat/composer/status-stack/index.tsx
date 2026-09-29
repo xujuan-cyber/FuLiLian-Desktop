@@ -115,7 +115,11 @@ export function ComposerStatusStack({ queue, sessionId }: ComposerStatusStackPro
     }
   }, [sessionId])
 
-  const hasRunningBackground = groups.some(g => g.type === 'background' && g.items.some(i => i.state === 'running'))
+  // The standing goal no longer renders here (step14 U5): the resident
+  // top-right GoalPanel owns goal display. Strip the goal group so the store's
+  // merged feed can converge without touching the other groups' order.
+  const visibleGroups = useMemo(() => groups.filter(group => group.type !== 'goal'), [groups])
+  const hasRunningBackground = visibleGroups.some(g => g.type === 'background' && g.items.some(i => i.state === 'running'))
 
   // Drop localhost previews once no dev server is left running — that's what made
   // dead `localhost:5174` chips stick around. On-disk file previews are kept.
@@ -146,7 +150,7 @@ export function ComposerStatusStack({ queue, sessionId }: ComposerStatusStackPro
         ))
       : []
 
-  const hasBackgroundGroup = groups.some(g => g.type === 'background')
+  const hasBackgroundGroup = visibleGroups.some(g => g.type === 'background')
 
   const previewBlock = <div className="px-1 py-0.5">{previewRows}</div>
 
@@ -159,7 +163,7 @@ export function ComposerStatusStack({ queue, sessionId }: ComposerStatusStackPro
     sections.push({ key: 'billing', node: <BillingBanner sessionId={sessionId} /> })
   }
 
-  for (const group of groups) {
+  for (const group of visibleGroups) {
     sections.push({
       key: group.type,
       node: (
@@ -188,7 +192,7 @@ export function ComposerStatusStack({ queue, sessionId }: ComposerStatusStackPro
               />
             ) : undefined
           }
-          defaultCollapsed={group.type !== 'todo' && group.type !== 'goal'}
+          defaultCollapsed={group.type !== 'todo'}
           icon={<Codicon className="text-muted-foreground/70" name={GROUP_ICON[group.type]} size="0.8rem" />}
           label={groupLabel(group, t.statusStack)}
         >

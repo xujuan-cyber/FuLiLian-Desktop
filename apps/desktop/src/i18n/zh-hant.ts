@@ -1268,6 +1268,12 @@ export const zhHant = defineLocale({
     back: '返回',
     searchPlaceholder: '搜尋工作階段、檢視和動作',
     goTo: '前往',
+    searchSessions: '會話檢索',
+    searchSessionsPlaceholder: '搜尋全部會話…',
+    searchSessionsSearching: '正在搜尋會話…',
+    noMatchingSessions: '無相符的會話',
+    sessionSearchRemote: '全庫檢索結果',
+    sessionChanges: '會話改動審查',
     goToSession: '前往工作階段',
     branches: '分支',
     startInBranch: branch => `在 ${branch} 中開始新對話`,
@@ -2127,6 +2133,28 @@ export const zhHant = defineLocale({
         text: '請解釋這是如何運作的，並告訴我關鍵檔案在哪裡。'
       }
     }
+  },
+
+  goalPanel: {
+    aria: '會話目標',
+    goal: '目標',
+    tokens: 'Token',
+    cost: '成本',
+    context: '上下文',
+    calls: '調用數',
+    elapsed: '耗時',
+    elapsedNote: '本次啟動內'
+  },
+
+  sessionChanges: {
+    aria: '會話改動審查',
+    title: '改動審查',
+    scopeNote: '本會話涉及的檔案 — 按工具調用聚合，非倉庫級變更清單。',
+    empty: '本次會話沒有檔案改動',
+    noDiff: '無未提交改動',
+    loadingDiff: '正在讀取差異…',
+    diffUnavailable: '無法讀取差異',
+    refresh: '重新整理'
   },
 
   statusStack: {

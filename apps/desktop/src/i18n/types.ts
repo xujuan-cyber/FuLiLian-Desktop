@@ -1302,6 +1302,12 @@ export interface Translations {
     paletteTitle: string
     back: string
     searchPlaceholder: string
+    searchSessions: string
+    searchSessionsPlaceholder: string
+    searchSessionsSearching: string
+    noMatchingSessions: string
+    sessionSearchRemote: string
+    sessionChanges: string
     goTo: string
     goToSession: string
     branches: string
@@ -2159,6 +2165,28 @@ export interface Translations {
       done: string
       doneTip: string
     }
+  }
+
+  goalPanel: {
+    aria: string
+    goal: string
+    tokens: string
+    cost: string
+    context: string
+    calls: string
+    elapsed: string
+    elapsedNote: string
+  }
+
+  sessionChanges: {
+    aria: string
+    title: string
+    scopeNote: string
+    empty: string
+    noDiff: string
+    loadingDiff: string
+    diffUnavailable: string
+    refresh: string
   }
 
   statusStack: {

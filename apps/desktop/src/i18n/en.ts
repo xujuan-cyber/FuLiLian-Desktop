@@ -1483,6 +1483,12 @@ export const en: Translations = {
     back: 'Back',
     searchPlaceholder: 'Search sessions, views, and actions',
     goTo: 'Go to',
+    searchSessions: 'Search sessions',
+    searchSessionsPlaceholder: 'Search all sessions…',
+    searchSessionsSearching: 'Searching sessions…',
+    noMatchingSessions: 'No matching sessions',
+    sessionSearchRemote: 'Deep search results',
+    sessionChanges: 'Session changes review',
     goToSession: 'Go to session',
     branches: 'Branches',
     projects: 'Projects',
@@ -2558,6 +2564,28 @@ export const en: Translations = {
         text: 'Please explain how this works and point me to the key files.'
       }
     }
+  },
+
+  goalPanel: {
+    aria: 'Session goal',
+    goal: 'Goal',
+    tokens: 'Tokens',
+    cost: 'Cost',
+    context: 'Context',
+    calls: 'Calls',
+    elapsed: 'Elapsed',
+    elapsedNote: 'this launch'
+  },
+
+  sessionChanges: {
+    aria: 'Session changes review',
+    title: 'Changes review',
+    scopeNote: 'Files this session touched — aggregated from tool calls, not a repo-level change list.',
+    empty: 'No file changes in this session',
+    noDiff: 'No uncommitted changes',
+    loadingDiff: 'Reading diff…',
+    diffUnavailable: 'Diff unavailable',
+    refresh: 'Refresh'
   },
 
   statusStack: {

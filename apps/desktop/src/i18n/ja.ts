@@ -1308,6 +1308,12 @@ export const ja = defineLocale({
     back: '戻る',
     searchPlaceholder: 'セッション、ビュー、アクションを検索',
     goTo: '移動',
+    searchSessions: 'セッション検索',
+    searchSessionsPlaceholder: 'すべてのセッションを検索…',
+    searchSessionsSearching: 'セッションを検索中…',
+    noMatchingSessions: '一致するセッションはありません',
+    sessionSearchRemote: '全件検索の結果',
+    sessionChanges: 'セッション変更レビュー',
     goToSession: 'セッションへ移動',
     branches: 'ブランチ',
     startInBranch: branch => `${branch} で新しい会話`,
@@ -2194,6 +2200,28 @@ export const ja = defineLocale({
         text: 'これがどのように機能するか説明し、主要なファイルを教えてください。'
       }
     }
+  },
+
+  goalPanel: {
+    aria: 'セッションゴール',
+    goal: 'ゴール',
+    tokens: 'Token',
+    cost: 'コスト',
+    context: 'コンテキスト',
+    calls: '呼び出し数',
+    elapsed: '経過時間',
+    elapsedNote: '今回の起動内'
+  },
+
+  sessionChanges: {
+    aria: 'セッション変更レビュー',
+    title: '変更レビュー',
+    scopeNote: 'このセッションが触れたファイル — ツール呼び出しから集計（リポジトリ単位の変更リストではありません）。',
+    empty: 'このセッションでのファイル変更はありません',
+    noDiff: '未コミットの変更はありません',
+    loadingDiff: '差分を読み込み中…',
+    diffUnavailable: '差分を取得できません',
+    refresh: '更新'
   },
 
   statusStack: {

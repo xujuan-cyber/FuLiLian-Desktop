@@ -1057,6 +1057,12 @@ export const ar = defineLocale({
     back: 'رجوع',
     searchPlaceholder: 'ابحث عن أمر أو إعداد...',
     goTo: 'انتقال إلى',
+    searchSessions: 'البحث في الجلسات',
+    searchSessionsPlaceholder: 'ابحث في جميع الجلسات…',
+    searchSessionsSearching: 'جارٍ البحث في الجلسات…',
+    noMatchingSessions: 'لا توجد جلسات مطابقة',
+    sessionSearchRemote: 'نتائج البحث الشامل',
+    sessionChanges: 'مراجعة تغييرات الجلسة',
     goToSession: 'الانتقال إلى الجلسة',
     branches: 'الفروع',
     startInBranch: branch => `محادثة جديدة في ${branch}`,
@@ -1934,6 +1940,28 @@ export const ar = defineLocale({
       }
     }
   },
+  goalPanel: {
+    aria: 'هدف الجلسة',
+    goal: 'الهدف',
+    tokens: 'الرموز',
+    cost: 'التكلفة',
+    context: 'السياق',
+    calls: 'عدد النداءات',
+    elapsed: 'الوقت المنقضي',
+    elapsedNote: 'ضمن هذا الإطلاق'
+  },
+
+  sessionChanges: {
+    aria: 'مراجعة تغييرات الجلسة',
+    title: 'مراجعة التغييرات',
+    scopeNote: 'الملفات التي لمستها هذه الجلسة — مُجمّعة من استدعاءات الأدوات، وليست قائمة تغييرات على مستوى المستودع.',
+    empty: 'لا توجد تغييرات على الملفات في هذه الجلسة',
+    noDiff: 'لا توجد تغييرات غير ملتزمة',
+    loadingDiff: 'جارٍ قراءة الفرق…',
+    diffUnavailable: 'الفرق غير متوفر',
+    refresh: 'تحديث'
+  },
+
   statusStack: {
     agents: 'الوكلاء',
     background: count => `${count} في الخلفية`,
