@@ -29,7 +29,9 @@ describe('markdown documents delivered via MEDIA', () => {
 
     // PreviewAttachment renders an "open preview" toggle button; the old
     // MediaAttachment 'file' fallback rendered a bare "Open ..." anchor.
-    expect(await screen.findByRole('button')).toBeTruthy()
+    // (R9 adds a second "Inline preview" button to the same card, so the
+    // query targets the rail button by name instead of counting buttons.)
+    expect(await screen.findByRole('button', { name: 'Open preview' })).toBeTruthy()
     expect(screen.queryByText(/^Loading /)).toBeNull()
     expect(screen.getByText('report.md')).toBeTruthy()
   })
