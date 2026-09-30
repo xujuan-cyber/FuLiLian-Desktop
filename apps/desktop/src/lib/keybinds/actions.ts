@@ -66,6 +66,13 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   // chord, so ship it unbound there (rebindable in the panel) rather than
   // stealing the long-standing sidebar binding.
   { id: 'composer.voice', category: 'composer', defaults: IS_MAC ? ['ctrl+b'] : [] },
+  // Shift+Tab cycles the GLOBAL approval mode (manual → smart → off). This is
+  // the profile-level `approvals.mode` config — NOT the TUI's per-session yolo
+  // flag — so the chord is documented as the three-way cycle everywhere it's
+  // surfaced. Skipped while a terminal owns focus (the CLI inside it carries
+  // its own Shift+Tab semantics); composer keydown yields the chord when a
+  // trigger popover is open.
+  { id: 'composer.approvalMode', category: 'composer', defaults: ['shift+tab'] },
 
   // ── Profiles ─────────────────────────────────────────────────────────────
   { id: 'profile.default', category: 'profiles', defaults: ['mod+d'] },

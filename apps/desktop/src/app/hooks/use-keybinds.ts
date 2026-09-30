@@ -18,8 +18,9 @@ import { setWorkspaceScope } from '@/components/pane-shell/workspace-scope'
 import { onReleaseTypingFocus } from '@/components/ui/keyboard-first'
 import { findBarClaimsCombo } from '@/lib/find-in-page'
 import { contributedKeybindHandler, PROFILE_SLOT_COUNT, SESSION_SLOT_COUNT } from '@/lib/keybinds/actions'
-import { actionAllowedInInput, comboFromEvent, isEditableTarget } from '@/lib/keybinds/combo'
+import { actionAllowedInInput, comboFromEvent, isEditableTarget, isFocusWithin } from '@/lib/keybinds/combo'
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
+import { approvalModeForProfile, nextApprovalMode, setApprovalModeForProfile } from '@/store/approval-mode'
 import { openWorktreeDialog } from '@/store/coding-status'
 import { $commandPaletteOpen, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
 import {
@@ -39,8 +40,10 @@ import {
 } from '@/store/layout'
 import { openBrowserTab } from '@/store/preview'
 import {
+  $activeGatewayProfile,
   $newChatProfile,
   cycleProfile,
+  normalizeProfileKey,
   requestProfileCreate,
   switchProfileToSlot,
   switchToDefaultProfile,
@@ -62,6 +65,7 @@ import {
   switcherJustClosed
 } from '@/store/session-switcher'
 import { toggleStatusbarVisible } from '@/store/statusbar-prefs'
+import { $gateway } from '@/store/gateway'
 import { openNewWindow } from '@/store/windows'
 import { useTheme } from '@/themes/context'
 
@@ -185,6 +189,29 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'keybinds.openPanel': () => navigate(`${SETTINGS_ROUTE}?tab=keybinds`),
 
     'composer.focus': () => requestComposerFocus('active'),
+    // Shift+Tab: cycle the GLOBAL approval mode (manual → smart → off) — the
+    // profile-level `approvals.mode` config, not the TUI's per-session yolo
+    // flag. A terminal holding focus keeps its chord: the CLI inside carries
+    // its own Shift+Tab semantics, and the shell never steals it (DESIGN.md
+    // keyboard contract) — yield without preventDefault.
+    'composer.approvalMode': () => {
+      if (isFocusWithin('[data-terminal]')) {
+        return
+      }
+
+      const profile = normalizeProfileKey($activeGatewayProfile.get())
+      const gateway = $gateway.get()
+
+      if (!gateway) {
+        return
+      }
+
+      const requestGateway = (method: string, params?: Record<string, unknown>) => gateway.request(method, params)
+
+      void setApprovalModeForProfile(requestGateway, profile, nextApprovalMode(approvalModeForProfile(profile))).catch(
+        () => undefined
+      )
+    },
     // Toggle the composer pill's live model dropdown (pane under the pointer,
     // else active composer); no chat surface on screen → the full dialog.
     'composer.modelPicker': () => {

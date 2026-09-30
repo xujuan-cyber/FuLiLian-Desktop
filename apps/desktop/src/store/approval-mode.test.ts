@@ -5,6 +5,7 @@ import { deferred } from '../test/deferred'
 import {
   $approvalModes,
   approvalModeForProfile,
+  nextApprovalMode,
   reconcileApprovalModeForProfile,
   setApprovalModeForProfile,
   syncApprovalModeForProfile
@@ -94,6 +95,36 @@ describe('profile-scoped approval mode cache', () => {
     read.resolve({ value: 'manual' })
     await staleRead
 
+    expect(approvalModeForProfile('default')).toBe('off')
+  })
+})
+
+describe('Shift+Tab cycle order (R5)', () => {
+  beforeEach(() => $approvalModes.set({}))
+
+  it('walks manual → smart → off and wraps back to manual', () => {
+    expect(nextApprovalMode('manual')).toBe('smart')
+    expect(nextApprovalMode('smart')).toBe('off')
+    expect(nextApprovalMode('off')).toBe('manual')
+  })
+
+  it('round-trips the written value through config.set / config.get (A5)', async () => {
+    // A backend that actually persists: config.set stores, config.get reads.
+    let stored: string | undefined
+    const request = vi.fn()
+
+    request.mockImplementation(async (_method: string, params?: Record<string, unknown>) => {
+      if (params && 'value' in params) {
+        stored = params.value as string
+      }
+
+      return { value: stored }
+    })
+
+    await setApprovalModeForProfile(request, 'default', 'off')
+
+    expect(request).toHaveBeenCalledWith('config.set', { key: 'approvals.mode', value: 'off' })
+    expect(await syncApprovalModeForProfile(request, 'default')).toBe('off')
     expect(approvalModeForProfile('default')).toBe('off')
   })
 })

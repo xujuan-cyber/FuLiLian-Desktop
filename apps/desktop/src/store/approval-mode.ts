@@ -32,6 +32,16 @@ export function approvalModeForProfile(profile: string): ApprovalMode {
   return $approvalModes.get()[profileKey(profile)] ?? 'smart'
 }
 
+/** The Shift+Tab cycle order: ask first, then smart, then full access —
+ *  increasing autonomy, one stop per press, wrapping back to manual. */
+const APPROVAL_MODE_CYCLE: readonly ApprovalMode[] = ['manual', 'smart', 'off']
+
+export function nextApprovalMode(mode: ApprovalMode): ApprovalMode {
+  const index = APPROVAL_MODE_CYCLE.indexOf(mode)
+
+  return APPROVAL_MODE_CYCLE[(index + 1) % APPROVAL_MODE_CYCLE.length]
+}
+
 function cacheApprovalMode(profile: string, mode: ApprovalMode): void {
   const key = profileKey(profile)
   $approvalModes.set({ ...$approvalModes.get(), [key]: mode })
