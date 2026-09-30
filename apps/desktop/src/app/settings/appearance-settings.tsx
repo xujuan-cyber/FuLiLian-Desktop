@@ -48,7 +48,7 @@ import {
 } from '@/store/translucency'
 import { $vibeHeartsEnabled, setVibeHeartsEnabled } from '@/store/vibe-hearts-enabled'
 import { $zoomPercent, setZoomPercent } from '@/store/zoom'
-import { getBaseColors, useTheme } from '@/themes/context'
+import { getBaseColors, useTheme, type TextInkTier, type TextScaleTier } from '@/themes/context'
 import { installVscodeThemeFromMarketplace } from '@/themes/install'
 import type { DesktopTheme } from '@/themes/types'
 import { $marketplaceInstalls, isUserTheme, removeUserTheme } from '@/themes/user-themes'
@@ -345,7 +345,18 @@ function GlassRow({ children, label }: GlassRowProps) {
 
 export function AppearanceSettings() {
   const { t, isSavingLocale } = useI18n()
-  const { themeName, mode, resolvedMode, availableThemes, setTheme, setMode } = useTheme()
+  const {
+    textInk,
+    textScale,
+    setTextInk,
+    setTextScale,
+    themeName,
+    mode,
+    resolvedMode,
+    availableThemes,
+    setTheme,
+    setMode
+  } = useTheme()
   const toolViewMode = useStore($toolViewMode)
   const reasoningCollapsedByDefault = useStore($reasoningCollapsedByDefault)
   const sessionListDensity = useStore($sessionListDensity)
@@ -579,6 +590,50 @@ export function AppearanceSettings() {
             description={a.uiScaleDesc(zoomPercent)}
             id={appearanceSettingElementId(APPEARANCE_SETTING_IDS.uiScale)}
             title={a.uiScaleTitle}
+          />
+
+          {/* R10 typography tiers: base text size moves conversation/UI type
+              only (the row above rescales the whole window); text ink is a
+              preset palette, never a free picker, and `default` follows the
+              skin. Both persist per profile and survive skin switches (A7). */}
+          <ListRow
+            action={
+              <SegmentedControl
+                onChange={id => {
+                  triggerHaptic('selection')
+                  setTextScale(id as TextScaleTier)
+                }}
+                options={[
+                  { id: 'compact', label: a.textScaleCompact },
+                  { id: 'default', label: a.textScaleDefault },
+                  { id: 'large', label: a.textScaleLarge },
+                  { id: 'xlarge', label: a.textScaleXlarge }
+                ]}
+                value={textScale}
+              />
+            }
+            description={a.textScaleDesc}
+            title={a.textScaleTitle}
+          />
+
+          <ListRow
+            action={
+              <SegmentedControl
+                onChange={id => {
+                  triggerHaptic('selection')
+                  setTextInk(id as TextInkTier)
+                }}
+                options={[
+                  { id: 'default', label: a.textInkDefault },
+                  { id: 'graphite', label: a.textInkGraphite },
+                  { id: 'ink', label: a.textInkInk },
+                  { id: 'sepia', label: a.textInkSepia }
+                ]}
+                value={textInk}
+              />
+            }
+            description={a.textInkDesc}
+            title={a.textInkTitle}
           />
 
           <TerminalFontSetting />

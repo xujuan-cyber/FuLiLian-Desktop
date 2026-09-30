@@ -35,6 +35,14 @@ const MODE_KEY = 'fulilian-desktop-mode-v1'
 // profile inherits the global default until it's given its own appearance.
 const PROFILE_SKINS_KEY = 'fulilian-desktop-profile-themes-v1'
 const PROFILE_MODES_KEY = 'fulilian-desktop-profile-modes-v1'
+// R10 typography tiers — base text scale and text ink — persisted per profile
+// with the same profilePref shape as skin/mode. Deliberately NOT read by any
+// skin preset or `applyTheme` seed chain: a skin switch can never clear these
+// (A7), and the boot block applies them from storage before first paint.
+const TEXT_SCALE_KEY = 'fulilian-desktop-text-scale-v1'
+const PROFILE_TEXT_SCALE_KEY = 'fulilian-desktop-profile-text-scale-v1'
+const TEXT_INK_KEY = 'fulilian-desktop-text-ink-v1'
+const PROFILE_TEXT_INK_KEY = 'fulilian-desktop-profile-text-ink-v1'
 // Last active profile, recorded so the boot-time paint can pick that profile's
 // theme before the gateway reports which profile actually launched.
 const LAST_PROFILE_KEY = 'fulilian-desktop-active-profile-v1'
@@ -43,6 +51,38 @@ const LAST_PROFILE_KEY = 'fulilian-desktop-active-profile-v1'
 const RETIRED_SKINS = new Set(['nous-light', 'default', 'gold'])
 
 export type ThemeMode = 'light' | 'dark' | 'system'
+
+/** Base text-size tiers (R10): a multiplier over the conversation/UI font-size
+ *  tokens via `--ui-text-scale`. Distinct from the OS-level zoom row, which
+ *  rescales EVERYTHING including the titlebar; these move type only. */
+export type TextScaleTier = 'compact' | 'default' | 'large' | 'xlarge'
+
+/** Text ink presets (R10): preset palettes — never a free color picker — that
+ *  override the `--ui-text-*` family while preserving the theme's hierarchy
+ *  ratios. `default` = follow the skin. */
+export type TextInkTier = 'default' | 'graphite' | 'ink' | 'sepia'
+
+const TEXT_SCALE_VALUE: Record<TextScaleTier, string> = {
+  compact: '0.9',
+  default: '1',
+  large: '1.1',
+  xlarge: '1.25'
+}
+
+// Per-mode ink hexes. Light inks for dark surfaces, dark inks for light ones;
+// at the family alphas (94/74/54/36%) the primary tier clears AA on every
+// built-in skin's surface (measured table in the step14 DEV-B receipt).
+const TEXT_INK_COLORS: Record<Exclude<TextInkTier, 'default'>, { dark: string; light: string }> = {
+  graphite: { dark: '#c9cfd8', light: '#333a45' },
+  ink: { dark: '#e6e8ec', light: '#14161a' },
+  sepia: { dark: '#d8cec2', light: '#41392e' }
+}
+
+// The hierarchy ratios styles.css bakes into the --ui-text-* family; an ink
+// tier reproduces the SAME ratios with a different base color, so secondary
+// and tertiary text keep their relative weight.
+const TEXT_INK_ALPHAS = [0.94, 0.74, 0.54, 0.36]
+const TEXT_INK_VAR_NAMES = ['--ui-text-primary', '--ui-text-secondary', '--ui-text-tertiary', '--ui-text-quaternary']
 
 const INJECTED_FONT_URLS = new Set<string>()
 
@@ -83,8 +123,26 @@ const profilePref = <T extends string>(record: string, legacy: string, normalize
 export const skinPref = profilePref(PROFILE_SKINS_KEY, SKIN_KEY, normalizeSkin)
 export const modePref = profilePref(PROFILE_MODES_KEY, MODE_KEY, normalizeMode)
 
+const normalizeTextScale = (value: string | null): TextScaleTier =>
+  value === 'compact' || value === 'large' || value === 'xlarge' ? value : 'default'
+
+const normalizeTextInk = (value: string | null): TextInkTier =>
+  value === 'graphite' || value === 'ink' || value === 'sepia' ? value : 'default'
+
+export const textScalePref = profilePref(PROFILE_TEXT_SCALE_KEY, TEXT_SCALE_KEY, normalizeTextScale)
+export const textInkPref = profilePref(PROFILE_TEXT_INK_KEY, TEXT_INK_KEY, normalizeTextInk)
+
 /** Everything a peer window could change that this one has to repaint for. */
-const APPEARANCE_KEYS = new Set([SKIN_KEY, PROFILE_SKINS_KEY, MODE_KEY, PROFILE_MODES_KEY])
+const APPEARANCE_KEYS = new Set([
+  SKIN_KEY,
+  PROFILE_SKINS_KEY,
+  MODE_KEY,
+  PROFILE_MODES_KEY,
+  TEXT_SCALE_KEY,
+  PROFILE_TEXT_SCALE_KEY,
+  TEXT_INK_KEY,
+  PROFILE_TEXT_INK_KEY
+])
 
 // Last active profile — lets the boot paint pick its appearance before the
 // gateway reports which profile actually launched.
@@ -199,7 +257,40 @@ const mixesFor = (isDark: boolean): Record<string, string> => ({
   '--theme-mix-bubble': isDark ? '46%' : '0%'
 })
 
-function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
+/** R10 typography tiers, applied on top of the palette seeds. A `default` tier
+ *  REMOVES its inline overrides so the stylesheet's theme-derived values win
+ *  again — switching tiers back must restore the skin exactly. */
+function applyTypographyTiers(
+  root: HTMLElement,
+  appearance: { textInk: TextInkTier; textScale: TextScaleTier },
+  isDark: boolean
+) {
+  root.style.setProperty('--ui-text-scale', TEXT_SCALE_VALUE[appearance.textScale])
+
+  if (appearance.textInk === 'default') {
+    for (const name of TEXT_INK_VAR_NAMES) {
+      root.style.removeProperty(name)
+    }
+
+    return
+  }
+
+  const rgb = hexToRgb(TEXT_INK_COLORS[appearance.textInk][isDark ? 'dark' : 'light'])
+
+  if (!rgb) {
+    return
+  }
+
+  for (const [index, name] of TEXT_INK_VAR_NAMES.entries()) {
+    root.style.setProperty(name, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${TEXT_INK_ALPHAS[index]})`)
+  }
+}
+
+function applyTheme(
+  theme: DesktopTheme,
+  mode: 'light' | 'dark',
+  appearance: { textInk: TextInkTier; textScale: TextScaleTier } = { textInk: 'default', textScale: 'default' }
+) {
   if (typeof document === 'undefined') {
     return
   }
@@ -277,6 +368,8 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
     root.style.setProperty(k, v)
   }
 
+  applyTypographyTiers(root, appearance, isDark)
+
   const chromeBg = chromeBackground(c.background, isDark)
 
   window.fulilianDesktop?.setTitleBarTheme?.({
@@ -320,7 +413,12 @@ if (typeof window !== 'undefined') {
   const pref = modePref.resolve(profile)
   const resolved = resolveMode(pref)
   const theme = deriveTheme(skinPref.resolve(profile), resolved)
-  applyTheme(theme, resolved)
+
+  applyTheme(theme, resolved, {
+    textInk: textInkPref.resolve(profile),
+    textScale: textScalePref.resolve(profile)
+  })
+
   syncNativeTheme(pref, renderedModeFor(theme.colors, resolved))
 }
 
@@ -342,6 +440,11 @@ interface ThemeContextValue {
   availableThemes: Array<{ name: string; label: string; description: string }>
   setTheme: (name: string) => void
   setMode: (mode: ThemeMode) => void
+  /** R10 base text-size tier for the active profile. */
+  textInk: TextInkTier
+  textScale: TextScaleTier
+  setTextInk: (tier: TextInkTier) => void
+  setTextScale: (tier: TextScaleTier) => void
   /**
    * Paint a theme with an explicit light/dark, without persistence. This is
    * the highlight preview for the palette. A commit (`setTheme`) or
@@ -362,6 +465,10 @@ const ThemeContext = createContext<ThemeContextValue>({
   availableThemes: SKIN_LIST,
   setTheme: () => {},
   setMode: () => {},
+  textInk: 'default',
+  textScale: 'default',
+  setTextInk: () => {},
+  setTextScale: () => {},
   previewTheme: () => {},
   clearThemePreview: () => {}
 })
@@ -399,12 +506,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     typeof window === 'undefined' ? 'light' : modePref.resolve(readBootProfileKey())
   )
 
+  // R10 typography tiers — same per-profile lifecycle as skin + mode.
+  const [textScale, setTextScaleState] = useState<TextScaleTier>(() =>
+    typeof window === 'undefined' ? 'default' : textScalePref.resolve(readBootProfileKey())
+  )
+  const [textInk, setTextInkState] = useState<TextInkTier>(() =>
+    typeof window === 'undefined' ? 'default' : textInkPref.resolve(readBootProfileKey())
+  )
+
   // Follow profile switches: paint the profile's assigned skin + mode and
   // remember it for the next boot's first paint.
   useEffect(() => {
     rememberActiveProfileKey(profileKey)
     setThemeNameState(skinPref.resolve(profileKey))
     setModeState(modePref.resolve(profileKey))
+    setTextScaleState(textScalePref.resolve(profileKey))
+    setTextInkState(textInkPref.resolve(profileKey))
   }, [profileKey])
 
   // Appearance is per-profile localStorage, and every desktop window is another
@@ -421,6 +538,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
       setThemeNameState(skinPref.resolve(live))
       setModeState(modePref.resolve(live))
+      setTextScaleState(textScalePref.resolve(live))
+      setTextInkState(textInkPref.resolve(live))
     }
 
     window.addEventListener('storage', onStorage)
@@ -461,7 +580,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // What actually gets painted (matches the `.dark` class applyTheme toggles).
   const renderedMode = useMemo(() => renderedModeFor(paintedTheme.colors, paintedMode), [paintedTheme, paintedMode])
 
-  useEffect(() => applyTheme(paintedTheme, paintedMode), [paintedTheme, paintedMode])
+  useEffect(() => applyTheme(paintedTheme, paintedMode, { textInk, textScale }), [paintedTheme, paintedMode, textInk, textScale])
 
   // Keep the native window appearance pinned to the app theme (vibrancy
   // material, titlebar, new-window pre-paint background).
@@ -482,6 +601,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setPreview(null)
     setModeState(next)
     modePref.assign(liveProfile(), next)
+  }, [])
+
+  const setTextScale = useCallback((tier: TextScaleTier) => {
+    setTextScaleState(tier)
+    textScalePref.assign(liveProfile(), tier)
+  }, [])
+
+  const setTextInk = useCallback((tier: TextInkTier) => {
+    setTextInkState(tier)
+    textInkPref.assign(liveProfile(), tier)
   }, [])
 
   const previewTheme = useCallback((name: string, previewMode: 'light' | 'dark') => {
@@ -515,6 +644,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       availableThemes,
       setTheme,
       setMode,
+      textInk,
+      textScale,
+      setTextInk,
+      setTextScale,
       previewTheme,
       clearThemePreview
     }),
@@ -527,6 +660,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       availableThemes,
       setTheme,
       setMode,
+      textInk,
+      textScale,
+      setTextInk,
+      setTextScale,
       previewTheme,
       clearThemePreview
     ]
