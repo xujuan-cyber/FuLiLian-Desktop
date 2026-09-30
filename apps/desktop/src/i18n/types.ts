@@ -446,6 +446,18 @@ export interface Translations {
       reasoningCollapsedDesc: string
       uiScaleTitle: string
       uiScaleDesc: (percent: number) => string
+      textScaleTitle: string
+      textScaleDesc: string
+      textScaleCompact: string
+      textScaleDefault: string
+      textScaleLarge: string
+      textScaleXlarge: string
+      textInkTitle: string
+      textInkDesc: string
+      textInkDefault: string
+      textInkGraphite: string
+      textInkInk: string
+      textInkSepia: string
       sessionDensityTitle: string
       sessionDensityDesc: string
       sessionDensityCompact: string
@@ -1381,8 +1393,8 @@ export interface Translations {
     settingsFields: string
     mcpServers: string
     archivedChats: string
-    sections: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
-    sectionDescriptions: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
+    sections: Record<'logs' | 'maintenance' | 'sessions' | 'system' | 'usage', string>
+    sectionDescriptions: Record<'logs' | 'maintenance' | 'sessions' | 'system' | 'usage', string>
     nav: Record<'newChat' | 'settings' | 'skills' | 'messaging' | 'artifacts', { title: string; detail: string }>
     sectionEntries: Record<'sessions' | 'system' | 'usage', { title: string; detail: string }>
     providerNavigate: string
@@ -1408,6 +1420,7 @@ export interface Translations {
     actionFailed: string
     actionStartedWaiting: string
     loadingStatus: string
+    loadingLogs: string
     recentLogs: string
     noLogs: string
     days: (count: number) => string
@@ -2645,6 +2658,8 @@ export interface Translations {
     opening: string
     hide: string
     openPreview: string
+    inlinePreview: string
+    inlineTooLarge: (name: string) => string
     openInBrowser: string
     openInExternal: string
     popIn: string
