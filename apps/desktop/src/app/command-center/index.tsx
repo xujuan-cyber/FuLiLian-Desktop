@@ -19,6 +19,7 @@ import {
   Bookmark,
   BookmarkFilled,
   Download,
+  FileText,
   MessageCircle,
   Trash2,
   Wrench
@@ -35,15 +36,14 @@ import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
 import { OverlayMain, OverlayNav, OverlaySplitLayout } from '../overlays/overlay-split-layout'
 import { OverlayView } from '../overlays/overlay-view'
+import { ModelDistributionBar, UsageTrendChart, modelShares } from './usage-charts'
 
 import { MaintenancePanel } from './maintenance'
+import { LOG_FILES, LOG_LEVELS, LogsPanel } from './logs-panel'
 
-export type CommandCenterSection = 'maintenance' | 'sessions' | 'system' | 'usage'
+export type CommandCenterSection = 'logs' | 'maintenance' | 'sessions' | 'system' | 'usage'
 
-const SECTIONS = ['sessions', 'system', 'usage', 'maintenance'] as const satisfies readonly CommandCenterSection[]
-
-const LOG_FILES = ['agent', 'errors', 'gateway', 'desktop'] as const
-const LOG_LEVELS = ['ALL', 'INFO', 'WARNING', 'ERROR'] as const
+const SECTIONS = ['sessions', 'usage', 'logs', 'system', 'maintenance'] as const satisfies readonly CommandCenterSection[]
 
 const USAGE_PERIODS = [7, 30, 90] as const
 type UsagePeriod = (typeof USAGE_PERIODS)[number]
@@ -313,7 +313,9 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
               ? Activity
               : value === 'maintenance'
                 ? Wrench
-                : BarChart3,
+                : value === 'logs'
+                  ? FileText
+                  : BarChart3,
         id: value,
         label: cc.sections[value],
         onSelect: () => setSection(value)
@@ -415,6 +417,8 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
               period={usagePeriod}
               usage={usage}
             />
+          ) : section === 'logs' ? (
+            <LogsPanel />
           ) : section === 'maintenance' ? (
             <MaintenancePanel />
           ) : (
@@ -528,14 +532,10 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
   const totals = usage?.totals
   const byModel = usage?.by_model ?? []
   const topSkills = usage?.skills?.top_skills ?? []
-
-  const maxTokens = useMemo(() => {
-    if (!daily.length) {
-      return 1
-    }
-
-    return daily.reduce((acc, entry) => Math.max(acc, (entry.input_tokens || 0) + (entry.output_tokens || 0)), 1)
-  }, [daily])
+  // R7: token-share distribution over the period's model rows (cost included
+  // in each segment's tooltip). Computed from the SAME analytics fetch — no
+  // extra request, no aggregation over session rows needed.
+  const modelShareRows = useMemo(() => modelShares(byModel), [byModel])
 
   if (!totals) {
     return (
@@ -594,29 +594,7 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
           </div>
         ) : (
           <>
-            <div className="flex h-24 items-end gap-px">
-              {daily.map(entry => {
-                const inputH = Math.round(((entry.input_tokens || 0) / maxTokens) * 96)
-                const outputH = Math.round(((entry.output_tokens || 0) / maxTokens) * 96)
-
-                return (
-                  <div
-                    className="group relative flex h-24 min-w-0 flex-1 flex-col justify-end"
-                    key={entry.day}
-                    title={`${entry.day} · in ${compactNumber(entry.input_tokens)} · out ${compactNumber(entry.output_tokens)}`}
-                  >
-                    <div
-                      className="w-full rounded-t-[1px] bg-[color:var(--dt-primary)]/50"
-                      style={{ height: Math.max(inputH, entry.input_tokens > 0 ? 1 : 0) }}
-                    />
-                    <div
-                      className="w-full bg-emerald-500/60"
-                      style={{ height: Math.max(outputH, entry.output_tokens > 0 ? 1 : 0) }}
-                    />
-                  </div>
-                )
-              })}
-            </div>
+            <UsageTrendChart daily={daily} />
             <div className="mt-1 flex justify-between text-[0.6rem] text-(--ui-text-tertiary)">
               <span>{daily[0]?.day}</span>
               <span>{daily[daily.length - 1]?.day}</span>
@@ -628,10 +606,11 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
       <div className="grid min-h-0 gap-x-8 gap-y-5 pt-1 sm:grid-cols-2">
         <UsageList
           emptyLabel={cc.noModelUsage}
-          rows={byModel.slice(0, 6).map(entry => ({
-            key: entry.model,
-            label: entry.model,
-            value: `${compactNumber((entry.input_tokens || 0) + (entry.output_tokens || 0))}`
+          header={modelShareRows.length > 0 ? <ModelDistributionBar shares={modelShareRows} /> : undefined}
+          rows={modelShareRows.map(share => ({
+            key: share.model,
+            label: share.model,
+            value: `${share.sharePercent.toFixed(0)}%`
           }))}
           title={cc.topModels}
         />
@@ -651,10 +630,13 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
 
 function UsageList({
   emptyLabel,
+  header,
   rows,
   title
 }: {
   emptyLabel: string
+  /** Optional visual above the rows (the model-share distribution bar). */
+  header?: ReactNode
   rows: Array<{ key: string; label: string; value: string }>
   title: string
 }) {
@@ -668,14 +650,17 @@ function UsageList({
           {emptyLabel}
         </div>
       ) : (
-        <ul>
-          {rows.map(row => (
-            <li className="flex items-center justify-between gap-2 py-1.5" key={row.key}>
-              <span className="min-w-0 truncate font-mono text-[0.7rem] text-foreground">{row.label}</span>
-              <span className="shrink-0 text-[0.65rem] text-(--ui-text-tertiary)">{row.value}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {header}
+          <ul className={cn(header && 'mt-2')}>
+            {rows.map(row => (
+              <li className="flex items-center justify-between gap-2 py-1.5" key={row.key}>
+                <span className="min-w-0 truncate font-mono text-[0.7rem] text-foreground">{row.label}</span>
+                <span className="shrink-0 text-[0.65rem] text-(--ui-text-tertiary)">{row.value}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   )

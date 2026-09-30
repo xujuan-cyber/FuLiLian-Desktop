@@ -1058,6 +1058,14 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             run: go(`${COMMAND_CENTER_ROUTE}?section=usage`)
           },
           {
+            // R11: the dedicated log diagnostics page (file × level × search).
+            icon: FileText,
+            id: 'cc-logs',
+            keywords: ['command center', 'logs', 'diagnostics', 'errors'],
+            label: cc.sections.logs,
+            run: go(`${COMMAND_CENTER_ROUTE}?section=logs`)
+          },
+          {
             icon: RefreshCw,
             id: 'cc-restart-gateway',
             keywords: ['gateway', 'restart', 'messaging', 'reconnect', 'system'],
