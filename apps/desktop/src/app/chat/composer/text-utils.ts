@@ -7,7 +7,7 @@ export interface TriggerState {
   /** True for a `/` typed mid-message — an inline skill/command reference in
    *  prose rather than a command invocation. Arg completion doesn't apply. */
   inline?: boolean
-  kind: '@' | '/' | ':'
+  kind: '@' | '/' | ':' | '#' | '$'
   query: string
   /** The `@kind:` prefix the user scoped the browse to, when there is one. */
   scope?: DirectiveScope
@@ -65,6 +65,16 @@ const AT_SCOPE_RE = new RegExp(`^(${DIRECTIVE_SCOPES.join('|')}):(.*)$`)
 const AT_TRIGGER_RE = /(?:^|[\s\uFFFC])(@)([^\s@\uFFFC]*)$/
 const SLASH_COMMAND_TRIGGER_RE = /^(\/)((?:[a-zA-Z][\w-]*(?:\s+\S*)*)?)$/
 const SLASH_INLINE_TRIGGER_RE = /[\s\uFFFC](\/)([a-zA-Z][\w-]*)?$/
+// `#history` — a quick session reference. Same boundary + token rules as `@`:
+// the trigger is one token ending at the next whitespace. The query stays a
+// free token (titles contain CJK, spaces arrive only after a pick), so unlike
+// `$` there is no leading-letter restriction.
+const HASH_TRIGGER_RE = /(?:^|[\s\uFFFC])(#)([^\s\uFFFC]*)$/
+// `$skill` — a skill invocation that inserts the skill's `/` command. The name
+// must start with a letter (slash command names do), so "$5" or "$100" in
+// prose never opens the popover — the same guard class as the emoji trigger's
+// two-char minimum.
+const DOLLAR_TRIGGER_RE = /(?:^|[\s\uFFFC])(\$)([a-zA-Z][\w-]*)$/
 // `:joy` → emoji completions, Slack-style. Boundary-anchored so a mid-word
 // colon (`localhost:8080`, `note:`) never fires; two chars minimum so a bare
 // `:` or `:D` smiley doesn't open a popover the user didn't ask for.
@@ -216,6 +226,23 @@ export function detectTrigger(textBefore: string): TriggerState | null {
       tokenLength: 1 + query.length,
       value: scoped ? (scoped[2] ?? '') : query
     }
+  }
+
+  // Before emoji so a `#tag`-style token is a session query, not a smiley.
+  const hash = HASH_TRIGGER_RE.exec(textBefore)
+
+  if (hash) {
+    const query = hash[2] ?? ''
+
+    return { kind: '#', query, tokenLength: 1 + query.length, value: query }
+  }
+
+  const dollar = DOLLAR_TRIGGER_RE.exec(textBefore)
+
+  if (dollar) {
+    const query = dollar[2] ?? ''
+
+    return { kind: '$', query, tokenLength: 1 + query.length, value: query }
   }
 
   // After `@` so a directive starter's colon (`@file:`) stays an `@` query.

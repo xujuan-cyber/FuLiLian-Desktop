@@ -93,9 +93,15 @@ interface CompletionSource {
 interface UseComposerTriggerOptions {
   at: CompletionSource
   draftRef: MutableRefObject<string>
+  dollar?: CompletionSource
   editorRef: RefObject<HTMLDivElement | null>
-  /** `:joy` emoji completions — inserts the emoji character, never a chip. */
   emoji?: CompletionSource
+  /** `#session` references — inserts the session title, modifier-click jumps. */
+  hash?: CompletionSource
+  /** Side door for the `#` modifier-click jump: strip the token, then open the
+   *  referenced session. The trigger engine stays router-free; the composer
+   *  owns the navigation. */
+  onOpenSession?: (sessionId: string) => void
   /** Bank the pre-commit state so a popover pick is a single undo step. */
   recordUndoPoint?: () => void
   requestMainFocus: () => void
@@ -104,19 +110,22 @@ interface UseComposerTriggerOptions {
 }
 
 /**
- * Trigger / completion engine: `@`/`/` detection against the live editor, the
- * adapter-driven item list, the open popover's selection state, and the chip
- * insertion that commits a pick back into the contentEditable. Owns the trigger
- * state; ChatBar threads its editor refs in and consumes the returned API from
- * the input/keydown/keyup paths + the popover render. `triggerKeyConsumedRef` is
- * exposed so keydown can mark a navigation/control key as handled and the
- * subsequent keyup skips its refresh.
+ * Trigger / completion engine: `@`/`/`/`#`/`$` detection against the live
+ * editor, the adapter-driven item list, the open popover's selection state, and
+ * the chip insertion that commits a pick back into the contentEditable. Owns
+ * the trigger state; ChatBar threads its editor refs in and consumes the
+ * returned API from the input/keydown/keyup paths + the popover render.
+ * `triggerKeyConsumedRef` is exposed so keydown can mark a navigation/control
+ * key as handled and the subsequent keyup skips its refresh.
  */
 export function useComposerTrigger({
   at,
   draftRef,
+  dollar,
   editorRef,
   emoji,
+  hash,
+  onOpenSession,
   recordUndoPoint,
   requestMainFocus,
   setComposerText,
@@ -151,14 +160,20 @@ export function useComposerTrigger({
       return
     }
 
-    // Fast-bail: if neither `@` nor `/` appears in the current draft, there's
+    // Fast-bail: if no trigger char appears in the current draft, there's
     // nothing for `detectTrigger` to match. Use `textContent` (cheap browser-
     // native walk) for the precondition check rather than `composerPlainText`
     // (recursive child walk with chip-aware logic). Only when a trigger char
     // is present do we pay the cost of the full walk + DOM range work.
     const rawText = editor.textContent ?? ''
 
-    if (!rawText.includes('@') && !rawText.includes('/') && !rawText.includes(':')) {
+    if (
+      !rawText.includes('@') &&
+      !rawText.includes('/') &&
+      !rawText.includes(':') &&
+      !rawText.includes('#') &&
+      !rawText.includes('$')
+    ) {
       if (trigger) {
         setTrigger(null)
         resetTriggerActive()
@@ -199,9 +214,13 @@ export function useComposerTrigger({
       ? at.adapter
       : trigger?.kind === '/'
         ? slash.adapter
-        : trigger?.kind === ':'
-          ? (emoji?.adapter ?? null)
-          : null
+        : trigger?.kind === '#'
+          ? (hash?.adapter ?? null)
+          : trigger?.kind === '$'
+            ? (dollar?.adapter ?? null)
+            : trigger?.kind === ':'
+              ? (emoji?.adapter ?? null)
+              : null
 
   useEffect(() => {
     if (!trigger || !triggerAdapter?.search) {
@@ -224,9 +243,13 @@ export function useComposerTrigger({
       ? at.loading
       : trigger?.kind === '/'
         ? slash.loading
-        : trigger?.kind === ':'
-          ? (emoji?.loading ?? false)
-          : false
+        : trigger?.kind === '#'
+          ? (hash?.loading ?? false)
+          : trigger?.kind === '$'
+            ? (dollar?.loading ?? false)
+            : trigger?.kind === ':'
+              ? (emoji?.loading ?? false)
+              : false
 
   // Suppress the "No matches" empty state once a slash command is past its name:
   // a no-arg command has nothing to offer, and a fully-typed arg commits on
@@ -291,7 +314,7 @@ export function useComposerTrigger({
     return true
   }
 
-  const replaceTriggerWithChip = (item: Unstable_TriggerItem, options?: { descend?: boolean }) => {
+  const replaceTriggerWithChip = (item: Unstable_TriggerItem, options?: { descend?: boolean; jump?: boolean }) => {
     const editor = editorRef.current
 
     if (!editor || !trigger) {
@@ -303,6 +326,25 @@ export function useComposerTrigger({
     recordUndoPoint?.()
 
     const rebuildAround = (insert: DocumentFragment | string) => rebuildAroundCaret(editor, trigger.tokenLength, insert)
+
+    // A `#` pick with ⌘/Ctrl held jumps to the referenced session instead of
+    // inserting its title. Same shape as the action branch below: strip the
+    // typed token, fire the side effect, close — the draft keeps whatever
+    // prose surrounded the reference.
+    const jumpSessionId = (item.metadata as { sessionId?: unknown } | undefined)?.sessionId
+
+    if (trigger.kind === '#' && options?.jump && typeof jumpSessionId === 'string' && jumpSessionId && onOpenSession) {
+      if (!replaceBeforeCaret(editor, trigger.tokenLength, document.createDocumentFragment())) {
+        rebuildAround('')
+      }
+
+      draftRef.current = composerPlainText(editor)
+      setComposerText(draftRef.current)
+      closeTrigger()
+      onOpenSession(jumpSessionId)
+
+      return
+    }
 
     // Action items (e.g. "Browse all sessions…") run a side effect instead of
     // inserting a chip: strip the typed trigger token, then fire the action.

@@ -1,8 +1,10 @@
 import { ComposerPrimitive } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
 import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from 'react-router'
 
 import { useTourMarker } from '@/app/chat/tour-marker'
+import { openSession } from '@/app/open-session'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { composerFill, composerFloatingStrip, composerSurfaceGlass } from '@/components/chat/composer-dock'
 import { Button } from '@/components/ui/button'
@@ -43,6 +45,8 @@ import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-aff
 import { markActiveComposer, onComposerAttachImagesRequest } from './focus'
 import { HelpHint } from './help-hint'
 import { useAtCompletions } from './hooks/use-at-completions'
+import { useDollarCompletions } from './hooks/use-dollar-completions'
+import { useHashCompletions } from './hooks/use-hash-completions'
 import { useComposerBranch } from './hooks/use-composer-branch'
 import { useComposerDraft } from './hooks/use-composer-draft'
 import { useComposerDrop } from './hooks/use-composer-drop'
@@ -213,6 +217,8 @@ export function ChatBar({
 
   const { availableThemes, themeName } = useTheme()
   const at = useAtCompletions({ gateway: gateway ?? null, sessionId: sessionId ?? null, cwd: cwd ?? null })
+  const dollar = useDollarCompletions({ enabled: Boolean(gateway) })
+  const hash = useHashCompletions({ enabled: true })
   const slash = useSlashCompletions({ activeSkin: themeName, gateway: gateway ?? null, skinThemes: availableThemes })
   const emoji = useEmojiCompletions()
 
@@ -390,6 +396,15 @@ export function ChatBar({
   // conversation change.
   const placeholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
 
+  // The `#` rows' ⌘/Ctrl-click jump target. 'stack' never steals main from an
+  // active chat; an already-open tile is fronted instead (open-session.ts owns
+  // the intent table).
+  const navigate = useNavigate()
+  const openDraftSessionJumper = useCallback(
+    (jumpSessionId: string) => openSession(jumpSessionId, navigate, 'stack'),
+    [navigate]
+  )
+
   // Trigger / completion engine: @// detection, the adapter-driven item list,
   // popover selection, and chip insertion. The keydown nav block below consumes
   // this API; keyup uses triggerKeyConsumedRef to skip its refresh.
@@ -409,7 +424,19 @@ export function ChatBar({
     triggerItems,
     triggerKeyConsumedRef,
     triggerLoading
-  } = useComposerTrigger({ at, draftRef, editorRef, emoji, recordUndoPoint, requestMainFocus, setComposerText, slash })
+  } = useComposerTrigger({
+    at,
+    draftRef,
+    dollar,
+    editorRef,
+    emoji,
+    hash,
+    onOpenSession: openDraftSessionJumper,
+    recordUndoPoint,
+    requestMainFocus,
+    setComposerText,
+    slash
+  })
 
   // Pull the live contentEditable text into draftRef + the AUI composer state
   // (which drives `hasComposerPayload` → the send button). Shared by the input
@@ -673,6 +700,17 @@ export function ChatBar({
     // keypress. Swallow it; the refresh lands with the items.
     if (trigger && triggerLoading && triggerItems.length === 0 && event.key === 'Tab') {
       event.preventDefault()
+      triggerKeyConsumedRef.current = true
+
+      return
+    }
+
+    // Shift+Tab belongs to the global approval-mode cycle (shared keybind
+    // layer) — the trigger popover owns bare Tab only. The global handler
+    // runs on window capture and has already claimed this keypress; without
+    // this guard the branches below would ALSO treat the shifted chord as a
+    // Tab descend/accept and double-fire from one key.
+    if (trigger && event.shiftKey && event.key === 'Tab') {
       triggerKeyConsumedRef.current = true
 
       return
@@ -1257,7 +1295,13 @@ export function ChatBar({
                 kind={trigger.kind}
                 loading={triggerLoading}
                 onHover={setTriggerActive}
-                onPick={replaceTriggerWithChip}
+                onPick={(item, event) =>
+                  replaceTriggerWithChip(item, {
+                    // ⌘/Ctrl-click on a `#` row jumps to that session instead
+                    // of inserting its title (the engine strips the token).
+                    jump: trigger.kind === '#' && (event.metaKey || event.ctrlKey)
+                  })
+                }
                 scope={trigger.scope}
               />
             )}

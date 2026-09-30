@@ -1,5 +1,5 @@
 import type { Unstable_TriggerItem } from '@assistant-ui/core'
-import { Fragment, useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
 
 import { referenceKind, referenceStyle } from '@/components/assistant-ui/reference-kinds'
 import { Codicon } from '@/components/ui/codicon'
@@ -51,13 +51,18 @@ const ROW_CLASS = [
 const GROUP_HEADER_CLASS =
   'select-none px-2 pb-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)'
 
+/** The trigger kinds the drawer serves. */
+export type TriggerKind = '@' | '/' | ':' | '#' | '$'
+
 interface ComposerTriggerPopoverProps {
   activeIndex: number
   items: readonly Unstable_TriggerItem[]
-  kind: '@' | '/' | ':'
+  kind: TriggerKind
   loading: boolean
   onHover: (index: number) => void
-  onPick: (item: Unstable_TriggerItem) => void
+  /** The click event rides along so a `#` pick can read modifiers
+   *  (⌘/Ctrl-click jumps to the referenced session instead of inserting). */
+  onPick: (item: Unstable_TriggerItem, event: ReactMouseEvent<HTMLButtonElement>) => void
   placement?: 'bottom' | 'top'
   /** The `@kind:` browse the list is filtered to, when there is one. Rendered
    *  as a header so the scope reads as the mode it is — the raw `@folder:` in
@@ -202,7 +207,7 @@ export function ComposerTriggerPopover({
               <button
                 className={ROW_CLASS}
                 data-highlighted={active ? '' : undefined}
-                onClick={() => onPick(item)}
+                onClick={event => onPick(item, event)}
                 onMouseEnter={() => {
                   // React bails out when hovering the already-active row. Do
                   // not leave a marker behind for a later items refresh.

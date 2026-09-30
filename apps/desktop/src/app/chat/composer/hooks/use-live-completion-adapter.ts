@@ -15,6 +15,9 @@ export interface CompletionEntry {
   /** Optional completion-action id. When set, picking the item runs that action
    *  (e.g. opening an overlay) instead of inserting a chip + waiting for submit. */
   action?: string
+  /** Out-of-band session id for `#` rows — the modifier-click jump target.
+   *  Never serialized into the composer text. */
+  sessionId?: string
 }
 
 export interface CompletionPayload {
