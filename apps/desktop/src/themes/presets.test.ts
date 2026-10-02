@@ -11,7 +11,8 @@ import {
   FULILIAN_SANS,
   githubTheme,
   nousAltTheme,
-  nousTheme
+  nousTheme,
+  workbenchTheme
 } from './presets'
 
 // #40364: none of the UI text/mono fonts carry emoji glyphs, so every font
@@ -46,10 +47,11 @@ describe('theme typography emoji fallback (#40364)', () => {
 
 // The pre-GitHub Nous palette stays available as nous-alt, and `nous` itself
 // is still a registered skin — since step 13 (U2) it stopped holding the
-// default (which went to `apricot`, then on to `github`'s white).
+// default, which moved apricot → github's white → `fulilian-workbench`
+// (step 15 · T1).
 describe('nous-alt is the retired Nous, and no longer the default skin', () => {
-  it('is registered under its own name while github holds the default', () => {
-    expect(DEFAULT_SKIN_NAME).toBe('github')
+  it('is registered under its own name while another skin holds the default', () => {
+    expect(DEFAULT_SKIN_NAME).not.toBe('nous-alt')
     expect(BUILTIN_THEMES['nous-alt']).toBe(nousAltTheme)
     expect(BUILTIN_THEMES.nous).not.toBe(nousAltTheme)
     expect(nousAltTheme.darkColors?.background).toBe('#0D2F86')
@@ -60,29 +62,61 @@ describe('nous-alt is the retired Nous, and no longer the default skin', () => {
 // DEFAULT_SKIN_NAME has to name a registered theme: it is the fallback for
 // retired persisted skins, and user-themes.test.ts asserts
 // resolveTheme(DEFAULT_SKIN_NAME) === BUILTIN_THEMES[DEFAULT_SKIN_NAME].
-describe('github is the shipped default skin', () => {
-  it('is registered under DEFAULT_SKIN_NAME', () => {
-    expect(DEFAULT_SKIN_NAME).toBe('github')
-    expect(BUILTIN_THEMES[DEFAULT_SKIN_NAME]).toBe(githubTheme)
+//
+// step 15 · T1 flipped the default off `github` onto the first-party
+// `fulilian-workbench`. The palette assertions below are the frozen contract
+// for that skin (DESIGN_PROPOSAL §3.1 / §3.2), written out rather than read
+// back so a silent palette edit fails here instead of shipping.
+describe('fulilian-workbench is the shipped default skin', () => {
+  it('is registered under DEFAULT_SKIN_NAME and leads the gallery order', () => {
+    expect(DEFAULT_SKIN_NAME).toBe('fulilian-workbench')
+    expect(BUILTIN_THEMES[DEFAULT_SKIN_NAME]).toBe(workbenchTheme)
+    expect(BUILTIN_THEMES['fulilian-workbench']?.label).toBe('Fulilian Workbench')
+    expect(BUILTIN_THEME_LIST[0]).toBe(workbenchTheme)
+  })
+
+  it('paints the Workbench Light surfaces', () => {
+    expect(workbenchTheme.colors.background).toBe('#FFFFFF')
+    expect(workbenchTheme.colors.sidebarBackground).toBe('#F7F7F8')
+    expect(workbenchTheme.colors.foreground).toBe('#1F2328')
+  })
+
+  it('ships the Graphite dark plus its own terminal palettes', () => {
+    expect(workbenchTheme.darkColors?.background).toBe('#0D1117')
+    expect(workbenchTheme.terminal?.foreground).toBe('#1F2328')
+    expect(workbenchTheme.darkTerminal?.foreground).toBe('#E6EAEE')
+  })
+
+  // The four optional slots added in step 15 · T1. Asserting them here is what
+  // gives the "legacy skins fall back to the stylesheet constant" contract
+  // teeth — the default skin has to actually declare them.
+  it('declares the four optional semantic slots in both appearances', () => {
+    const light = workbenchTheme.colors
+    const dark = workbenchTheme.darkColors
+
+    expect(light.accentBright).toBe('#EA620E')
+    expect(light.info).toBe('#0969DA')
+    expect(light.success).toBe('#1A7F37')
+    expect(light.warning).toBe('#9A6700')
+    expect(dark?.accentBright).toBe('#F2760F')
+    expect(dark?.info).toBe('#4493F8')
+    expect(dark?.success).toBe('#3FB950')
+    expect(dark?.warning).toBe('#D29922')
+  })
+
+  // Flipping the default must not retire github — it stays selectable on its
+  // own terms.
+  it('leaves github registered as a selectable skin', () => {
+    expect(BUILTIN_THEMES.github).toBe(githubTheme)
     expect(BUILTIN_THEMES.github?.label).toBe('GitHub')
-  })
-
-  it('paints white in light mode', () => {
-    expect(BUILTIN_THEMES.github.colors.background).toBe('#ffffff')
-    expect(BUILTIN_THEMES.github.colors.sidebarBackground).toBe('#f6f8fa')
-  })
-
-  it('ships both appearances plus its own terminal palettes', () => {
-    expect(BUILTIN_THEMES.github.darkColors?.background).toBe('#0d1117')
-    expect(BUILTIN_THEMES.github.terminal?.foreground).toBe('#1f2328')
-    expect(BUILTIN_THEMES.github.darkTerminal?.foreground).toBe('#e6edf3')
   })
 
   // §5.3: apricot deliberately declares no typography. context.tsx merges
   // nousTheme.typography as a middle layer, so a third copy of the chain here
-  // would be a drift risk with no upside.
+  // would be a drift risk with no upside. Workbench follows the same rule.
   it('declares no typography override, inheriting the merged chain', () => {
     expect(BUILTIN_THEMES.apricot.typography).toBeUndefined()
+    expect(BUILTIN_THEMES['fulilian-workbench'].typography).toBeUndefined()
   })
 
   it('carries the Fulilian chain in both required places, from one constant', () => {

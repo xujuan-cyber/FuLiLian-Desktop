@@ -234,12 +234,15 @@ function renderedModeFor(colors: DesktopThemeColors, mode: 'light' | 'dark'): 'l
 // Per-mode mix knobs. Light/dark fallbacks live in styles.css `:root` /
 // `:root.dark`; setting them inline keeps active-skin overrides surviving
 // the boot-time paint.
-// styles.css --theme-neutral-chrome — keep in sync. Cool neutrals (the default
-// skin moved to github's white; was apricot's warm #EAE0CE family): this value
-// lands on the *native* title bar via chromeBackground() and
-// setTitleBarTheme(), so a warm cream here shows up as a toasty frame around a
-// white page. Must match the styles.css --theme-neutral-* family.
-const NEUTRAL_CHROME = { light: '#F6F8FA', dark: '#221D18' } as const
+// styles.css --theme-neutral-chrome — keep in sync. Retuned to the
+// `fulilian-workbench` default skin (step 15 · T1): the light endpoint is now
+// pure white so the ZCode canvas lands on #FFFFFF, and the dark endpoint is
+// Graphite's panel so the frame stays cool instead of apricot's warm #221D18.
+// This value lands on the *native* title bar via chromeBackground() and
+// setTitleBarTheme(), so any drift from styles.css shows up as a differently
+// tinted frame around the page. Must match the styles.css --theme-neutral-*
+// family.
+const NEUTRAL_CHROME = { light: '#FFFFFF', dark: '#10151C' } as const
 
 // The one foreground --dt-primary-solid is built to carry. Fixed rather than
 // measured: the surface is derived to suit IT, not the other way round.

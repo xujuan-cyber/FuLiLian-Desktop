@@ -102,6 +102,65 @@ for call-site shadow or border inventions.
 Never hardcode `border-gray-*`, `bg-white`, `text-black`, etc. The white tile in
 `BrandMark` is the one sanctioned literal (the mark needs a fixed backdrop).
 
+## Workbench palette & mode colours (step 15 · T1)
+
+`fulilian-workbench` is the shipped default skin — light "Workbench Light" and
+dark "石墨 Graphite". It is defined in `src/themes/presets.ts` and registered
+first in `BUILTIN_THEMES`. Its first-frame fallbacks live in three places that
+must all move together with `DEFAULT_SKIN_NAME`, or the app flashes the previous
+skin on boot: the `:root` / `:root.dark` blocks in `styles.css`, and the
+pre-paint script in `index.html`.
+
+Tokens added by T1. Each is **optional** on `DesktopThemeColors`, so a skin that
+declares nothing (all twelve legacy skins) falls back to the `styles.css`
+constant:
+
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `--color-accent-bright` | `#EA620E` | `#F2760F` | signal orange — see the whitelist below |
+| `--color-info` | `#0969DA` | `#4493F8` | forensics marker, links, running status dot |
+| `--color-success` | `#1A7F37` | `#3FB950` | validation passed, correct flag, programming marker |
+| `--color-warning` | `#9A6700` | `#D29922` | needs-input status dot, expiring countdown |
+| `--dt-shadow-tint` | `20, 24, 30` | same | cool-grey base for every `--shadow-*` rung |
+| `--radius-input` / `--radius-overlay` | `calc(var(--radius-scalar) * 1rem)` | same | input card / composer; overlays and dialogs |
+| `shadow-signature` | — | — | the one floating elevation: home input card, overlays, dialogs, settings right-hand card |
+
+`shadow-signature` is deliberately narrow. List rows, tool cards and the message
+stream stay on flat hairlines (principle 1) — do not reach for it to "lift" a
+row.
+
+### Orange whitelist
+
+`accentBright` is a signal, not a decoration. It may appear in exactly **four**
+places:
+
+1. the 「完全访问」 permission badge,
+2. the CTF mode marker,
+3. the automation (`/cron`) icon,
+4. a critical count — a countdown or a needs-attention number.
+
+At most **three** may be visible on one screen. Never use it as a background
+fill, as a primary button, or as body text.
+
+### Mode colours
+
+The three work modes are marked by colour, and only at two sizes: a **6px**
+status dot and a **10.5px** badge. Never a large colour block.
+
+| Mode | Colour | Token |
+| --- | --- | --- |
+| 取证 Case | blue | `info` |
+| CTF Challenge | orange | `accentBright` |
+| 编程 Project | green | `success` |
+
+### Status-dot breathing
+
+The needs-input state is the app's only looping micro-animation (opacity
+0.6 → 1, 1.6s). Its keyframes live in `styles.css` as `.status-dot-breathe` and
+are registered in the `data-renderer-animations-paused` list plus a
+`prefers-reduced-motion` fallback. Any new looping animation has to be
+registered the same way (principle 3).
+
 ## Typography tokens
 
 Two per-profile typography tiers ride on top of the palette, written inline on

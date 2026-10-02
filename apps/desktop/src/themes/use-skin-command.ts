@@ -3,15 +3,17 @@ import { useCallback } from 'react'
 import { useTheme } from './context'
 
 // Retired skin names land on the canonical Nous skin so old muscle memory works.
-// `default` and `fulilian` now resolve to the shipped default skin (step 13 ·
-// U2 moved the default to apricot; a later pass moved it to github's white) —
-// `gold` / `nous-light` stay pinned to `nous`, since they name that skin rather
-// than the default one.
+// `default` and `fulilian` name the SHIPPED DEFAULT, so they have to follow
+// DEFAULT_SKIN_NAME — step 13 · U2 moved it to apricot, a later pass moved it to
+// github's white, and step 15 · T1 moved it to `fulilian-workbench`. Keep these
+// two in step with presets.ts or `/skin default` quietly switches to a skin
+// that is no longer the default. `gold` / `nous-light` stay pinned to `nous`,
+// since they name that skin rather than the default one.
 const ALIASES: Record<string, string> = {
   ares: 'ember',
-  default: 'github',
+  default: 'fulilian-workbench',
   gold: 'nous',
-  fulilian: 'github',
+  fulilian: 'fulilian-workbench',
   'nous-light': 'nous'
 }
 

@@ -990,7 +990,148 @@ export const apricotTheme: DesktopTheme = {
   }
 }
 
+/**
+ * Fulilian Workbench — the first-party default skin (step 15 · T1).
+ *
+ * ZCode-aligned: a neutral grey-white light ("Workbench Light") and a cool
+ * graphite dark ("石墨 Graphite"), flat and restrained, with a deep-ink
+ * primary/send key and a small-area signal orange (`accentBright`).
+ *
+ * Hand-authored rather than converted from a Marketplace extension — like
+ * `nous-alt` and `apricot` this is a first-party palette, so it is allowed to
+ * write its hexes directly (DESIGN_PROPOSAL §3). Do not re-derive it from a VS
+ * Code theme.
+ *
+ * No `typography` on purpose. `context.tsx` merges `nousTheme.typography` as a
+ * *middle* layer, so a third copy of the font chain here would be a drift risk
+ * with no upside — Workbench inherits the merged Fulilian chain unchanged.
+ *
+ * The four optional slots (`accentBright` / `info` / `success` / `warning`) are
+ * new in step 15 · T1 and are deliberately optional: the twelve legacy skins do
+ * not declare them, so consumers must still fall back to the stylesheet
+ * constants in `styles.css`.
+ *
+ * The ANSI palettes are Workbench's own — a cool terminal against a cool page.
+ * Every slot clears 3.0:1 against the theme background (terminal text is
+ * large-scale).
+ */
+export const workbenchTheme: DesktopTheme = {
+  name: 'fulilian-workbench',
+  label: 'Fulilian Workbench',
+  description: 'Neutral workbench light and graphite dark',
+  colors: {
+    background: '#FFFFFF',
+    foreground: '#1F2328',
+    card: '#FFFFFF',
+    cardForeground: '#1F2328',
+    muted: '#F2F3F5',
+    mutedForeground: '#59636E',
+    popover: '#FFFFFF',
+    popoverForeground: '#1F2328',
+    primary: '#1F2328',
+    primaryForeground: '#FFFFFF',
+    secondary: '#F2F3F5',
+    secondaryForeground: '#1F2328',
+    accent: '#FDF0E5',
+    accentForeground: '#1F2328',
+    border: '#E7E9EC',
+    input: '#F2F3F5',
+    ring: '#1F2328',
+    midground: '#1F2328',
+    midgroundForeground: '#FFFFFF',
+    composerRing: '#D8DCE1',
+    destructive: '#D1242F',
+    destructiveForeground: '#FFFFFF',
+    sidebarBackground: '#F7F7F8',
+    sidebarBorder: '#E7E9EC',
+    userBubble: '#FDF0E5',
+    userBubbleBorder: '#E7E9EC',
+    accentBright: '#EA620E',
+    info: '#0969DA',
+    success: '#1A7F37',
+    warning: '#9A6700'
+  },
+  darkColors: {
+    background: '#0D1117',
+    foreground: '#E6EAEE',
+    card: '#161C24',
+    cardForeground: '#E6EAEE',
+    muted: '#0F141A',
+    mutedForeground: '#99A3AD',
+    popover: '#161C24',
+    popoverForeground: '#E6EAEE',
+    primary: '#E6EAEE',
+    primaryForeground: '#0D1117',
+    secondary: '#1A222C',
+    secondaryForeground: '#E6EAEE',
+    accent: 'rgba(242, 118, 15, 0.14)',
+    accentForeground: '#E6EAEE',
+    border: '#222B34',
+    input: '#0F141A',
+    ring: '#E6EAEE',
+    midground: '#E6EAEE',
+    midgroundForeground: '#0D1117',
+    composerRing: '#2E3843',
+    destructive: '#F85149',
+    destructiveForeground: '#FFFFFF',
+    sidebarBackground: '#10151C',
+    sidebarBorder: '#222B34',
+    userBubble: 'rgba(242, 118, 15, 0.14)',
+    userBubbleBorder: '#222B34',
+    accentBright: '#F2760F',
+    info: '#4493F8',
+    success: '#3FB950',
+    warning: '#D29922'
+  },
+  terminal: {
+    foreground: '#1F2328',
+    cursor: '#1F2328',
+    selectionBackground: '#D8DCE1',
+    black: '#24292F',
+    red: '#CF222E',
+    green: '#1A7F37',
+    yellow: '#9A6700',
+    blue: '#0969DA',
+    magenta: '#8250DF',
+    cyan: '#1B7C83',
+    white: '#6E7781',
+    brightBlack: '#57606A',
+    brightRed: '#A40E26',
+    brightGreen: '#116329',
+    brightYellow: '#7A5200',
+    brightBlue: '#218BFF',
+    brightMagenta: '#A475F9',
+    brightCyan: '#3192AA',
+    brightWhite: '#8C959F'
+  },
+  darkTerminal: {
+    foreground: '#E6EAEE',
+    cursor: '#E6EAEE',
+    selectionBackground: '#2E3843',
+    black: '#484F58',
+    red: '#F85149',
+    green: '#3FB950',
+    yellow: '#D29922',
+    blue: '#4493F8',
+    magenta: '#BC8CFF',
+    cyan: '#39C5CF',
+    white: '#B1BAC4',
+    brightBlack: '#6E7681',
+    brightRed: '#FFA198',
+    brightGreen: '#56D364',
+    brightYellow: '#E3B341',
+    brightBlue: '#79C0FF',
+    brightMagenta: '#D2A8FF',
+    brightCyan: '#56D4DD',
+    brightWhite: '#FFFFFF'
+  }
+}
+
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
+  // The shipped default leads the list: `BUILTIN_THEME_LIST` is the order the
+  // settings gallery and `/skin` cycling read, and the skin the app ships with
+  // belongs at the top of it (step 15 · T1).
+  'fulilian-workbench': workbenchTheme,
   apricot: apricotTheme,
   nous: nousTheme,
   github: githubTheme,
@@ -1008,4 +1149,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'github'
+export const DEFAULT_SKIN_NAME = 'fulilian-workbench'

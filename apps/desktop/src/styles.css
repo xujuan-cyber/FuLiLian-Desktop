@@ -44,6 +44,7 @@
     .pet-egg-shadow,
     .pet-wobble,
     .progress-slide,
+    .status-dot-breathe,
     .kanban-arc,
     .glyph-spinner__strip
   ),
@@ -173,6 +174,15 @@
   --color-midground: var(--dt-midground);
   --color-midground-foreground: var(--dt-midground-foreground);
 
+  /* step 15 · T1 semantic slots. They are OPTIONAL on `DesktopThemeColors`, so
+     each mapping carries its own fallback: a skin that declares nothing (all
+     twelve legacy skins) still resolves to a real colour instead of an invalid
+     `var()`. Values are the Workbench Light constants (DESIGN_PROPOSAL §3.1). */
+  --color-accent-bright: var(--dt-accent-bright, #EA620E);
+  --color-info: var(--dt-info, #0969DA);
+  --color-success: var(--dt-success, #1A7F37);
+  --color-warning: var(--dt-warning, #9A6700);
+
   --font-sans: var(--dt-font-sans);
   --font-mono: var(--dt-font-mono);
 
@@ -183,6 +193,11 @@
   --radius-md: calc(var(--radius-scalar) * 0.625rem);
   --radius-lg: calc(var(--radius-scalar) * 0.75rem);
   --radius-xl: calc(var(--radius-scalar) * 1rem);
+  /* step 15 · T1 — the input card / composer and the overlay / modal radius.
+     Deliberately the same formula as `--radius-xl` (DESIGN_PROPOSAL §3.4):
+     named rungs of the ladder, not a second scale. */
+  --radius-input: calc(var(--radius-scalar) * 1rem);
+  --radius-overlay: calc(var(--radius-scalar) * 1rem);
   --radius-2xl: calc(var(--radius-scalar) * 1.5rem);
   --radius-3xl: calc(var(--radius-scalar) * 2rem);
   --radius-4xl: calc(var(--radius-scalar) * 2.5rem);
@@ -196,56 +211,83 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
 
-  --shadow-xs: 0 0.0625rem 0.125rem color-mix(in srgb, #000 5%, transparent);
+  /* Shadows cast a cool-grey tint instead of pure black (step 15 · T1). The
+     `--dt-shadow-tint` triplet in `:root` is the single base for every rung, so
+     one knob re-tempers the whole ladder. It has to be wrapped in `rgb()`
+     because `color-mix()` needs a colour — a bare `20, 24, 30` would be
+     invalid, and an undefined variable would take the whole declaration with
+     it. */
+  --shadow-xs: 0 0.0625rem 0.125rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 5%, transparent);
   --shadow-sm:
     0 0 0 0.0625rem color-mix(in srgb, var(--dt-foreground) 6%, transparent),
-    0 0.125rem 0.5rem color-mix(in srgb, #000 4%, transparent);
+    0 0.125rem 0.5rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 4%, transparent);
   --shadow-md:
     0 0 0 0.0625rem color-mix(in srgb, var(--dt-foreground) 8%, transparent),
-    0 0.25rem 1rem color-mix(in srgb, #000 8%, transparent),
-    0 1rem 2rem -1.5rem color-mix(in srgb, #000 18%, transparent);
+    0 0.25rem 1rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 8%, transparent),
+    0 1rem 2rem -1.5rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 18%, transparent);
   /* Soft floating shadow for borderless modals/overlays. Single top light
      source: every layer is centered (x=0) and cast downward, with negative
      spread that grows with the blur so each layer is pulled horizontally inward
      — the shadow pools below the panel instead of bleeding out every side.
      Layered (contact → ambient) for a smooth, natural falloff. */
   --shadow-nous:
-    0 0.125rem 0.25rem -0.125rem color-mix(in srgb, #000 7%, transparent),
-    0 0.5rem 0.75rem -0.375rem color-mix(in srgb, #000 6%, transparent),
-    0 1.25rem 1.75rem -0.875rem color-mix(in srgb, #000 6%, transparent),
-    0 2.25rem 3rem -1.75rem color-mix(in srgb, #000 0%, transparent);
+    0 0.125rem 0.25rem -0.125rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 7%, transparent),
+    0 0.5rem 0.75rem -0.375rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 6%, transparent),
+    0 1.25rem 1.75rem -0.875rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 6%, transparent),
+    0 2.25rem 3rem -1.75rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 0%, transparent);
   /* Hairline border paired with --shadow-nous on borderless overlays.
      currentColor resolves per-element, so it adapts to text color/theme. */
   --stroke-nous: color-mix(in srgb, currentColor 3%, transparent);
   --shadow-lg:
     inset 0 0.0625rem 0 color-mix(in srgb, #fff 28%, transparent),
     0 0 0 0.0625rem color-mix(in srgb, var(--dt-foreground) 8%, transparent),
-    0 0.75rem 2rem color-mix(in srgb, #000 12%, transparent);
-  --shadow-composer: 0 0.0625rem 0.125rem color-mix(in srgb, #000 5%, transparent);
+    0 0.75rem 2rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 12%, transparent);
+  --shadow-composer: 0 0.0625rem 0.125rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 5%, transparent);
+  /* step 15 · T1 — the signature shadow (DESIGN_PROPOSAL §3.4): the one
+     elevation for things that genuinely float above the page — the home input
+     card, overlays, dialogs, and the settings right-hand card. Deliberately NOT
+     applied to list rows, tool cards or the message stream, which stay on flat
+     hairlines (DESIGN.md principle 1). Used as `shadow-signature`. */
+  --shadow-signature:
+    0 0.0625rem 0.125rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 5%, transparent),
+    0 0.375rem 1.25rem color-mix(in srgb, rgb(var(--dt-shadow-tint)) 5%, transparent);
 }
 
 @layer base {
   :root {
     color-scheme: light;
 
-    /* First-frame fallback for the DEFAULT skin (github light). applyTheme()
-       overwrites every one of these from the active theme once it runs; this
-       block only decides what the very first paint looks like. Cool neutrals —
-       was apricot's warm #FAF5EA family before the default moved to github. */
-    --theme-foreground: #1f2328;
-    --theme-primary: #196d31;
-    --theme-secondary: #dfebe2;
-    --theme-accent-soft: #e3ede6;
-    --theme-midground: #196d31;
-    --theme-warm: #196d31;
-    --theme-background-seed: #ffffff;
-    --theme-sidebar-seed: #f6f8fa;
-    --theme-card-seed: #f6f8fa;
-    --theme-elevated-seed: #ffffff;
-    --theme-bubble-seed: #dbe7e2;
-    --theme-neutral-chrome: #F6F8FA;
-    --theme-neutral-sidebar: #EDF0F3;
-    --theme-neutral-card: #FBFCFD;
+    /* First-frame fallback for the DEFAULT skin — `fulilian-workbench` light
+       since step 15 · T1 (github's white before the default flipped).
+       applyTheme() overwrites every one of these from the active theme once it
+       runs; this block only decides what the very first paint looks like, so it
+       has to track DEFAULT_SKIN_NAME in the SAME commit or the app flashes the
+       previous skin's palette (step 15 hard acceptance). */
+    --theme-foreground: #1F2328;
+    --theme-primary: #1F2328;
+    --theme-secondary: #F2F3F5;
+    --theme-accent-soft: #FDF0E5;
+    --theme-midground: #1F2328;
+    --theme-warm: #1F2328;
+    --theme-background-seed: #FFFFFF;
+    --theme-sidebar-seed: #F7F7F8;
+    --theme-card-seed: #FFFFFF;
+    --theme-elevated-seed: #FFFFFF;
+    --theme-bubble-seed: #FDF0E5;
+    /* The neutral endpoints below are skin-independent AND are not written by
+       applyTheme(), so they hold the same value on both sides of the hydration
+       boundary — they cannot flash. Retuned from github's greys to the
+       `fulilian-workbench` surfaces (step 15 · T1) because they are the OTHER
+       endpoint of every surface mix: `--ui-bg-editor` is
+       `color-mix(card-seed var(--theme-mix-card), neutral-card)`, so a card can
+       only land on its skin's declared value when this endpoint agrees.
+       `--theme-neutral-chrome` must stay in step with `NEUTRAL_CHROME` in
+       themes/context.tsx (it owns the native titlebar colour).
+       NOTE: global retune — the twelve legacy skins' dark cards and popovers
+       move off apricot's warm endpoint onto this cool one. */
+    --theme-neutral-chrome: #FFFFFF;
+    --theme-neutral-sidebar: #F2F3F5;
+    --theme-neutral-card: #FFFFFF;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
@@ -491,14 +533,32 @@
     --dt-scrollbar-thumb: oklch(from var(--dt-midground) l 0 h);
     --dt-composer-ring: var(--ui-base);
     /* First-frame fallback only (pre-hydration) — the live value is written by
-       applyTheme() from the active theme. Aligned to apricot so boot doesn't
-       flash the old cool crimson, matching the --dt-primary-solid pair above. */
-    --dt-destructive: #B3324B;
-    --dt-destructive-foreground: #FFFCF5;
+       applyTheme() from the active theme, so it has to track the DEFAULT skin's
+       danger or boot flashes the previous skin's red. Retuned to
+       `fulilian-workbench` light in step 15 · T1 (was apricot's #B3324B),
+       matching the --dt-primary-solid pair above. */
+    --dt-destructive: #D1242F;
+    --dt-destructive-foreground: #FFFFFF;
     --dt-sidebar-bg: var(--ui-bg-sidebar);
     --dt-sidebar-border: var(--ui-stroke-secondary);
     --dt-user-bubble: var(--ui-chat-bubble-background);
     --dt-user-bubble-border: var(--ui-stroke-tertiary);
+
+    /* step 15 · T1 — shadow base. Every `--shadow-*` rung in `@theme inline`
+       mixes from this triplet instead of pure black, so elevation reads as a
+       cool grey cast over the neutral surfaces rather than a sooty one. Light
+       and dark share the value; only the per-rung alphas move between
+       appearances. */
+    --dt-shadow-tint: 20, 24, 30;
+    /* step 15 · T1 — semantic slots. These are the FALLBACKS for skins that do
+       not declare `accentBright` / `info` / `success` / `warning` (all twelve
+       legacy skins). `applyTheme()` does not write them yet, so the `.dark`
+       block below carries the dark values and consumers reach them through the
+       `@theme inline` mappings (`--color-accent-bright` etc.). */
+    --dt-accent-bright: #EA620E;
+    --dt-info: #0969DA;
+    --dt-success: #1A7F37;
+    --dt-warning: #9A6700;
 
     --dt-font-sans:
       'Fulilian Sans', 'Sarasa Gothic SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC',
@@ -615,16 +675,30 @@
     --theme-mix-card: 38%;
     --theme-mix-elevated: 46%;
     --theme-mix-bubble: 46%;
-    --theme-neutral-chrome: #221D18;
-    --theme-neutral-sidebar: #1A1612;
-    --theme-neutral-card: #2A2420;
+    /* Same neutral endpoints as `:root`, in Graphite. See the note there for why
+       they are retuned globally rather than per skin; `--theme-neutral-chrome`
+       stays in step with `NEUTRAL_CHROME` in themes/context.tsx. */
+    --theme-neutral-chrome: #10151C;
+    --theme-neutral-sidebar: #0F141A;
+    --theme-neutral-card: #161C24;
 
     /* Dark never had a `--dt-destructive` of its own, so the cool light value
-       leaked into dark's first frame (3.50 against #1C1814). Pinned per
-       appearance like the light pair; the live value still comes from the
-       active theme via `applyTheme()`. */
-    --dt-destructive: #E4677F;
-    --dt-destructive-foreground: #241F1A;
+       leaked into dark's first frame (3.50 against the then-default #1C1814).
+       Pinned per appearance like the light pair; the live value still comes
+       from the active theme via `applyTheme()`. Retuned to the
+       `fulilian-workbench` Graphite danger when the default skin flipped
+       (step 15 · T1) — the pair has to describe whatever skin is default. */
+    --dt-destructive: #F85149;
+    --dt-destructive-foreground: #FFFFFF;
+
+    /* step 15 · T1 — dark values for the optional semantic slots. `applyTheme()`
+       does not write these yet, so this block is what makes the dark appearance
+       resolve correctly; the light pair lives in `:root`. `--dt-shadow-tint` is
+       shared — only the rung alphas differ between appearances. */
+    --dt-accent-bright: #F2760F;
+    --dt-info: #4493F8;
+    --dt-success: #3FB950;
+    --dt-warning: #D29922;
 
     /* Dark-only accent palette overrides. The full warm set is restated, not
        just the three the old cool palette happened to need — otherwise orange,
@@ -2649,6 +2723,37 @@ button[data-slot='aui_msg-reactions'] svg {
     left: 0;
     width: 100%;
     opacity: 0.4;
+  }
+}
+
+/* ── StatusDot — needs-input breathing (step 15 · T1, DESIGN_PROPOSAL §3.4) ──
+   The app's ONLY looping micro-animation: an amber dot that fades 0.6 → 1 while
+   a session is waiting on the user. The primitive
+   (`src/components/status-dot.tsx`, T2) applies `.status-dot-breathe`; the
+   motion lives here so that it is registered in the
+   `data-renderer-animations-paused` list above AND in the reduced-motion
+   fallback below — the contract for every looping animation
+   (DESIGN.md principle 3 / Motion). */
+.status-dot-breathe {
+  animation: status-dot-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes status-dot-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Settle fully opaque rather than parked at 0.6 — a dimmed dot would read as
+     a different state, and the amber colour is the signal. */
+  .status-dot-breathe {
+    animation: none;
+    opacity: 1;
   }
 }
 

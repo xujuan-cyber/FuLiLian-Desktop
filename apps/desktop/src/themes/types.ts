@@ -45,6 +45,24 @@ export interface DesktopThemeColors {
   sidebarBorder?: string
   userBubble?: string
   userBubbleBorder?: string
+  /**
+   * Step 15 · T1 — Workbench semantic slots. Optional on purpose: the twelve
+   * legacy skins omit them, so every consumer must fall back to the stylesheet
+   * constant (`--dt-accent-bright` / `--dt-info` / `--dt-success` /
+   * `--dt-warning` in `styles.css`). Adding a slot here changes nothing for an
+   * existing skin — the fallback already paints.
+   *
+   * `accentBright` is the ZCode-style signal orange. It is whitelisted to four
+   * placements and never a background fill or a primary button — see
+   * `DESIGN.md` §"Workbench palette & mode colours".
+   */
+  accentBright?: string
+  /** Forensics marker, links, running status dot. */
+  info?: string
+  /** Validation passed, correct flag, programming marker. */
+  success?: string
+  /** Needs-input status dot, expiring countdown. */
+  warning?: string
 }
 
 export interface DesktopThemeTypography {
