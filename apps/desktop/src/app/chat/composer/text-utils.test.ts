@@ -23,6 +23,17 @@ describe('detectTrigger', () => {
     expect(detectTrigger('hello there')).toBeNull()
   })
 
+  // step14 收尾 D-2: `$` only arms on a LETTER (a price like `$5` or `$100`
+  // must never open the skill popover), while `#` takes any non-space token.
+  it('does not treat `$` followed by a digit as a skill trigger', () => {
+    expect(detectTrigger('$5')).toBeNull()
+    expect(detectTrigger('$100')).toBeNull()
+  })
+
+  it('detects a hash query on any non-space token, digits included', () => {
+    expect(detectTrigger('#5')).toEqual({ kind: '#', query: '5', tokenLength: 2, value: '5' })
+  })
+
   it('keeps the slash trigger live while typing args', () => {
     expect(detectTrigger('/personality ')).toEqual({
       kind: '/',

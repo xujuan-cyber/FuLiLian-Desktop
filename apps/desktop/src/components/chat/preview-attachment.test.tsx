@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { atom } from 'nanostores'
 
@@ -69,12 +69,21 @@ describe('R9 inline preview in the transcript (click-to-expand)', () => {
     mocks.openPreview.mockReset()
   })
 
-  it('never auto-expands: a mounted card renders no preview pane (no-hijack)', () => {
+  it('never auto-expands: a mounted card renders no preview pane (no-hijack)', async () => {
     mocks.resolveTarget.mockResolvedValue({ kind: 'file', name: 'notes.md' })
 
     render(<PreviewAttachment target={fileTarget('notes.md')} />)
 
+    // Flush the microtask queue before judging: an async auto-expand (a mount
+    // effect resolving the target) lands after render, and a sync-only
+    // assertion cannot see it (step14 收尾 D-1 — both REV-14 mutations must
+    // turn this red now).
+    await act(async () => {})
+
     expect(screen.queryByTestId('local-file-preview')).toBeNull()
+    // The toggle owns the expansion state: an auto-opened card flips
+    // aria-expanded even when nothing has resolved into a pane yet.
+    expect(screen.getByRole('button', { name: 'Inline preview' }).getAttribute('aria-expanded')).toBe('false')
   })
 
   it('expands the shared rail renderer only on click (two consumers, one render path)', async () => {
