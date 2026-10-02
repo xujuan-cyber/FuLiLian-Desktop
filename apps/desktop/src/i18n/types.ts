@@ -2049,6 +2049,60 @@ export interface Translations {
       done: string
     }
     markAllRead: string
+    brandWordmark: string
+    newTask: string
+    searchCommandPalette: string
+    kind: {
+      all: string
+      forensics: string
+      ctf: string
+      project: string
+      forensicsEmpty: string
+      ctfEmpty: string
+    }
+    gateway: {
+      local: string
+      connected: string
+      connecting: string
+      offline: string
+      error: string
+    }
+    filterMenu: {
+      title: string
+      grouping: string
+      ordering: string
+      show: string
+      inboxStyle: string
+      filters: string
+      filterStatus: string
+      filterPullRequest: string
+      filterProfile: string
+      filterProject: string
+      archived: string
+      resetToDefaults: string
+      expandAll: string
+      collapseAll: string
+      date: string
+      project: string
+      status: string
+      profile: string
+      updated: string
+      created: string
+      tokens: string
+      cost: string
+      manual: string
+      preview: string
+      pr: string
+      open: string
+      draft: string
+      merged: string
+      closed: string
+      none: string
+      'needs-input': string
+      working: string
+      unread: string
+      idle: string
+    }
   }
 
   composer: {

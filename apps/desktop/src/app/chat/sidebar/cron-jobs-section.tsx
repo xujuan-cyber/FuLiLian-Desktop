@@ -8,6 +8,7 @@ import { Codicon } from '@/components/ui/codicon'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { SidebarGroup, SidebarGroupContent } from '@/components/ui/sidebar'
+import { StatusDot, type StatusDotState } from '@/components/status-dot'
 import { Tip } from '@/components/ui/tooltip'
 import { deleteCronJob, getCronJobRuns, pauseCronJob, resumeCronJob, type SessionInfo } from '@/fulilian'
 import { useI18n } from '@/i18n'
@@ -20,13 +21,27 @@ import { notify, notifyError } from '@/store/notifications'
 import { $selectedStoredSessionId } from '@/store/session'
 import type { CronJob } from '@/types/fulilian'
 
-import { jobState, jobTitle, STATE_DOT } from '../../cron/job-state'
+import { jobState, jobTitle } from '../../cron/job-state'
 import { SidebarPanelLabel } from '../../shell/sidebar-label'
 
 import { SidebarRowBody, SidebarRowLabel, SidebarRowLead, SidebarRowShell } from './chrome'
 import { SidebarLoadMoreRow } from './load-more-row'
 
 const INACTIVE_STATES = new Set(['completed', 'disabled', 'error', 'paused'])
+
+// Cron job state → StatusDot state (§3.5). The shared primitive owns the
+// visuals; this is only the vocabulary mapping. A scheduled job is authoritatively
+// alive but quiet (hollow ring); paused/disabled/completed ask nothing of you
+// (grey); a failure is red; an executing run is the running blue.
+const CRON_DOT_STATE: Record<string, StatusDotState> = {
+  completed: 'background',
+  disabled: 'background',
+  enabled: 'stalled',
+  error: 'failed',
+  paused: 'background',
+  running: 'running',
+  scheduled: 'stalled'
+}
 
 // Recent runs shown in the inline quick-peek — enough to glance at history
 // without turning the sidebar into the full Cron page.
@@ -356,14 +371,10 @@ function CronJobSidebarRow({
               onClick={onTogglePeek}
             >
               <SidebarRowLead>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'size-1 rounded-full',
-                    STATE_DOT[state] ?? 'bg-(--ui-text-quaternary)',
-                    state === 'running' && 'size-1.5 animate-pulse'
-                  )}
-                />
+                {/* The StatusDot primitive, not a page-local pip: cron jobs and
+                    sessions sit in the same list, so they paint from the same
+                    §3.5 vocabulary. */}
+                <StatusDot state={CRON_DOT_STATE[state] ?? 'background'} />
               </SidebarRowLead>
               <SidebarRowLabel className="group-hover/cron:text-foreground">{label}</SidebarRowLabel>
               <DisclosureCaret

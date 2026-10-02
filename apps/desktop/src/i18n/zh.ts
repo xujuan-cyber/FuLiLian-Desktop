@@ -2578,7 +2578,61 @@ export const zh: Translations = {
       working: '进行中',
       done: '已完成'
     },
-    markAllRead: '全部标记为已读'
+    markAllRead: '全部标记为已读',
+    brandWordmark: 'FuLilian',
+    newTask: '新建任务',
+    searchCommandPalette: '搜索（命令面板）',
+    kind: {
+      all: '全部',
+      forensics: '取证',
+      ctf: 'CTF',
+      project: '项目',
+      forensicsEmpty: '暂无取证案件',
+      ctfEmpty: '暂无 CTF 赛题'
+    },
+    gateway: {
+      local: '本地网关',
+      connected: '已连接',
+      connecting: '连接中…',
+      offline: '离线',
+      error: '连接错误'
+    },
+    filterMenu: {
+      title: '筛选',
+      grouping: '分组',
+      ordering: '排序',
+      show: '显示',
+      inboxStyle: '收件箱样式',
+      filters: '筛选',
+      filterStatus: '状态',
+      filterPullRequest: '拉取请求',
+      filterProfile: '配置档案',
+      filterProject: '项目',
+      archived: '已归档',
+      resetToDefaults: '重置为默认',
+      expandAll: '全部展开',
+      collapseAll: '全部折叠',
+      date: '更新时间',
+      project: '项目',
+      status: '状态',
+      profile: '配置档案',
+      updated: '更新时间',
+      created: '创建时间',
+      tokens: 'Token',
+      cost: '费用',
+      manual: '手动',
+      preview: '预览',
+      pr: 'PR',
+      open: '打开',
+      draft: '草稿',
+      merged: '已合并',
+      closed: '已关闭',
+      none: '无 PR',
+      'needs-input': '需输入',
+      working: '运行中',
+      unread: '未读',
+      idle: '空闲'
+    }
   },
 
   composer: {

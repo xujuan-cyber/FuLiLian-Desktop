@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
 
+import { STATUS_DOT_STATE_CLASS } from '@/components/status-dot'
 import { type Translations, useI18n } from '@/i18n'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'

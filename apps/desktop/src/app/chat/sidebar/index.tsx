@@ -6,12 +6,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
+import { BrandMark } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { KbdGroup } from '@/components/ui/kbd'
-import { SearchField } from '@/components/ui/search-field'
 import {
   Sidebar,
   SidebarContent,
@@ -23,11 +23,10 @@ import {
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
-import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/fulilian'
+import { type SessionInfo } from '@/fulilian'
 import { useI18n } from '@/i18n'
 import { comboTokens } from '@/lib/keybinds/combo'
 import { resolveProfileColor } from '@/lib/profile-color'
-import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
 import { $activeConnectionId } from '@/store/connections'
@@ -58,7 +57,6 @@ import {
   $sidebarWorkspaceParentOrderIds,
   filterVisibleProjects,
   pinSession,
-  SESSION_SEARCH_FOCUS_EVENT,
   setPinnedSessionOrder,
   setSidebarCronOpen,
   setSidebarPinsOpen,
@@ -109,6 +107,7 @@ import {
   refreshPullRequests,
   sessionPrKey
 } from '@/store/pull-requests'
+import { toggleCommandPalette } from '@/store/command-palette'
 import { openRouteTile } from '@/store/route-tiles'
 import {
   $cronSessions,
@@ -135,9 +134,7 @@ import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
 import {
   type AppView,
-  ARTIFACTS_ROUTE,
   CRON_ROUTE,
-  MESSAGING_ROUTE,
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
   SKILLS_ROUTE
@@ -145,7 +142,10 @@ import {
 import type { SidebarNavItem } from '../../types'
 
 import { SidebarCronJobsSection } from './cron-jobs-section'
-import { SidebarFilterMenu } from './filter-menu'
+import { SidebarKindGroups } from './container-groups'
+import { kindGroupsVisible, type ContainerKindFilter } from './container-kind'
+import { SidebarFilterMenu, SidebarKindFilterRow } from './filter-menu'
+import { SidebarGatewayStatusRow } from './gateway-status-row'
 import { SidebarLoadMoreRow } from './load-more-row'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
 import { filterSessionsByProfileScope } from './profile-scope'
@@ -186,13 +186,18 @@ const NON_SESSION_LOAD_STEP = 10
 // screen — has the connection to itself first.
 const PROJECT_TREE_WARM_MS = 2_000
 
+// The §4.3 wireframe flattens the old five-entry nav into a primary「新建任务」
+// button (rendered separately, below) plus two flat rows: 自动化 (/cron — its
+// icon is one of the four accentBright whitelist positions) and 工具箱
+// (/skills). Messaging/artifacts keep their routes (§4.3: 一级路由全部不动)
+// but their entries live in the command palette now, not the sidebar.
 const SIDEBAR_NAV: SidebarNavItem[] = [
   {
-    id: 'new-session',
+    id: 'cron',
     label: '',
-    icon: props => <Codicon name="robot" {...props} />,
-    action: 'new-session',
-    keybindActionId: 'session.new'
+    icon: props => <Codicon name="watch" {...props} />,
+    route: CRON_ROUTE,
+    keybindActionId: 'nav.cron'
   },
   {
     id: 'skills',
@@ -200,29 +205,18 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="symbol-misc" {...props} />,
     route: SKILLS_ROUTE,
     keybindActionId: 'nav.skills'
-  },
-  {
-    id: 'messaging',
-    label: '',
-    icon: props => <Codicon name="comment" {...props} />,
-    route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
-  },
-  {
-    id: 'artifacts',
-    label: '',
-    icon: props => <Codicon name="files" {...props} />,
-    route: ARTIFACTS_ROUTE,
-    keybindActionId: 'nav.artifacts'
-  },
-  {
-    id: 'cron',
-    label: '',
-    icon: props => <Codicon name="watch" {...props} />,
-    route: CRON_ROUTE,
-    keybindActionId: 'nav.cron'
   }
 ]
+
+// The primary「新建任务」button forwards this nav item, so the parent's
+// onNavigate contract (action: 'new-session') is unchanged.
+const NEW_SESSION_NAV_ITEM: SidebarNavItem = {
+  id: 'new-session',
+  label: '',
+  icon: props => <Codicon name="add" {...props} />,
+  action: 'new-session',
+  keybindActionId: 'session.new'
+}
 
 // Two modes via the `compact` height variant (styles.css):
 //   tall    → each section is shrink-0, capped, its own scroller; Sessions is flex-1.
@@ -255,10 +249,6 @@ const HEADER_ACTION_BTN =
 const HEADER_NAV_BTN =
   'text-(--ui-text-tertiary) opacity-70 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground hover:opacity-100 focus-visible:opacity-100'
 
-// FTS results cover sessions that aren't in the loaded page; synthesize a
-// minimal SessionInfo so they render in the same row component (resume works
-// by id; the snippet stands in for the preview).
-
 // The backend's FTS layer wraps matched terms in literal '>>>' / '<<<'
 // highlight markers (sqlite snippet() delimiters — see fulilian_state_search.py).
 // The sidebar renders the snippet as plain text, so the markers must be
@@ -266,29 +256,6 @@ const HEADER_NAV_BTN =
 // Exported for tests.
 export function stripFtsMarkers(snippet: string): string {
   return snippet.replaceAll('>>>', '').replaceAll('<<<', '')
-}
-
-function searchResultToSession(result: SessionSearchResult): SessionInfo {
-  const ts = result.session_started ?? Date.now() / 1000
-
-  return {
-    archived: false,
-    cwd: null,
-    ended_at: null,
-    id: result.session_id,
-    _lineage_root_id: result.lineage_root ?? null,
-    input_tokens: 0,
-    is_active: false,
-    last_active: ts,
-    message_count: 0,
-    model: result.model ?? null,
-    output_tokens: 0,
-    preview: stripFtsMarkers(result.snippet ?? '').trim() || null,
-    source: result.source ?? null,
-    started_at: ts,
-    title: null,
-    tool_call_count: 0
-  }
 }
 
 interface ChatSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -430,26 +397,17 @@ export function ChatSidebar({
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
-  const [searchQuery, setSearchQuery] = useState('')
-  const [serverMatches, setServerMatches] = useState<SessionSearchResult[]>([])
-  const [searchPending, setSearchPending] = useState(false)
+  // §4.3 kind chips (全部|取证|CTF|项目). View-local state on purpose: the
+  // kind metadata has no store this round (src/store/ is out of scope), and a
+  // filter over an empty data layer has nothing worth persisting.
+  const [kindFilter, setKindFilter] = useState<ContainerKindFilter>('all')
+  const kindVisible = kindGroupsVisible(kindFilter)
   const [newSessionKbdFlash, setNewSessionKbdFlash] = useState(false)
   const [messagingLoadMorePending, setMessagingLoadMorePending] = useState<Record<string, boolean>>({})
   const [recentsLoadMorePending, setRecentsLoadMorePending] = useState(false)
   const messagingOpenIds = useStore($sidebarMessagingOpenIds)
   // Per-platform count of rows currently revealed (starts at NON_SESSION_INITIAL_ROWS).
   const [messagingVisible, setMessagingVisible] = useState<Record<string, number>>({})
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const trimmedQuery = searchQuery.trim()
-
-  // Hotkey (session.focusSearch) → focus the field once it's mounted.
-  useEffect(() => {
-    const onFocus = () => searchInputRef.current?.focus({ preventScroll: true })
-
-    window.addEventListener(SESSION_SEARCH_FOCUS_EVENT, onFocus)
-
-    return () => window.removeEventListener(SESSION_SEARCH_FOCUS_EVENT, onFocus)
-  }, [])
 
   // Flash the ⌘N hint full-opacity (no transition) for the press, so hitting
   // the shortcut visibly pings its affordance in the sidebar.
@@ -614,67 +572,6 @@ export function ChatSidebar({
     (session: SessionInfo) => isPinnedSession(session) || (filtersNarrow && !sessionMatchesFilters(session)),
     [isPinnedSession, filtersNarrow, sessionMatchesFilters]
   )
-
-  // Full-text search across *all* sessions (not just the loaded page) so 699
-  // sessions stay findable. Debounced; loaded sessions are matched instantly
-  // client-side and merged ahead of the server hits.
-  useEffect(() => {
-    if (!trimmedQuery) {
-      setServerMatches([])
-      setSearchPending(false)
-
-      return
-    }
-
-    let cancelled = false
-
-    setSearchPending(true)
-
-    const id = window.setTimeout(() => {
-      void searchSessions(trimmedQuery)
-        .then(res => {
-          if (!cancelled) {
-            setServerMatches(res.results)
-          }
-        })
-        .catch(() => undefined)
-        .finally(() => {
-          if (!cancelled) {
-            setSearchPending(false)
-          }
-        })
-    }, 200)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(id)
-    }
-  }, [trimmedQuery])
-
-  const searchResults = useMemo(() => {
-    if (!trimmedQuery) {
-      return []
-    }
-
-    const out = new Map<string, SessionInfo>()
-
-    for (const s of sortedSessions) {
-      if (sessionMatchesSearch(s, trimmedQuery)) {
-        out.set(s.id, s)
-      }
-    }
-
-    for (const match of serverMatches) {
-      if (out.has(match.session_id)) {
-        continue
-      }
-
-      const loaded = sessionByAnyId.get(match.session_id)
-      out.set(match.session_id, loaded ?? searchResultToSession(match))
-    }
-
-    return [...out.values()]
-  }, [trimmedQuery, sortedSessions, serverMatches, sessionByAnyId])
 
   const unpinnedAgentSessions = useMemo(
     () => sortedSessions.filter(s => !isPinnedSession(s)),
@@ -1422,15 +1319,13 @@ export function ChatSidebar({
   // skins can target project mode (overview vs. entered), archived, or search
   // without relying on internal class names. `data-sessions-project` carries
   // the entered project's id for per-project targeting.
-  const sessionsMode: 'archived' | 'flat' | 'project' | 'projects' | 'search' = trimmedQuery
-    ? 'search'
-    : showArchived
-      ? 'archived'
-      : inProject
-        ? 'project'
-        : worktreeGroupingActive
-          ? 'projects'
-          : 'flat'
+  const sessionsMode: 'archived' | 'flat' | 'project' | 'projects' = showArchived
+    ? 'archived'
+    : inProject
+      ? 'project'
+      : worktreeGroupingActive
+        ? 'projects'
+        : 'flat'
 
   // Each reorderable list reports its OWN new id order; persisting is a direct,
   // typed write — no id-prefix sniffing to figure out which level moved.
@@ -1469,8 +1364,67 @@ export function ChatSidebar({
       data-tour="sessions-sidebar"
     >
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
-        <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
+        <SidebarGroup className="shrink-0 p-0 pb-2 pt-[var(--titlebar-height)]">
           <SidebarGroupContent>
+            {/* §4.3 brand row: mark + wordmark. The layout lives HERE so the
+                brand-mark component itself stays untouched (it is outside this
+                step's file set). The row keeps the titlebar's drag region —
+                the app drags by its brand, like every native window. */}
+            <div className="flex items-center gap-2 px-2 pb-1.5 pt-1.5">
+              <BrandMark className="size-5 rounded-[4px]" />
+              <span className="truncate text-[0.8125rem] font-semibold tracking-tight text-foreground">
+                {s.brandWordmark}
+              </span>
+            </div>
+            {/* [＋新建任务] [搜索]: one deep-ink primary and the command
+                palette (§4.3 — the palette carries the session deep-search the
+                old inline field used to own). */}
+            <div className="flex shrink-0 items-center gap-1 px-2 pb-1.5">
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <SidebarMenuButton
+                    aria-label={s.newTask}
+                    className="flex h-7 w-full justify-start gap-2 rounded-md border border-transparent bg-primary px-2 text-left text-[0.8125rem] font-medium text-primary-foreground transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-primary/90 hover:text-primary-foreground hover:transition-none"
+                    data-tip-region=""
+                    data-tour="sidebar-nav-new-session"
+                    onClick={() => {
+                      // A plain new session lands in whatever profile the live
+                      // gateway is on (= the active switcher context). null →
+                      // no swap. The switcher header is the single place to
+                      // change which profile that is.
+                      $newChatProfile.set(null)
+                      onNavigate(NEW_SESSION_NAV_ITEM)
+                    }}
+                    tooltip={<TipKeybindLabel actionId="session.new" text={s.newTask} />}
+                    type="button"
+                  >
+                    <Codicon className="size-4 shrink-0 text-primary-foreground/70" name="add" />
+                    <span className="min-w-0 truncate" data-tip-arrow-only="">
+                      {s.newTask}
+                    </span>
+                    <KbdGroup
+                      className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
+                      keys={newSessionKbd}
+                      size="sm"
+                    />
+                  </SidebarMenuButton>
+                </ContextMenuTrigger>
+                <ContextMenuContent aria-label={s.newTask}>
+                  <SplitSubmenu kit={CONTEXT_SPLIT_KIT} label={s.row.openInSplit} onSplit={onNewSessionSplit} />
+                </ContextMenuContent>
+              </ContextMenu>
+              <Tip label={s.searchCommandPalette}>
+                <Button
+                  aria-label={s.searchCommandPalette}
+                  className="size-7 shrink-0 text-(--ui-text-secondary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
+                  onClick={toggleCommandPalette}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Codicon name="search" size="0.875rem" />
+                </Button>
+              </Tip>
+            </div>
             <SidebarMenu className="gap-px">
               {[...SIDEBAR_NAV, ...contributedNav].map(item => {
                 const isInteractive = Boolean(item.action) || Boolean(item.route)
@@ -1482,8 +1436,6 @@ export function ChatSidebar({
                   (item.id === 'cron' && currentView === 'cron') ||
                   // Contributed rows light up at their own route.
                   (Boolean(item.route) && pathname === item.route)
-
-                const isNewSession = item.id === 'new-session'
 
                 const button = (
                   <SidebarMenuButton
@@ -1505,17 +1457,7 @@ export function ChatSidebar({
                     // A tip anchored to the label points at the end of the
                     // word; the row is what it's actually about.
                     data-tip-region=""
-                    onClick={() => {
-                      // A plain new session lands in whatever profile the live
-                      // gateway is on (= the active switcher context). null →
-                      // no swap. The switcher header is the single place to
-                      // change which profile that is.
-                      if (isNewSession) {
-                        $newChatProfile.set(null)
-                      }
-
-                      onNavigate(item)
-                    }}
+                    onClick={() => onNavigate(item)}
                     tooltip={
                       item.keybindActionId
                         ? {
@@ -1540,21 +1482,14 @@ export function ChatSidebar({
                     <span className="min-w-0 truncate" data-tip-arrow-only="" data-tour={`sidebar-nav-${item.id}`}>
                       {s.nav[item.id] ?? item.label}
                     </span>
-                    {isNewSession && (
-                      <KbdGroup
-                        className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
-                        keys={newSessionKbd}
-                        size="sm"
-                      />
-                    )}
                   </SidebarMenuButton>
                 )
 
-                // New session + route-backed pages can open in a split —
-                // right-click for the directional "Open in split" submenu.
+                // Route-backed pages can open in a split — right-click for the
+                // directional "Open in split" submenu.
                 return (
                   <SidebarMenuItem key={item.id}>
-                    {isNewSession || item.route ? (
+                    {item.route ? (
                       <ContextMenu>
                         <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
                         <ContextMenuContent aria-label={s.nav[item.id] ?? item.label}>
@@ -1562,9 +1497,7 @@ export function ChatSidebar({
                             kit={CONTEXT_SPLIT_KIT}
                             label={s.row.openInSplit}
                             onSplit={dir => {
-                              if (isNewSession) {
-                                onNewSessionSplit(dir)
-                              } else if (item.route) {
+                              if (item.route) {
                                 openRouteTile(item.route, dir)
                               }
                             }}
@@ -1581,17 +1514,12 @@ export function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {showSessionSections && (
-          <div className="shrink-0 px-2 pb-1 pt-1">
-            <SearchField
-              aria-label={s.searchAria}
-              inputRef={searchInputRef}
-              onChange={setSearchQuery}
-              placeholder={s.searchPlaceholder}
-              value={searchQuery}
-            />
-          </div>
-        )}
+        {/* §4.3 kind chips + forensics/CTF container groups are SIDEBAR
+            STRUCTURE, not session-area content: they render even when the
+            gateway is offline and the session area collapses to its blank
+            state — an honestly empty group IS the body there. */}
+        <SidebarKindFilterRow onChange={setKindFilter} value={kindFilter} />
+        <SidebarKindGroups filter={kindFilter} />
 
         {showSessionSections && (
           <div
@@ -1599,36 +1527,7 @@ export function ChatSidebar({
             data-sessions-mode={sessionsMode}
             data-sessions-project={inProject ? (enteredProjectId ?? undefined) : undefined}
           >
-            {trimmedQuery && (
-              <SidebarSessionsSection
-                activeSessionId={activeSidebarSessionId}
-                contentClassName={cn('flex min-h-0 flex-1 flex-col gap-px pb-1.75', SCROLL_Y)}
-                emptyState={
-                  searchPending ? (
-                    <SidebarSessionSkeletons />
-                  ) : (
-                    <div className="wrap-anywhere grid min-h-24 place-items-center rounded-lg px-2 text-center text-xs text-(--ui-text-tertiary)">
-                      {s.noMatch(trimmedQuery)}
-                    </div>
-                  )
-                }
-                label={s.results}
-                onArchiveSession={onArchiveSession}
-                onBranchSession={onBranchSession}
-                onDeleteSession={onDeleteSession}
-                onResumeSession={onResumeSession}
-                onToggle={() => undefined}
-                onTogglePin={pinSession}
-                onToggleUnread={toggleUnread}
-                open
-                pinned={false}
-                rootClassName="min-h-32 flex-1 overflow-hidden p-0"
-                sessions={searchResults}
-                showProfileTags={showAllProfiles}
-              />
-            )}
-
-            {!trimmedQuery && (
+            {kindVisible.project && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
                 contentClassName="flex flex-col gap-px rounded-lg pb-2 pt-1"
@@ -1652,7 +1551,7 @@ export function ChatSidebar({
               />
             )}
 
-            {!trimmedQuery && (
+            {kindVisible.project && (
               <SidebarSessionsSection
                 activeProjectId={activeProjectId}
                 activeSessionId={activeSidebarSessionId}
@@ -1840,8 +1739,7 @@ export function ChatSidebar({
               />
             )}
 
-            {!trimmedQuery &&
-              !worktreeGroupingActive &&
+            {kindVisible.project && !worktreeGroupingActive &&
               messagingGroups.map(group => {
                 const visible = messagingVisible[group.sourceId] ?? NON_SESSION_INITIAL_ROWS
                 const shownSessions = group.sessions.slice(0, visible)
@@ -1886,7 +1784,7 @@ export function ChatSidebar({
                 )
               })}
 
-            {!trimmedQuery && !worktreeGroupingActive && cronJobs.length > 0 && (
+            {kindVisible.project && !worktreeGroupingActive && cronJobs.length > 0 && (
               <SidebarCronJobsSection
                 jobs={cronJobs}
                 label={s.cronJobs}
@@ -1900,9 +1798,11 @@ export function ChatSidebar({
           </div>
         )}
 
-        {!showSessionSections && <SidebarBlankState onNewProject={openProjectCreate} />}
+        {!showSessionSections && kindVisible.project && <SidebarBlankState onNewProject={openProjectCreate} />}
 
         <div className="shrink-0 px-0.5 pb-1 pt-0.5">
+          {/* §4.3 bottom status lines: gateway state, then the profile rail. */}
+          <SidebarGatewayStatusRow />
           <ProfileRail />
         </div>
       </SidebarContent>

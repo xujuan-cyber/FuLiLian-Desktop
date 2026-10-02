@@ -2400,7 +2400,62 @@ export const en: Translations = {
       working: 'Working',
       done: 'Done'
     },
-    markAllRead: 'Mark all as read'
+    markAllRead: 'Mark all as read',
+    // §4.3 sidebar chrome (Workbench v2).
+    brandWordmark: 'FuLilian',
+    newTask: 'New task',
+    searchCommandPalette: 'Search (command palette)',
+    kind: {
+      all: 'All',
+      forensics: 'Forensics',
+      ctf: 'CTF',
+      project: 'Projects',
+      forensicsEmpty: 'No forensics cases yet',
+      ctfEmpty: 'No CTF challenges yet'
+    },
+    gateway: {
+      local: 'Local gateway',
+      connected: 'Connected',
+      connecting: 'Connecting…',
+      offline: 'Offline',
+      error: 'Connection error'
+    },
+    filterMenu: {
+      title: 'Filters',
+      grouping: 'Grouping',
+      ordering: 'Ordering',
+      show: 'Show',
+      inboxStyle: 'Inbox style',
+      filters: 'Filters',
+      filterStatus: 'Status',
+      filterPullRequest: 'Pull request',
+      filterProfile: 'Profile',
+      filterProject: 'Project',
+      archived: 'Archived',
+      resetToDefaults: 'Reset to defaults',
+      expandAll: 'Expand all',
+      collapseAll: 'Collapse all',
+      date: 'Updated',
+      project: 'Project',
+      status: 'Status',
+      profile: 'Profile',
+      updated: 'Updated',
+      created: 'Created',
+      tokens: 'Tokens',
+      cost: 'Cost',
+      manual: 'Manual',
+      preview: 'Preview',
+      pr: 'PR',
+      open: 'Open',
+      draft: 'Draft',
+      merged: 'Merged',
+      closed: 'Closed',
+      none: 'No PR',
+      'needs-input': 'Needs input',
+      working: 'Working',
+      unread: 'Unread',
+      idle: 'Idle'
+    }
   },
 
   composer: {
