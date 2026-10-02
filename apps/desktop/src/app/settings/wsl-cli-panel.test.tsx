@@ -72,9 +72,11 @@ describe('WslCliPanel', () => {
     render(<WslCliPanel />)
 
     expect(await screen.findByText('claude')).toBeTruthy()
+
     for (const name of NAMES) {
       expect(screen.getByText(name)).toBeTruthy()
     }
+
     // Two available, three genuinely missing.
     expect(screen.getAllByText('Available')).toHaveLength(2)
     expect(screen.getAllByText('Unavailable')).toHaveLength(3)
@@ -94,6 +96,7 @@ describe('WslCliPanel', () => {
     expect(screen.getByText(/stub:not-implemented/)).toBeTruthy()
     expect(screen.getAllByText('Unknown')).toHaveLength(5)
     expect(screen.queryByText('Unavailable')).toBeNull()
+
     // Unknown availability is not a dead state: toggles stay usable.
     for (const toggle of screen.getAllByRole('switch')) {
       expect(toggle.getAttribute('disabled')).toBeNull()

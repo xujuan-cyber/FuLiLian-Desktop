@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import { atom } from 'nanostores'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { $approvalModes, approvalModeForProfile } from '@/store/approval-mode'
 import { $gateway } from '@/store/gateway'
 import { $activeGatewayProfile } from '@/store/profile'
-import { $approvalModes, approvalModeForProfile } from '@/store/approval-mode'
 
 import { ApprovalModePill } from './approval-mode-pill'
 

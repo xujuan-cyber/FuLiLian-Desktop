@@ -2,9 +2,8 @@ import type { Unstable_TriggerAdapter, Unstable_TriggerItem } from '@assistant-u
 import { useCallback } from 'react'
 
 import { getSkills } from '@/api/skills'
-import type { SkillInfo } from '@/types/fulilian'
-
 import { normalize } from '@/lib/text'
+import type { SkillInfo } from '@/types/fulilian'
 
 import type { CompletionEntry, CompletionPayload } from './use-live-completion-adapter'
 import { useLiveCompletionAdapter } from './use-live-completion-adapter'

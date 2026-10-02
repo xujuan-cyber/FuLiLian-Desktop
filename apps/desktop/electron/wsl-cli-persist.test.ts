@@ -11,15 +11,15 @@ import path from 'node:path'
 
 import { afterEach, beforeEach, test } from 'vitest'
 
-import { WSL_CLI_NAMES } from './wsl-cli-probe'
 import {
   normalizeWslCliOptinState,
   readWslCliOptinFile,
   resetWslCliPersistCache,
+  writeWslCliOptinFile,
   WSL_CLI_OPTIN_FILE_NAME,
-  wslCliOptinFilePath,
-  writeWslCliOptinFile
+  wslCliOptinFilePath
 } from './wsl-cli-persist'
+import { WSL_CLI_NAMES } from './wsl-cli-probe'
 
 const NAMES = [...WSL_CLI_NAMES]
 
@@ -150,6 +150,7 @@ test('the mtime cache is reused on an unchanged file and invalidated when it cha
 
 test('a failing atomic writer never throws and still returns the state', () => {
   const target = path.join(tempDir, WSL_CLI_OPTIN_FILE_NAME)
+
   const deps = {
     writeAtomic: () => {
       throw new Error('EACCES: permission denied')

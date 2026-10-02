@@ -1,6 +1,6 @@
+import type { Unstable_TriggerAdapter } from '@assistant-ui/core'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Unstable_TriggerAdapter } from '@assistant-ui/core'
 
 import { $sessions } from '@/store/session'
 

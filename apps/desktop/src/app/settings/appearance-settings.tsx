@@ -48,7 +48,7 @@ import {
 } from '@/store/translucency'
 import { $vibeHeartsEnabled, setVibeHeartsEnabled } from '@/store/vibe-hearts-enabled'
 import { $zoomPercent, setZoomPercent } from '@/store/zoom'
-import { getBaseColors, useTheme, type TextInkTier, type TextScaleTier } from '@/themes/context'
+import { getBaseColors, type TextInkTier, type TextScaleTier, useTheme } from '@/themes/context'
 import { installVscodeThemeFromMarketplace } from '@/themes/install'
 import type { DesktopTheme } from '@/themes/types'
 import { $marketplaceInstalls, isUserTheme, removeUserTheme } from '@/themes/user-themes'
@@ -345,6 +345,7 @@ function GlassRow({ children, label }: GlassRowProps) {
 
 export function AppearanceSettings() {
   const { t, isSavingLocale } = useI18n()
+
   const {
     textInk,
     textScale,
@@ -357,6 +358,7 @@ export function AppearanceSettings() {
     setTheme,
     setMode
   } = useTheme()
+
   const toolViewMode = useStore($toolViewMode)
   const reasoningCollapsedByDefault = useStore($reasoningCollapsedByDefault)
   const sessionListDensity = useStore($sessionListDensity)

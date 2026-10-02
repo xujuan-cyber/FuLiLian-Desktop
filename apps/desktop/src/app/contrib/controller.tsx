@@ -78,8 +78,8 @@ import { isBrowserWindow, isHudWindow } from '@/store/windows'
 import { BrowserPopoutShell } from '../chat/browser-popout-shell'
 import type { SessionDragPayload } from '../chat/composer/inline-refs'
 import { watchPreviewTiles } from '../chat/preview-tile'
-import { watchRouteTiles } from '../chat/route-tile'
 import { SessionChangesPanel } from '../chat/right-rail/session-changes'
+import { watchRouteTiles } from '../chat/route-tile'
 import { startSessionDrag } from '../chat/session-drag'
 import {
   SessionTileCloseConfirm,

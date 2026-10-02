@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui'
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import { searchSessions } from '@/api/sessions'
 import {
   HUD_HEADING,
   HUD_ITEM,
@@ -17,7 +18,6 @@ import { codiconIcon } from '@/components/ui/codicon'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { HighlightMatches } from '@/components/ui/highlight-matches'
 import { KbdCombo } from '@/components/ui/kbd'
-import { searchSessions } from '@/api/sessions'
 import { getFulilianConfigRecord, listAllProfileSessions } from '@/fulilian'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { type Translations, useI18n } from '@/i18n'
@@ -440,6 +440,7 @@ export function buildSessionSearchGroups({
   // title/preview rows above.
   const remoteItems = remote.map(result => {
     const startedAt = result.session_started
+
     const age = !startedAt
       ? undefined
       : (() => {

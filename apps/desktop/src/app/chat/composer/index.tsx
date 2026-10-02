@@ -4,8 +4,8 @@ import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useCallback, u
 import { useNavigate } from 'react-router'
 
 import { useTourMarker } from '@/app/chat/tour-marker'
-import { openSession } from '@/app/open-session'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
+import { openSession } from '@/app/open-session'
 import { composerFill, composerFloatingStrip, composerSurfaceGlass } from '@/components/chat/composer-dock'
 import { Button } from '@/components/ui/button'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
@@ -45,8 +45,6 @@ import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-aff
 import { markActiveComposer, onComposerAttachImagesRequest } from './focus'
 import { HelpHint } from './help-hint'
 import { useAtCompletions } from './hooks/use-at-completions'
-import { useDollarCompletions } from './hooks/use-dollar-completions'
-import { useHashCompletions } from './hooks/use-hash-completions'
 import { useComposerBranch } from './hooks/use-composer-branch'
 import { useComposerDraft } from './hooks/use-composer-draft'
 import { useComposerDrop } from './hooks/use-composer-drop'
@@ -60,7 +58,9 @@ import { triggerKeyUpHandler, useComposerTrigger } from './hooks/use-composer-tr
 import { useComposerUndo } from './hooks/use-composer-undo'
 import { useComposerUrlDialog } from './hooks/use-composer-url-dialog'
 import { useComposerVoice } from './hooks/use-composer-voice'
+import { useDollarCompletions } from './hooks/use-dollar-completions'
 import { useEmojiCompletions } from './hooks/use-emoji-completions'
+import { useHashCompletions } from './hooks/use-hash-completions'
 import { useComposerMicroActions } from './hooks/use-micro-actions'
 import { useSlashCompletions } from './hooks/use-slash-completions'
 import { useSessionStatusPresence } from './hooks/use-status-presence'
@@ -400,6 +400,7 @@ export function ChatBar({
   // active chat; an already-open tile is fronted instead (open-session.ts owns
   // the intent table).
   const navigate = useNavigate()
+
   const openDraftSessionJumper = useCallback(
     (jumpSessionId: string) => openSession(jumpSessionId, navigate, 'stack'),
     [navigate]

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { skinPref, textInkPref, textScalePref, type TextInkTier, type TextScaleTier } from './context'
+import { skinPref, textInkPref, type TextInkTier, textScalePref, type TextScaleTier } from './context'
 
 // R10 typography tiers share the per-profile pref contract with skin/mode.
 // Same shape as profile-theme.test.ts's Pref harness.
