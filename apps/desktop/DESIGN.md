@@ -102,6 +102,26 @@ for call-site shadow or border inventions.
 Never hardcode `border-gray-*`, `bg-white`, `text-black`, etc. The white tile in
 `BrandMark` is the one sanctioned literal (the mark needs a fixed backdrop).
 
+## Typography tokens
+
+Two per-profile typography tiers ride on top of the palette, written inline on
+`<html>` by `themes/context.tsx` (`applyTypographyTiers`, the tail of every
+`applyTheme` paint):
+
+- **`--ui-text-scale`** — the base text-size multiplier: `compact 0.9` /
+  `default 1` / `large 1.1` / `xlarge 1.25`. `styles.css` consumes it in the
+  three conversation sizes — `--conversation-{text,tool,caption}-font-size`
+  are each `calc(<size> * var(--ui-text-scale, 1))`. Don't multiply a font
+  size by hand at a call site; route it through one of these tokens.
+- **Text ink tiers** (`graphite` / `ink` / `sepia`) — a per-profile base ink
+  whose light/dark shade replaces ALL FOUR text-hierarchy tokens
+  (`--ui-text-primary/-secondary/-tertiary/-quaternary`) with `rgba(...)`
+  values at the same 0.94/0.74/0.54/0.36 alphas the stylesheet bakes in, so
+  relative weight survives the swap. The `default` tier removes the inline
+  overrides so the skin's own values win again. These keys live OUTSIDE the
+  skin preset chain — switching skins never clears them, and a skin switch
+  repaints through the same `applyTheme` tail that re-applies the tier.
+
 ## Buttons — one component
 
 `src/components/ui/button.tsx` is the single source. Pick a `variant` + `size`;
@@ -327,9 +347,9 @@ long transcript or a busy terminal.
 
 - Every user-facing string goes through `useI18n()` (`src/i18n/context.tsx`).
   No literals in JSX.
-- **Update all locales together** — `en`, `ja`, `zh`, `zh-hant`. A string change
-  in `en.ts` that skips the others is a regression (drifted punctuation,
-  stale labels). Keep trailing-punctuation and tone consistent across all four.
+- **Update all locales together** — `en`, `ja`, `zh`, `zh-hant`, `ar`. A string
+  change in `en.ts` that skips the others is a regression (drifted punctuation,
+  stale labels). Keep trailing-punctuation and tone consistent across all five.
 
 ## State (TypeScript)
 
