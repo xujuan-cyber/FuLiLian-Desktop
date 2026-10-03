@@ -330,6 +330,64 @@ export interface Translations {
     noResults: string
   }
 
+  security: {
+    approvals: {
+      nav: string
+      title: string
+      intro: string
+      mode: string
+      modeDesc: string
+      modeManual: string
+      modeSmart: string
+      modeOff: string
+      fullAccessTitle: string
+      fullAccessBadge: string
+      fullAccessNote: string
+      highRiskCommands: string
+      highRiskCommandsDesc: string
+    }
+    evidence: {
+      nav: string
+      title: string
+      intro: string
+      readOnly: string
+      readOnlyDesc: string
+      verifyOnReference: string
+      verifyOnReferenceDesc: string
+      archiveLock: string
+      archiveLockDesc: string
+      disableConfirmTitle: string
+    }
+    audit: {
+      nav: string
+      title: string
+      intro: string
+      enabled: string
+      enabledDesc: string
+      retention: string
+      retentionDesc: string
+      retentionPermanent: string
+      exportTitle: string
+      export: string
+      clear: string
+      dataLayerNote: string
+    }
+    sensitive: {
+      nav: string
+      title: string
+      intro: string
+      redactSecrets: string
+      redactSecretsDesc: string
+      redactFlags: string
+      redactFlagsDesc: string
+      customRegex: string
+      customRegexDesc: string
+      customRegexPlaceholder: string
+      revealAudited: string
+      revealAuditedDesc: string
+    }
+  }
+
   settings: {
     closeSettings: string
     exportConfig: string
@@ -431,6 +489,45 @@ export interface Translations {
       completionSoundTitle: string
       completionSoundDesc: string
       completionSoundPreview: string
+    }
+    group: {
+      basics: string
+      'work-mode': string
+      'model-capabilities': string
+      'security-compliance': string
+      'connection-data': string
+      apps: string
+      programming: string
+      forensics: {
+        nav: string
+        title: string
+        intro: string
+        caseNoTemplate: string
+        caseNoTemplateDesc: string
+        reportSections: string
+        reportSectionsDesc: string
+        reportSectionNames: Record<string, string>
+        reportSectionDescs: Record<string, string>
+        timelineSources: string
+        timelineSourcesDesc: string
+        timelineSourceNames: Record<string, string>
+        timelineSourceDescs: Record<string, string>
+      }
+      ctf: {
+        nav: string
+        title: string
+        intro: string
+        flagRegex: string
+        flagRegexDesc: string
+        defaultTimezone: string
+        defaultTimezoneDesc: string
+        submitRetryLimit: string
+        submitRetryLimitDesc: string
+      }
+      skinGallery: {
+        title: string
+        recommended: string
+      }
     }
     sections: Record<string, string>
     searchPlaceholder: Record<'about' | 'config' | 'gateway' | 'keys' | 'mcp' | 'sessions', string>

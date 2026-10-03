@@ -1,9 +1,10 @@
 import { useStore } from '@nanostores/react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { codiconIcon } from '@/components/ui/codicon'
 import { KbdCombo } from '@/components/ui/kbd'
+import { TabDropdown } from '@/components/ui/tab-dropdown'
 import { Tip } from '@/components/ui/tooltip'
 import { getFulilianConfigDefaults, getFulilianConfigRecord, saveFulilianConfig } from '@/fulilian'
 import { useI18n } from '@/i18n'
@@ -12,18 +13,25 @@ import {
   Archive,
   BarChart3,
   Bell,
+  CheckCircle2,
+  Clock,
   Download,
+  EyeOff,
+  FileText,
+  FolderOpen,
   Globe,
   Info,
   Keyboard,
   KeyRound,
   Layers3,
+  type IconComponent,
   Package,
+  PawPrint,
   RefreshCw,
   Search,
   Settings2,
+  Terminal,
   Upload,
-  Wrench,
   Zap
 } from '@/lib/icons'
 import { isEditableTarget } from '@/lib/keybinds/combo'
@@ -36,40 +44,41 @@ import { notifyError } from '@/store/notifications'
 
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
 import { OverlayIconButton } from '../overlays/overlay-chrome'
-import { OverlayMain, OverlayNav, type OverlayNavGroup, OverlaySplitLayout } from '../overlays/overlay-split-layout'
+import { OverlayMain, OverlayNavItem, OverlaySidebar, OverlaySplitLayout } from '../overlays/overlay-split-layout'
 import { OverlayView } from '../overlays/overlay-view'
 import { SKILLS_ROUTE } from '../routes'
 
 import { AboutSettings } from './about-settings'
+import { ApprovalsPermissionsSettings } from './approvals-permissions-settings'
 import { AppearanceSettings } from './appearance-settings'
+import { AuditSettings } from './audit-settings'
 import { BillingSettings } from './billing'
 import { ConfigSettings } from './config-settings'
-import { SECTIONS } from './constants'
+import { CtfSettings } from './ctf-settings'
+import { SECTIONS, SETTINGS_GROUPS } from './constants'
+import { EvidenceProtectionSettings } from './evidence-protection-settings'
+import { ForensicsSettings } from './forensics-settings'
 import { GatewaySettings } from './gateway-settings'
 import { KeybindSettings } from './keybind-settings'
 import { KEYS_VIEWS, KeysSettings, type KeysView } from './keys-settings'
 import { NotificationsSettings } from './notifications-settings'
+import { PetSettings } from './pet-settings'
 import { PluginsSettings } from './plugins-settings'
 import { PresetsSettings } from './presets-settings'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
+import { QuickEntrySettings } from './quick-entry-settings'
+import { SensitiveInfoSettings } from './sensitive-info-settings'
 import { SessionsSettings } from './sessions-settings'
+import { SettingsContent } from './primitives'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 
+// Nav views derive from the Workbench group table (DESIGN_PROPOSAL §5.5) so
+// the rail, the dropdown and the deep-link enum can never drift apart. The
+// legacy `connections` alias is kept resolvable (redirected to gateway below)
+// but has no nav row.
 const SETTINGS_VIEWS: readonly SettingsViewId[] = [
-  ...SECTIONS.map(s => `config:${s.id}` as SettingsViewId),
-  'providers',
-  'gateway',
-  // Legacy alias: the Connections page merged into Gateways. Kept in the enum
-  // so saved `?tab=connections` deep links still resolve (redirected below).
-  'connections',
-  'keybinds',
-  'keys',
-  'notifications',
-  'billing',
-  'plugins',
-  'presets',
-  'sessions',
-  'about'
+  ...SETTINGS_GROUPS.flatMap(group => group.views),
+  'connections'
 ]
 
 export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: SettingsPageProps) {
@@ -170,136 +179,136 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     }
   }
 
-  const navGroups: OverlayNavGroup[] = useMemo(
-    () => [
-      ...SECTIONS.map(s => {
-        const view = `config:${s.id}` as SettingsViewId
+  const sectionById = useMemo(() => new Map(SECTIONS.map(section => [section.id, section])), [])
+
+  // One label/icon resolution per nav view. `config:workspace` presents as the
+  // Workbench "programming" entry (DESIGN_PROPOSAL §5.5) while reusing the
+  // existing workspace page — a link, not a new page.
+  const viewMeta = useCallback(
+    (view: SettingsViewId): { icon: IconComponent; label: string } => {
+      if (view.startsWith('config:')) {
+        const section = sectionById.get(view.slice('config:'.length))
+
+        if (!section) {
+          return { icon: Settings2, label: view }
+        }
 
         return {
-          active: activeView === view,
-          icon: s.icon,
-          id: view,
-          label: t.settings.sections[s.id] ?? s.label,
-          onSelect: () => setActiveView(view)
+          icon: section.icon,
+          label:
+            view === 'config:workspace'
+              ? t.settings.group.programming
+              : (t.settings.sections[section.id] ?? section.label)
         }
-      }),
-      {
-        active: activeView === 'notifications',
-        icon: Bell,
-        id: 'notifications',
-        label: t.settings.nav.notifications,
-        onSelect: () => setActiveView('notifications')
-      },
-      {
-        active: activeView === 'billing',
-        icon: BarChart3,
-        id: 'billing',
-        label: t.settings.nav.billing,
-        onSelect: () => setActiveView('billing')
-      },
-      {
-        active: activeView === 'providers',
-        children: [
-          {
-            active: activeView === 'providers' && providerView === 'accounts',
-            icon: codiconIcon('account'),
-            id: 'pview:accounts',
-            label: t.settings.nav.providerAccounts,
-            onSelect: () => openProviderView('accounts')
-          },
-          {
-            active: activeView === 'providers' && providerView === 'keys',
-            icon: KeyRound,
-            id: 'pview:keys',
-            label: t.settings.nav.providerApiKeys,
-            onSelect: () => openProviderView('keys')
-          },
-          {
-            active: activeView === 'providers' && providerView === 'custom-endpoints',
-            icon: Globe,
-            id: 'pview:custom-endpoints',
-            label: t.settings.nav.providerCustomEndpoints,
-            onSelect: () => openProviderView('custom-endpoints')
-          }
-        ],
-        gapBefore: true,
-        icon: Zap,
-        id: 'providers',
-        label: t.settings.nav.providers,
-        onSelect: () => setActiveView('providers')
-      },
-      {
-        active: activeView === 'gateway',
-        icon: Globe,
-        id: 'gateway',
-        label: t.settings.nav.gateway,
-        onSelect: () => setActiveView('gateway')
-      },
-      {
-        active: activeView === 'keybinds',
-        icon: Keyboard,
-        id: 'keybinds',
-        label: t.settings.nav.keybinds,
-        onSelect: () => setActiveView('keybinds')
-      },
-      {
-        active: activeView === 'keys',
-        children: [
-          {
-            active: activeView === 'keys' && keysView === 'tools',
-            icon: Wrench,
-            id: 'kview:tools',
-            label: t.settings.nav.keysTools,
-            onSelect: () => openKeysView('tools')
-          },
-          {
-            active: activeView === 'keys' && keysView === 'settings',
-            icon: Settings2,
-            id: 'kview:settings',
-            label: t.settings.nav.keysSettings,
-            onSelect: () => openKeysView('settings')
-          }
-        ],
-        icon: KeyRound,
-        id: 'keys',
-        label: t.settings.nav.apiKeys,
-        onSelect: () => setActiveView('keys')
-      },
-      {
-        active: activeView === 'plugins',
-        icon: Package,
-        id: 'plugins',
-        label: t.settings.nav.plugins,
-        onSelect: () => setActiveView('plugins')
-      },
-      {
-        // Phase-13 capability presets. The label reuses `t.presets.title`
-        // rather than adding a `settings.nav.presets` key: it is the same
-        // string the page renders as its heading, and a second copy in another
-        // group is exactly the drift the four-locale rule exists to avoid.
-        active: activeView === 'presets',
-        icon: Layers3,
-        id: 'presets',
-        label: t.presets.title,
-        onSelect: () => setActiveView('presets')
-      },
-      {
-        active: activeView === 'sessions',
-        icon: Archive,
-        id: 'sessions',
-        label: t.settings.nav.archivedChats,
-        onSelect: () => setActiveView('sessions')
-      },
-      {
-        active: activeView === 'about',
-        gapBefore: true,
-        icon: Info,
-        id: 'about',
-        label: t.settings.nav.about,
-        onSelect: () => setActiveView('about')
       }
-    ],
-    [activeView, keysView, providerView, t, setActiveView, openProviderView, openKeysView]
+
+      switch (view) {
+        case 'about':
+          return { icon: Info, label: t.settings.nav.about }
+        case 'approvals':
+          return { icon: CheckCircle2, label: t.security.approvals.nav }
+        case 'audit':
+          return { icon: Clock, label: t.security.audit.nav }
+        case 'billing':
+          return { icon: BarChart3, label: t.settings.nav.billing }
+        case 'ctf':
+          return { icon: Terminal, label: t.settings.group.ctf.nav }
+        case 'evidence-protection':
+          return { icon: FolderOpen, label: t.security.evidence.nav }
+        case 'forensics':
+          return { icon: FileText, label: t.settings.group.forensics.nav }
+        case 'gateway':
+          return { icon: Globe, label: t.settings.nav.gateway }
+        case 'keybinds':
+          return { icon: Keyboard, label: t.settings.nav.keybinds }
+        case 'keys':
+          return { icon: KeyRound, label: t.settings.nav.apiKeys }
+        case 'notifications':
+          return { icon: Bell, label: t.settings.nav.notifications }
+        case 'pet':
+          // Same string the page renders as its heading — a second key would
+          // be exactly the drift the four-locale rule exists to avoid.
+          return { icon: PawPrint, label: t.settings.appearance.pet.title }
+        case 'plugins':
+          return { icon: Package, label: t.settings.nav.plugins }
+        case 'presets':
+          return { icon: Layers3, label: t.presets.title }
+        case 'providers':
+          return { icon: Zap, label: t.settings.nav.providers }
+        case 'quick-entry':
+          return { icon: Zap, label: t.settings.quickEntry.enabledTitle }
+        case 'sensitive-info':
+          return { icon: EyeOff, label: t.security.sensitive.nav }
+        case 'sessions':
+          return { icon: Archive, label: t.settings.nav.archivedChats }
+        default:
+          return { icon: Settings2, label: view }
+      }
+    },
+    [sectionById, t]
+  )
+
+  const navGroups = useMemo(
+    () =>
+      SETTINGS_GROUPS.map(group => ({
+        id: group.id,
+        items: group.views.map(view => {
+          const meta = viewMeta(view)
+
+          return {
+            active: activeView === view,
+            children:
+              view === 'providers'
+                ? [
+                    {
+                      active: activeView === 'providers' && providerView === 'accounts',
+                      icon: codiconIcon('account'),
+                      id: 'pview:accounts',
+                      label: t.settings.nav.providerAccounts,
+                      onSelect: () => openProviderView('accounts')
+                    },
+                    {
+                      active: activeView === 'providers' && providerView === 'keys',
+                      icon: KeyRound,
+                      id: 'pview:keys',
+                      label: t.settings.nav.providerApiKeys,
+                      onSelect: () => openProviderView('keys')
+                    },
+                    {
+                      active: activeView === 'providers' && providerView === 'custom-endpoints',
+                      icon: Globe,
+                      id: 'pview:custom-endpoints',
+                      label: t.settings.nav.providerCustomEndpoints,
+                      onSelect: () => openProviderView('custom-endpoints')
+                    }
+                  ]
+                : view === 'keys'
+                  ? [
+                      {
+                        active: activeView === 'keys' && keysView === 'tools',
+                        icon: Settings2,
+                        id: 'kview:tools',
+                        label: t.settings.nav.keysTools,
+                        onSelect: () => openKeysView('tools')
+                      },
+                      {
+                        active: activeView === 'keys' && keysView === 'settings',
+                        icon: Settings2,
+                        id: 'kview:settings',
+                        label: t.settings.nav.keysSettings,
+                        onSelect: () => openKeysView('settings')
+                      }
+                    ]
+                  : undefined,
+            icon: meta.icon,
+            id: view,
+            label: meta.label,
+            onSelect: () => setActiveView(view)
+          }
+        }),
+        label: t.settings.group[group.id]
+      })),
+    [activeView, keysView, providerView, t, viewMeta, setActiveView, openProviderView, openKeysView]
   )
 
   // Type-to-search: printable keystrokes on the Settings surface (outside any
@@ -397,6 +406,26 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       <GatewaySettings />
     ) : activeView === 'keybinds' ? (
       <KeybindSettings />
+    ) : activeView === 'forensics' ? (
+      <ForensicsSettings />
+    ) : activeView === 'ctf' ? (
+      <CtfSettings />
+    ) : activeView === 'approvals' ? (
+      <ApprovalsPermissionsSettings />
+    ) : activeView === 'evidence-protection' ? (
+      <EvidenceProtectionSettings />
+    ) : activeView === 'audit' ? (
+      <AuditSettings />
+    ) : activeView === 'sensitive-info' ? (
+      <SensitiveInfoSettings />
+    ) : activeView === 'pet' ? (
+      <SettingsContent>
+        <PetSettings />
+      </SettingsContent>
+    ) : activeView === 'quick-entry' ? (
+      <SettingsContent>
+        <QuickEntrySettings />
+      </SettingsContent>
     ) : activeView.startsWith('config:') ? (
       <ConfigSettings
         activeSectionId={activeView.slice('config:'.length)}
@@ -427,7 +456,88 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
   return (
     <OverlayView closeLabel={t.settings.closeSettings} edgeBadge={searchPill} onClose={onClose}>
       <OverlaySplitLayout>
-        <OverlayNav footer={navFooter} groups={navGroups} />
+        {/* Wide rail: the six Workbench groups with header rows (§5.5).
+            Rendered here rather than via the shared OverlayNav because the
+            group headers are settings-specific — rows still go through the
+            shared OverlayNavItem so tour handles keep working. */}
+        <OverlaySidebar className="max-[47.5rem]:hidden">
+          {navGroups.map(group => (
+            <Fragment key={group.id}>
+              <div
+                aria-hidden
+                className="px-2 pb-1 pt-3 text-[10.5px] font-medium uppercase tracking-wider text-(--ui-text-tertiary)"
+              >
+                {group.label}
+              </div>
+              {group.items.map(item => (
+                <Fragment key={item.id}>
+                  <OverlayNavItem
+                    active={item.active}
+                    icon={item.icon}
+                    id={item.id}
+                    label={item.label}
+                    onClick={item.onSelect}
+                  />
+                  {item.children && item.active && (
+                    <div className="ml-3.5 flex flex-col gap-0.5 pl-1.5">
+                      {item.children.map(child => (
+                        <OverlayNavItem
+                          active={child.active}
+                          icon={child.icon}
+                          id={child.id}
+                          key={child.id}
+                          label={child.label}
+                          nested
+                          onClick={child.onSelect}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </Fragment>
+              ))}
+            </Fragment>
+          ))}
+          <div className="mt-auto flex items-center gap-1 pt-2">{navFooter}</div>
+        </OverlaySidebar>
+
+        {/* Narrow: the same groups flattened into the titlebar dropdown, with
+            one separator at each group break — mirrors OverlayNav's narrow
+            degradation for the split layout. */}
+        <div
+          className={cn(
+            'pointer-events-none relative z-20 h-[calc(var(--titlebar-height)+0.1875rem)] items-center justify-between gap-2 pl-3 pr-12',
+            'hidden max-[47.5rem]:flex'
+          )}
+        >
+          <div className="pointer-events-auto min-w-0 [-webkit-app-region:no-drag]">
+            <TabDropdown
+              align="start"
+              items={navGroups.flatMap((group, groupIndex) => [
+                ...group.items.map(item => ({
+                  active: item.active && !item.children?.some(child => child.active),
+                  icon: item.icon,
+                  id: item.id,
+                  label: item.label,
+                  onSelect: item.onSelect,
+                  separatorBefore: groupIndex > 0 && group.items[0] === item
+                })),
+                ...(group.items ?? []).flatMap(item =>
+                  (item.children ?? []).map(child => ({
+                    active: child.active,
+                    icon: child.icon,
+                    id: child.id,
+                    indent: true,
+                    label: child.label,
+                    onSelect: child.onSelect
+                  }))
+                )
+              ])}
+            />
+          </div>
+          <div className="pointer-events-auto flex shrink-0 items-center gap-1 [-webkit-app-region:no-drag]">
+            {navFooter}
+          </div>
+        </div>
 
         <OverlayMain className="px-0 pb-0">{activeSettingsContent}</OverlayMain>
       </OverlaySplitLayout>

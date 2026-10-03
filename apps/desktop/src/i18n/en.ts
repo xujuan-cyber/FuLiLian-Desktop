@@ -381,6 +381,76 @@ export const en: Translations = {
     noResults: 'No languages found'
   },
 
+  security: {
+    approvals: {
+      nav: 'Approvals & permissions',
+      title: 'Approvals & permissions',
+      intro:
+        'Guardrails shared by every work mode (forensics, CTF, programming). The same approval settings also appear on the Safety page — config.yaml is the single source of truth.',
+      mode: 'Default approval mode',
+      modeDesc:
+        'Per-step asks for every write. Semi-auto approves inside the workspace and asks outside. Full access runs without approval prompts.',
+      modeManual: 'Per-step',
+      modeSmart: 'Semi-auto',
+      modeOff: 'Full access',
+      fullAccessTitle: 'Full access',
+      fullAccessBadge: 'FULL ACCESS',
+      fullAccessNote:
+        'With Full access, Fulilian runs tool calls without approval prompts. The badge appears wherever the app is running unattended — keep this mode for trusted, disposable workspaces only.',
+      highRiskCommands: 'High-risk command list',
+      highRiskCommandsDesc:
+        'Commands that always require a second confirmation regardless of mode (comma separated). The interception layer itself lands with the data layer; this page only records the list.'
+    },
+    evidence: {
+      nav: 'Evidence protection',
+      title: 'Evidence protection',
+      intro:
+        'For forensics cases. Preferences apply to the evidence container when its data layer is active; they are recorded now so nothing has to be re-decided later.',
+      readOnly: 'Read-only evidence mount',
+      readOnlyDesc:
+        'Evidence directories mount read-only. Writes require an approval and are always audited. Default on, and never turned off silently.',
+      verifyOnReference: 'Verify before reference',
+      verifyOnReferenceDesc:
+        'Re-compute SHA256 each time an evidence file is referenced; a mismatch blocks the reference. Default on.',
+      archiveLock: 'Lock writes on archive',
+      archiveLockDesc:
+        'Archived cases reject write operations until they are unlocked with an approval and an audit entry.',
+      disableConfirmTitle: 'Turn off the read-only evidence mount?'
+    },
+    audit: {
+      nav: 'Audit trail',
+      title: 'Audit trail',
+      intro:
+        'Local audit logging of tool calls, writes, unlocks and reveals — the compliance record for legal forensics work.',
+      enabled: 'Audit logging',
+      enabledDesc:
+        'Record agent tool calls, write operations and manual events (unlock, reveal, export) to the local audit log. Default on.',
+      retention: 'Retention period',
+      retentionDesc: 'How long audit entries are kept locally before cleanup.',
+      retentionPermanent: 'Forever',
+      exportTitle: 'Export & clear',
+      export: 'Export',
+      clear: 'Clear',
+      dataLayerNote:
+        'The audit store itself arrives with the data layer (later round) — these controls enable there and are inert until then.'
+    },
+    sensitive: {
+      nav: 'Sensitive info',
+      title: 'Sensitive information',
+      intro:
+        'What Fulilian masks before it reaches the model or the screen. Flag masking applies in CTF mode; secret masking applies everywhere.',
+      redactSecrets: 'Redact secrets',
+      redactSecretsDesc: 'Hide detected secrets (keys, tokens, passwords) from model-visible content when possible. Default on.',
+      redactFlags: 'Redact flags',
+      redactFlagsDesc: 'Mask CTF flags in captured output; reveal per flag card with an explicit action.',
+      customRegex: 'Custom pattern',
+      customRegexDesc: 'An extra regular expression whose matches are masked like secrets.',
+      customRegexPlaceholder: 'Regular expression',
+      revealAudited: 'Audit reveals',
+      revealAuditedDesc: 'Every unmask/reveal action is written to the audit trail. Default on.'
+    }
+  },
+
   settings: {
     closeSettings: 'Close settings',
     exportConfig: 'Export config',
@@ -510,6 +580,73 @@ export const en: Translations = {
       completionSoundTitle: 'Completion Sound',
       completionSoundDesc: 'Plays when an agent turn finishes. Pick a preset and preview it here.',
       completionSoundPreview: 'Preview'
+    },
+    group: {
+      basics: 'Basics',
+      'work-mode': 'Work modes',
+      'model-capabilities': 'Models & capabilities',
+      'security-compliance': 'Security & compliance',
+      'connection-data': 'Connection & data',
+      apps: 'Apps',
+      // The programming entry reuses the existing workspace page (a link, not
+      // a new page) — DESIGN_PROPOSAL §5.5.
+      programming: 'Programming',
+      forensics: {
+        nav: 'Forensics',
+        title: 'Forensics',
+        intro:
+          'Defaults for forensics cases: case numbering, report structure and timeline sources. Case data itself is managed per case, not here.',
+        caseNoTemplate: 'Case number template',
+        caseNoTemplateDesc:
+          'Format used when a new case number is minted. YYYY is the year, NNN a zero-padded counter.',
+        reportSections: 'Report section template',
+        reportSectionsDesc:
+          'Which sections a generated report draft contains. Draft generation itself arrives with the data layer (later round) — the structure is recorded here.',
+        reportSectionNames: {
+          overview: 'Overview',
+          evidence: 'Evidence inventory',
+          analysis: 'Analysis process',
+          conclusion: 'Conclusion',
+          appendix: 'Appendix'
+        },
+        reportSectionDescs: {
+          overview: 'Case summary, scope and authorization basis.',
+          evidence: 'Evidence list with hashes and verify status.',
+          analysis: 'Timeline and findings, referencing evidence by hash.',
+          conclusion: 'Answers to the case questions, with confidence notes.',
+          appendix: 'Tool versions, environment and raw exports.'
+        },
+        timelineSources: 'Timeline sources',
+        timelineSourcesDesc:
+          'Which source types timeline extraction may draw from. Extraction arrives with the data layer (later round).',
+        timelineSourceNames: {
+          mirror: 'Disk images',
+          logs: 'Logs',
+          pcap: 'Packet captures'
+        },
+        timelineSourceDescs: {
+          mirror: 'Filesystem artifacts from mounted images.',
+          logs: 'Application, system and security event logs.',
+          pcap: 'Network captures and flow records.'
+        }
+      },
+      ctf: {
+        nav: 'CTF',
+        title: 'CTF',
+        intro:
+          'Defaults for CTF challenges: flag recognition, event timezone and submission retries. Flags themselves live encrypted in the flag vault.',
+        flagRegex: 'Flag pattern',
+        flagRegexDesc: 'Regular expression used to detect and mask flags in tool output.',
+        defaultTimezone: 'Default event timezone',
+        defaultTimezoneDesc: 'Timezone used for challenge deadlines that do not state one (IANA name).',
+        submitRetryLimit: 'Submission retry limit',
+        submitRetryLimitDesc:
+          'How many wrong submissions are recorded for one challenge before a cooldown is suggested.'
+      },
+      skinGallery: {
+        title: 'Skin gallery',
+        recommended: 'Recommended'
+      }
     },
     sections: {
       model: 'Model',

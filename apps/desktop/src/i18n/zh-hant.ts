@@ -255,6 +255,65 @@ export const zhHant = defineLocale({
     noResults: '找不到語言'
   },
 
+  security: {
+    approvals: {
+      nav: '審批與權限',
+      title: '審批與權限',
+      intro: '三種工作模式（取證、CTF、程式設計）共用的護欄。同一審批設定也出現在「安全」頁——config.yaml 是唯一事實來源。',
+      mode: '預設審批模式',
+      modeDesc: '逐項審批：每次寫入都詢問。半自動：工作區內自動、區外逐項。完全存取：不再彈出審批確認。',
+      modeManual: '逐項審批',
+      modeSmart: '半自動',
+      modeOff: '完全存取',
+      fullAccessTitle: '完全存取',
+      fullAccessBadge: '完全存取',
+      fullAccessNote:
+        '完全存取模式下，Fulilian 執行工具呼叫不再請求審批。凡在無人值守時執行，介面都會出現此徽標——請只對可信、可棄的工作區使用該模式。',
+      highRiskCommands: '高危險命令清單',
+      highRiskCommandsDesc: '無論何種模式都需二次確認的命令（逗號分隔）。攔截層本體隨資料層落地，本頁僅記錄清單。'
+    },
+    evidence: {
+      nav: '取證保護',
+      title: '取證保護',
+      intro: '面向取證案件。以下偏好在證據容器資料層啟用後生效，現在先落配置，後續無需重新決策。',
+      readOnly: '證據目錄唯讀掛載',
+      readOnlyDesc: '證據目錄以唯讀方式掛載；寫入需審批且必定留痕。預設開啟，且不可靜默關閉。',
+      verifyOnReference: '引用前複驗',
+      verifyOnReferenceDesc: '每次引用證據檔案前重新計算 SHA256，失配即阻斷引用。預設開啟。',
+      archiveLock: '歸檔後鎖定寫入操作',
+      archiveLockDesc: '已歸檔案件拒絕寫入操作，直至經審批並留痕解鎖。',
+      disableConfirmTitle: '關閉證據目錄唯讀掛載？'
+    },
+    audit: {
+      nav: '審計留痕',
+      title: '審計留痕',
+      intro: '對工具呼叫、寫入、解鎖與揭示行為的本機審計日誌——合法取證工作的合規記錄。',
+      enabled: '審計留痕',
+      enabledDesc: '將 agent 工具呼叫、寫入操作與人工事件（解鎖、揭示、匯出）記入本機審計日誌。預設開啟。',
+      retention: '保留期限',
+      retentionDesc: '審計條目本機保留多久後清理。',
+      retentionPermanent: '永久',
+      exportTitle: '匯出與清空',
+      export: '匯出',
+      clear: '清空',
+      dataLayerNote: '審計儲存本體隨資料層（後續輪次）落地——屆時此處啟用生效，在此之前不產生資料。'
+    },
+    sensitive: {
+      nav: '敏感資訊',
+      title: '敏感資訊',
+      intro: 'Fulilian 在內容到達模型或螢幕前的脫敏規則。flag 脫敏作用於 CTF 模式；密鑰脫敏全域生效。',
+      redactSecrets: '密鑰脫敏',
+      redactSecretsDesc: '盡可能對偵測到的密鑰（key、token、密碼）在模型可見內容中打碼。預設開啟。',
+      redactFlags: 'flag 脫敏',
+      redactFlagsDesc: '對工具輸出中的 CTF flag 打碼；在 flag 卡中經明確操作揭示。',
+      customRegex: '自訂正規表示式',
+      customRegexDesc: '額外的正規表示式，其匹配內容按密鑰方式打碼。',
+      customRegexPlaceholder: '正規表示式',
+      revealAudited: '揭示留痕',
+      revealAuditedDesc: '每次取消打碼/揭示動作都會寫入審計日誌。預設開啟。'
+    }
+  },
+
   settings: {
     closeSettings: '關閉設定',
     exportConfig: '匯出設定',
@@ -323,6 +382,66 @@ export const zhHant = defineLocale({
       completionSoundTitle: '完成提示音',
       completionSoundDesc: '代理回合結束時播放。可在此選擇預設並預覽。',
       completionSoundPreview: '預覽'
+    },
+    group: {
+      basics: '基礎',
+      'work-mode': '工作模式',
+      'model-capabilities': '模型與能力',
+      'security-compliance': '安全與合規',
+      'connection-data': '連線與資料',
+      apps: '應用',
+      // 程式設計入口複用既有工作區頁（連結跳轉，非新頁）——DESIGN_PROPOSAL §5.5。
+      programming: '程式設計',
+      forensics: {
+        nav: '取證',
+        title: '取證',
+        intro: '取證案件的預設配置：案號編號、報告結構與時間線來源。案件資料本身按案件管理，不在此處。',
+        caseNoTemplate: '案號格式範本',
+        caseNoTemplateDesc: '產生新案號時使用的格式。YYYY 為年份，NNN 為補零序號。',
+        reportSections: '報告章節範本',
+        reportSectionsDesc: '產生的報告草稿包含哪些章節。草稿產生本體隨資料層（後續輪次）落地——此處先記錄結構。',
+        reportSectionNames: {
+          overview: '概述',
+          evidence: '證據清單',
+          analysis: '分析過程',
+          conclusion: '結論',
+          appendix: '附錄'
+        },
+        reportSectionDescs: {
+          overview: '案件摘要、範圍與授權依據。',
+          evidence: '附雜湊與複驗狀態的證據清單。',
+          analysis: '時間線與發現，按雜湊引用證據。',
+          conclusion: '對案件問題的回答，附信心水準說明。',
+          appendix: '工具版本、環境與原始匯出。'
+        },
+        timelineSources: '時間線來源',
+        timelineSourcesDesc: '時間線提取允許取用的來源類型。提取隨資料層（後續輪次）落地。',
+        timelineSourceNames: {
+          mirror: '磁碟映像',
+          logs: '日誌',
+          pcap: '網路擷取'
+        },
+        timelineSourceDescs: {
+          mirror: '已掛載映像中的檔案系統痕跡。',
+          logs: '應用、系統與安全事件日誌。',
+          pcap: '網路擷取與流記錄。'
+        }
+      },
+      ctf: {
+        nav: 'CTF',
+        title: 'CTF',
+        intro: 'CTF 賽題的預設配置：flag 識別、賽事時區與提交重試。flag 本體加密存於保管庫。',
+        flagRegex: 'flag 正規表示式',
+        flagRegexDesc: '用於偵測並對工具輸出中的 flag 打碼的正規表示式。',
+        defaultTimezone: '預設賽事時區',
+        defaultTimezoneDesc: '賽題未標註時區時，截止時間使用的時區（IANA 名稱）。',
+        submitRetryLimit: '提交重試上限',
+        submitRetryLimitDesc: '單題記錄的錯誤提交次數上限，超過後建議冷卻。'
+      },
+      skinGallery: {
+        title: '皮膚藝廊',
+        recommended: '推薦'
+      }
     },
     sections: {
       model: '模型',

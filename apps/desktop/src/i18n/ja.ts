@@ -263,6 +263,78 @@ export const ja = defineLocale({
     noResults: '言語が見つかりません'
   },
 
+  security: {
+    approvals: {
+      nav: '承認と権限',
+      title: '承認と権限',
+      intro:
+        '取証・CTF・プログラミング、すべての作業モードで共有されるガードレール。同じ承認設定は「セーフティ」ページにもあります——config.yaml が唯一の情報源です。',
+      mode: 'デフォルト承認モード',
+      modeDesc:
+        '「毎回承認」はすべての書き込みで確認します。「セミオート」はワークスペース内は自動、外では確認。「フルアクセス」は承認なしで実行します。',
+      modeManual: '毎回承認',
+      modeSmart: 'セミオート',
+      modeOff: 'フルアクセス',
+      fullAccessTitle: 'フルアクセス',
+      fullAccessBadge: 'フルアクセス',
+      fullAccessNote:
+        'フルアクセスでは、Fulilian は承認を求めずにツール呼び出しを実行します。無人実行時にはどこにでもこのバッジが表示されます——信頼できる使い捨てワークスペースでのみ使ってください。',
+      highRiskCommands: '高リスクコマンドリスト',
+      highRiskCommandsDesc:
+        'モードに関係なく二次確認が必要なコマンド（カンマ区切り）。遮断層そのものはデータ層と共に提供され、このページはリストを記録するだけです。'
+    },
+    evidence: {
+      nav: '証拠保護',
+      title: '証拠保護',
+      intro:
+        '取証案件向け。以下の設定は証拠コンテナのデータ層が有効になると適用されます——今のうちに記録しておけば、後で改めて決める必要はありません。',
+      readOnly: '証拠ディレクトリの読み取り専用マウント',
+      readOnlyDesc:
+        '証拠ディレクトリは読み取り専用でマウントされます。書き込みには承認が必要で、必ず監査されます。デフォルトはオンで、黙ってオフにはできません。',
+      verifyOnReference: '参照前に検証',
+      verifyOnReferenceDesc:
+        '証拠ファイルを参照するたびに SHA256 を再計算し、不一致なら参照を遮断します。デフォルトはオン。',
+      archiveLock: 'アーカイブ時に書き込みをロック',
+      archiveLockDesc:
+        'アーカイブ済み案件は、承認と監査記録付きの解除まで書き込み操作を拒否します。',
+      disableConfirmTitle: '証拠ディレクトリの読み取り専用マウントを解除しますか？'
+    },
+    audit: {
+      nav: '監査ログ',
+      title: '監査ログ',
+      intro:
+        'ツール呼び出し・書き込み・解除・表示の操作を記録するローカル監査ログ——合法な取証作業のためのコンプライアンス記録です。',
+      enabled: '監査ログ',
+      enabledDesc:
+        'agent のツール呼び出し、書き込み操作、手動イベント（解除・表示・書き出し）をローカル監査ログに記録します。デフォルトはオン。',
+      retention: '保持期間',
+      retentionDesc: '監査エントリをローカルに保持する期間。',
+      retentionPermanent: '無期限',
+      exportTitle: '書き出しと消去',
+      export: '書き出し',
+      clear: '消去',
+      dataLayerNote:
+        '監査ストア本体はデータ層（後のラウンド）で提供されます——それまでは無効で、データは生成されません。'
+    },
+    sensitive: {
+      nav: '機密情報',
+      title: '機密情報',
+      intro:
+        'モデルや画面に届く前に Fulilian がマスクする内容のルール。flag のマスクは CTF モード、シークレットのマスクは全環境で有効です。',
+      redactSecrets: 'シークレットのマスク',
+      redactSecretsDesc:
+        '検出されたシークレット（キー・トークン・パスワード）を可能な限りモデル可視コンテンツから隠します。デフォルトはオン。',
+      redactFlags: 'flag のマスク',
+      redactFlagsDesc:
+        'ツール出力中の CTF flag をマスクします。flag カードから明示的な操作でのみ表示します。',
+      customRegex: 'カスタムパターン',
+      customRegexDesc: '追加の正規表現。一致した内容はシークレットと同様にマスクされます。',
+      customRegexPlaceholder: '正規表現',
+      revealAudited: '表示を監査',
+      revealAuditedDesc: 'マスク解除・表示の操作はすべて監査ログに記録されます。デフォルトはオン。'
+    }
+  },
+
   settings: {
     closeSettings: '設定を閉じる',
     exportConfig: '設定を書き出す',
@@ -332,6 +404,73 @@ export const ja = defineLocale({
       completionSoundTitle: '完了サウンド',
       completionSoundDesc: 'エージェントのターン終了時に再生されます。プリセットを選んでここで試聴できます。',
       completionSoundPreview: '試聴'
+    },
+    group: {
+      basics: '基本',
+      'work-mode': '作業モード',
+      'model-capabilities': 'モデルと能力',
+      'security-compliance': 'セキュリティとコンプライアンス',
+      'connection-data': '接続とデータ',
+      apps: 'アプリ',
+      // プログラミング入口は既存のワークスペースページを再利用（リンク、新ページなし）——DESIGN_PROPOSAL §5.5。
+      programming: 'プログラミング',
+      forensics: {
+        nav: '取証',
+        title: '取証',
+        intro:
+          '取証案件のデフォルト設定：案件番号、報告書構成、タイムラインのソース。案件データ自体は案件ごとに管理され、ここでは扱いません。',
+        caseNoTemplate: '案件番号テンプレート',
+        caseNoTemplateDesc:
+          '新しい案件番号を発行する際の形式。YYYY は年、NNN はゼロ埋めの連番です。',
+        reportSections: '報告書セクションテンプレート',
+        reportSectionsDesc:
+          '生成される報告書ドラフトに含めるセクション。ドラフト生成そのものはデータ層（後のラウンド）で提供されます——ここでは構成だけを記録します。',
+        reportSectionNames: {
+          overview: '概要',
+          evidence: '証拠一覧',
+          analysis: '分析過程',
+          conclusion: '結論',
+          appendix: '付録'
+        },
+        reportSectionDescs: {
+          overview: '案件の要約、範囲、承認根拠。',
+          evidence: 'ハッシュと検証状態付きの証拠リスト。',
+          analysis: 'タイムラインと所見。ハッシュで証拠を参照。',
+          conclusion: '案件の問いへの回答と信頼度メモ。',
+          appendix: 'ツールバージョン、環境、生データの書き出し。'
+        },
+        timelineSources: 'タイムラインのソース',
+        timelineSourcesDesc:
+          'タイムライン抽出が参照できるソースの種類。抽出はデータ層（後のラウンド）で提供されます。',
+        timelineSourceNames: {
+          mirror: 'ディスクイメージ',
+          logs: 'ログ',
+          pcap: 'パケットキャプチャ'
+        },
+        timelineSourceDescs: {
+          mirror: 'マウントされたイメージ内のファイルシステム痕跡。',
+          logs: 'アプリ・システム・セキュリティイベントログ。',
+          pcap: 'ネットワークキャプチャとフローレコード。'
+        }
+      },
+      ctf: {
+        nav: 'CTF',
+        title: 'CTF',
+        intro:
+          'CTF 問題のデフォルト設定：flag の認識、イベントのタイムゾーン、提出のリトライ。flag 本体は保管庫に暗号化して保存されます。',
+        flagRegex: 'flag パターン',
+        flagRegexDesc: 'ツール出力中の flag を検出・マスクする正規表現。',
+        defaultTimezone: 'デフォルトのイベントタイムゾーン',
+        defaultTimezoneDesc:
+          '問題がタイムゾーンを明示しない場合の締切に使うタイムゾーン（IANA 名）。',
+        submitRetryLimit: '提出リトライ上限',
+        submitRetryLimitDesc:
+          '1 問あたり記録される誤提出の上限。超えるとクールダウンを提案します。'
+      },
+      skinGallery: {
+        title: 'スキンギャラリー',
+        recommended: 'おすすめ'
+      }
     },
     sections: {
       model: 'モデル',

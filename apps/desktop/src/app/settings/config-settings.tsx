@@ -46,7 +46,6 @@ import { ProviderConfigPanel } from './memory/provider-config-panel'
 import { ModelSettings, ModelSettingsSkeleton } from './model-settings'
 import { EmptyState, ListRow, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SettingsProfileScope } from './profile-scope'
-import { QuickEntrySettings } from './quick-entry-settings'
 
 export function ConfigSettings({
   activeSectionId,
@@ -370,8 +369,9 @@ function ConfigSettingsInner({
         </div>
       )}
       {/* Device-local desktop prefs (not config.yaml) — they live here since
-          keeping the machine awake and the global Quick Entry chord are both
-          power-user, this-computer-only knobs. */}
+          keeping the machine awake and disabling F12 are both power-user,
+          this-computer-only knobs. Quick Entry moved to its own Applications
+          group page (DESIGN_PROPOSAL §5.5). */}
       {activeSectionId === 'advanced' && (
         <>
           <ToggleRow
@@ -386,7 +386,6 @@ function ConfigSettingsInner({
             label={c.disableF12Title}
             onChange={setDisableF12}
           />
-          <QuickEntrySettings />
         </>
       )}
       {/* Device-local attach/preview byte cap (main-process IPC guard). Chat is

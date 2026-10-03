@@ -50,11 +50,11 @@ import { $vibeHeartsEnabled, setVibeHeartsEnabled } from '@/store/vibe-hearts-en
 import { $zoomPercent, setZoomPercent } from '@/store/zoom'
 import { getBaseColors, useTheme, type TextInkTier, type TextScaleTier } from '@/themes/context'
 import { installVscodeThemeFromMarketplace } from '@/themes/install'
+import { BUILTIN_THEME_LIST } from '@/themes/presets'
 import type { DesktopTheme } from '@/themes/types'
 import { $marketplaceInstalls, isUserTheme, removeUserTheme } from '@/themes/user-themes'
 
 import { MODE_OPTIONS } from './constants'
-import { PetSettings } from './pet-settings'
 import { ListRow, SectionHeading, SettingsContent, ToggleRow } from './primitives'
 import { APPEARANCE_SETTING_IDS } from './settings-search'
 import { TerminalFontSetting } from './terminal-font-setting'
@@ -107,6 +107,15 @@ const APPEARANCE_SEARCH_TARGETS = new Set<string>(Object.values(APPEARANCE_SETTI
 const appearanceSettingElementId = (id: string) => `setting-field-${id}`
 
 type UiScalePreset = (typeof UI_SCALE_PRESETS)[number]
+
+// Skin gallery (DESIGN_PROPOSAL §3/§5.5): the built-in skins, led by the
+// first-party Workbench skin with a recommendation badge. Switching rides the
+// existing setTheme channel — no new persistence.
+const RECOMMENDED_SKIN = 'fulilian-workbench'
+
+const GALLERY_THEMES: DesktopTheme[] = [...BUILTIN_THEME_LIST].sort(
+  (a, b) => Number(b.name === RECOMMENDED_SKIN) - Number(a.name === RECOMMENDED_SKIN)
+)
 
 function matchUiScalePreset(percent: number): UiScalePreset | null {
   return UI_SCALE_PRESETS.find(preset => Number(preset) === percent) ?? null
@@ -478,6 +487,43 @@ export function AppearanceSettings() {
           <ListRow
             below={
               <>
+                {/* Skin gallery card: built-in skins only, Workbench pinned
+                    first with its recommendation badge. */}
+                <div className="mt-3">
+                  <p className="px-1 text-[length:var(--conversation-caption-font-size)] font-medium text-(--ui-text-tertiary)">
+                    {t.settings.group.skinGallery.title}
+                  </p>
+                  <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {GALLERY_THEMES.map(theme => {
+                      const active = themeName === theme.name
+
+                      return (
+                        <button
+                          className={cn('relative w-full p-2 text-left', selectableCardClass({ active, prominent: true }))}
+                          key={theme.name}
+                          onClick={() => {
+                            triggerHaptic('crisp')
+                            setTheme(theme.name)
+                          }}
+                          type="button"
+                        >
+                          {theme.name === RECOMMENDED_SKIN && (
+                            <span className="absolute right-2 top-2 rounded-full border border-(--ui-stroke-tertiary) bg-(--ui-bg-elevated)/80 px-2 py-0.5 text-[10.5px] font-semibold text-foreground backdrop-blur-sm">
+                              {t.settings.group.skinGallery.recommended}
+                            </span>
+                          )}
+                          <ThemePreview mode={resolvedMode} name={theme.name} />
+                          <div className="mt-3 px-1">
+                            <div className="truncate text-[length:var(--conversation-text-font-size)] font-medium">
+                              {theme.label}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
                 {/* One search box: filters your installed themes (the grid)
                     and live-searches the VS Code Marketplace below. */}
                 <div className="mt-3">
@@ -949,10 +995,6 @@ export function AppearanceSettings() {
             title={a.embedsTitle}
           />
         </div>
-      </div>
-
-      <div className="mt-6">
-        <PetSettings />
       </div>
     </SettingsContent>
   )

@@ -368,6 +368,64 @@ export const zh: Translations = {
     noResults: '未找到语言'
   },
 
+  security: {
+    approvals: {
+      nav: '审批与权限',
+      title: '审批与权限',
+      intro: '三种工作模式（取证、CTF、编程）共用的护栏。同一审批设置也出现在「安全」页——config.yaml 是唯一事实来源。',
+      mode: '默认审批模式',
+      modeDesc: '逐项审批：每次写入都询问。半自动：工作区内自动、区外逐项。完全访问：不再弹出审批确认。',
+      modeManual: '逐项审批',
+      modeSmart: '半自动',
+      modeOff: '完全访问',
+      fullAccessTitle: '完全访问',
+      fullAccessBadge: '完全访问',
+      fullAccessNote: '完全访问模式下，Fulilian 执行工具调用不再请求审批。凡在无人值守时运行，界面都会出现此徽标——请只对可信、可弃的工作区使用该模式。',
+      highRiskCommands: '高危命令清单',
+      highRiskCommandsDesc: '无论何种模式都需二次确认的命令（逗号分隔）。拦截层本体随数据层落地，本页仅记录清单。'
+    },
+    evidence: {
+      nav: '取证保护',
+      title: '取证保护',
+      intro: '面向取证案件。以下偏好在证据容器数据层激活后生效，现在先落配置，后续无需重新决策。',
+      readOnly: '证据目录只读挂载',
+      readOnlyDesc: '证据目录以只读方式挂载；写入需审批且必定留痕。默认开启，且不可静默关闭。',
+      verifyOnReference: '引用前复验',
+      verifyOnReferenceDesc: '每次引用证据文件前重新计算 SHA256，失配即阻断引用。默认开启。',
+      archiveLock: '归档后锁定写操作',
+      archiveLockDesc: '已归档案件拒绝写操作，直至经审批并留痕解锁。',
+      disableConfirmTitle: '关闭证据目录只读挂载？'
+    },
+    audit: {
+      nav: '审计留痕',
+      title: '审计留痕',
+      intro: '对工具调用、写入、解锁与揭示行为的本地审计日志——合法取证工作的合规记录。',
+      enabled: '审计留痕',
+      enabledDesc: '将 agent 工具调用、写操作与人工事件（解锁、揭示、导出）记入本地审计日志。默认开启。',
+      retention: '保留期',
+      retentionDesc: '审计条目本地保留多久后清理。',
+      retentionPermanent: '永久',
+      exportTitle: '导出与清空',
+      export: '导出',
+      clear: '清空',
+      dataLayerNote: '审计存储本体随数据层（后续轮次）落地——届时此处启用生效，在此之前不产生数据。'
+    },
+    sensitive: {
+      nav: '敏感信息',
+      title: '敏感信息',
+      intro: 'Fulilian 在内容到达模型或屏幕前的脱敏规则。flag 脱敏作用于 CTF 模式；密钥脱敏全局生效。',
+      redactSecrets: '密钥脱敏',
+      redactSecretsDesc: '尽可能对检测到的密钥（key、token、密码）在模型可见内容中打码。默认开启。',
+      redactFlags: 'flag 脱敏',
+      redactFlagsDesc: '对工具输出中的 CTF flag 打码；在 flag 卡中经显式操作揭示。',
+      customRegex: '自定义正则',
+      customRegexDesc: '额外的正则表达式，其匹配内容按密钥方式打码。',
+      customRegexPlaceholder: '正则表达式',
+      revealAudited: '揭示留痕',
+      revealAuditedDesc: '每次取消打码/揭示动作都会写入审计日志。默认开启。'
+    }
+  },
+
   settings: {
     closeSettings: '关闭设置',
     exportConfig: '导出配置',
@@ -497,6 +555,66 @@ export const zh: Translations = {
       completionSoundTitle: '完成提示音',
       completionSoundDesc: '智能体回合结束时播放。可在此选择预设并预览。',
       completionSoundPreview: '预览'
+    },
+    group: {
+      basics: '基础',
+      'work-mode': '工作模式',
+      'model-capabilities': '模型与能力',
+      'security-compliance': '安全与合规',
+      'connection-data': '连接与数据',
+      apps: '应用',
+      // 编程入口复用既有工作区页（链接跳转，非新页）——DESIGN_PROPOSAL §5.5。
+      programming: '编程',
+      forensics: {
+        nav: '取证',
+        title: '取证',
+        intro: '取证案件的缺省配置：案号编号、报告结构与时间线来源。案件数据本身按案件管理，不在此处。',
+        caseNoTemplate: '案号格式模板',
+        caseNoTemplateDesc: '生成新案号时使用的格式。YYYY 为年份，NNN 为补零序号。',
+        reportSections: '报告章节模板',
+        reportSectionsDesc: '生成的报告草稿包含哪些章节。草稿生成本体随数据层（后续轮次）落地——此处先记录结构。',
+        reportSectionNames: {
+          overview: '概述',
+          evidence: '证据清单',
+          analysis: '分析过程',
+          conclusion: '结论',
+          appendix: '附录'
+        },
+        reportSectionDescs: {
+          overview: '案件摘要、范围与授权依据。',
+          evidence: '附哈希与复验状态的证据列表。',
+          analysis: '时间线与发现，按哈希引用证据。',
+          conclusion: '对案件问题的回答，附置信度说明。',
+          appendix: '工具版本、环境与原始导出。'
+        },
+        timelineSources: '时间线来源',
+        timelineSourcesDesc: '时间线提取允许取用的来源类型。提取随数据层（后续轮次）落地。',
+        timelineSourceNames: {
+          mirror: '磁盘镜像',
+          logs: '日志',
+          pcap: '网络抓包'
+        },
+        timelineSourceDescs: {
+          mirror: '已挂载镜像中的文件系统痕迹。',
+          logs: '应用、系统与安全事件日志。',
+          pcap: '网络捕获与流记录。'
+        }
+      },
+      ctf: {
+        nav: 'CTF',
+        title: 'CTF',
+        intro: 'CTF 赛题的缺省配置：flag 识别、赛事时区与提交重试。flag 本体加密存于保管库。',
+        flagRegex: 'flag 正则',
+        flagRegexDesc: '用于检测并对工具输出中的 flag 打码的正则表达式。',
+        defaultTimezone: '默认赛事时区',
+        defaultTimezoneDesc: '赛题未标注时区时，截止时间使用的时区（IANA 名称）。',
+        submitRetryLimit: '提交重试上限',
+        submitRetryLimitDesc: '单题记录的错误提交次数上限，超过后建议冷却。'
+      },
+      skinGallery: {
+        title: '皮肤画廊',
+        recommended: '推荐'
+      }
     },
     sections: {
       model: '模型',

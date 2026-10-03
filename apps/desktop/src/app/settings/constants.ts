@@ -20,7 +20,7 @@ import type { ThemeMode } from '@/themes/context'
 export { BUILTIN_PERSONALITIES } from '@/lib/personalities'
 
 import { defineFieldCopy } from './field-copy'
-import type { DesktopConfigSection } from './types'
+import type { DesktopConfigSection, SettingsGroupId, SettingsView } from './types'
 
 // Provider group definitions used to fold raw env-var names like
 // ``XAI_API_KEY`` into a single "xAI" card with a friendly label, short
@@ -628,26 +628,25 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
 })
 
 // Curated desktop config surface: only fields a user might tune from the app.
+// Grouping follows DESIGN_PROPOSAL §5.5 (six Workbench groups); ids and key
+// lists are stable — placement and order are all that changed.
 export const SECTIONS: DesktopConfigSection[] = [
   {
-    id: 'model',
-    label: 'Model',
-    icon: Box,
-    keys: ['model_context_length', 'fallback_providers']
-  },
-  {
+    group: 'basics',
     id: 'chat',
     label: 'Chat',
     icon: MessageCircle,
     keys: ['display.personality', 'timezone', 'display.show_reasoning', 'agent.image_input_mode']
   },
   {
+    group: 'basics',
     id: 'appearance',
     label: 'Appearance',
     icon: Palette,
     keys: []
   },
   {
+    group: 'work-mode',
     id: 'workspace',
     label: 'Workspace',
     icon: Monitor,
@@ -663,26 +662,14 @@ export const SECTIONS: DesktopConfigSection[] = [
     ]
   },
   {
-    id: 'safety',
-    label: 'Safety',
-    icon: Lock,
-    keys: [
-      'approvals.mode',
-      'approvals.timeout',
-      'approvals.mcp_reload_confirm',
-      'command_allowlist',
-      'security.redact_secrets',
-      'security.allow_private_urls',
-      'checkpoints.enabled'
-    ]
+    group: 'model-capabilities',
+    id: 'model',
+    label: 'Model',
+    icon: Box,
+    keys: ['model_context_length', 'fallback_providers']
   },
   {
-    id: 'browser',
-    label: 'Browser',
-    icon: Globe,
-    keys: ['browser.use_real_profile', 'browser.allow_private_urls', 'browser.auto_local_for_private_urls']
-  },
-  {
+    group: 'model-capabilities',
     id: 'memory',
     label: 'Memory & Context',
     icon: Brain,
@@ -700,6 +687,7 @@ export const SECTIONS: DesktopConfigSection[] = [
     ]
   },
   {
+    group: 'model-capabilities',
     id: 'voice',
     label: 'Voice',
     icon: Mic,
@@ -749,6 +737,14 @@ export const SECTIONS: DesktopConfigSection[] = [
     ]
   },
   {
+    group: 'model-capabilities',
+    id: 'browser',
+    label: 'Browser',
+    icon: Globe,
+    keys: ['browser.use_real_profile', 'browser.allow_private_urls', 'browser.auto_local_for_private_urls']
+  },
+  {
+    group: 'model-capabilities',
     id: 'advanced',
     label: 'Advanced',
     icon: Wrench,
@@ -776,7 +772,46 @@ export const SECTIONS: DesktopConfigSection[] = [
       'delegation.reasoning_effort',
       'updates.non_interactive_local_changes'
     ]
+  },
+  {
+    group: 'security-compliance',
+    id: 'safety',
+    label: 'Safety',
+    icon: Lock,
+    keys: [
+      'approvals.mode',
+      'approvals.timeout',
+      'approvals.mcp_reload_confirm',
+      'command_allowlist',
+      'security.redact_secrets',
+      'security.allow_private_urls',
+      'checkpoints.enabled'
+    ]
   }
+]
+
+// Workbench nav grouping (DESIGN_PROPOSAL §5.5): each group lists its nav
+// views in display order — `config:*` ids resolve through SECTIONS, the rest
+// are page-level views rendered by the settings shell. The programming entry
+// intentionally reuses the existing workspace page (link, not a new page).
+export interface SettingsGroupDef {
+  id: SettingsGroupId
+  views: SettingsView[]
+}
+
+export const SETTINGS_GROUPS: SettingsGroupDef[] = [
+  { id: 'basics', views: ['config:chat', 'config:appearance', 'notifications', 'keybinds'] },
+  { id: 'work-mode', views: ['forensics', 'ctf', 'config:workspace'] },
+  {
+    id: 'model-capabilities',
+    views: ['config:model', 'providers', 'config:memory', 'config:voice', 'config:browser', 'config:advanced']
+  },
+  {
+    id: 'security-compliance',
+    views: ['config:safety', 'approvals', 'evidence-protection', 'audit', 'sensitive-info']
+  },
+  { id: 'connection-data', views: ['keys', 'gateway', 'sessions', 'billing'] },
+  { id: 'apps', views: ['plugins', 'presets', 'about', 'pet', 'quick-entry'] }
 ]
 
 export interface ModeOption {

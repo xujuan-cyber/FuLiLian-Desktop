@@ -6,17 +6,35 @@ import type { EnvVarInfo } from '@/types/fulilian'
 
 export type SettingsView =
   | 'about'
+  | 'approvals'
+  | 'audit'
   | 'billing'
   | 'connections'
+  | 'ctf'
+  | 'evidence-protection'
+  | 'forensics'
   | 'gateway'
   | 'keybinds'
   | 'keys'
   | 'notifications'
+  | 'pet'
   | 'plugins'
   | 'presets'
   | 'providers'
+  | 'quick-entry'
+  | 'sensitive-info'
   | 'sessions'
   | `config:${string}`
+
+// The six Workbench groups (DESIGN_PROPOSAL §5.5). Pure re-grouping: section
+// ids are stable, only placement and order change.
+export type SettingsGroupId =
+  | 'apps'
+  | 'basics'
+  | 'connection-data'
+  | 'model-capabilities'
+  | 'security-compliance'
+  | 'work-mode'
 export type EnvPatch = Partial<Pick<EnvVarInfo, 'is_set' | 'redacted_value'>>
 
 export interface SettingsPageProps {
@@ -34,6 +52,7 @@ export interface ProviderGroup {
 }
 
 export interface DesktopConfigSection {
+  group: SettingsGroupId
   id: string
   label: string
   icon: IconComponent
