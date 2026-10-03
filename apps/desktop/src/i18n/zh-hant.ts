@@ -255,6 +255,67 @@ export const zhHant = defineLocale({
     noResults: '找不到語言'
   },
 
+  container: {
+    meta: {
+      project: '專案',
+      forensics: '取證',
+      ctf: 'CTF',
+      caseNo: '案號',
+      statsEvidence: '證據',
+      statsAudit: '留痕',
+      statsReport: '報告',
+      event: '賽事',
+      categoryPoints: '分類·分值',
+      countdown: '倒數',
+      countdownNone: '未設截止'
+    },
+    cards: {
+      evidenceTitle: '證據清單',
+      evidenceEmpty: '匯入證據以開始——匯入即計算 SHA256。',
+      auditTitle: '審計留痕',
+      auditEmpty: '暫無留痕記錄。',
+      flagVaultTitle: 'flag 保管庫',
+      flagEmpty: '暫無已保存 flag。',
+      submissionsTitle: '提交歷史',
+      submissionsEmpty: '暫無提交記錄。',
+      toolboxTitle: '工具箱',
+      toolboxEmpty: '快捷啟動隨資料層輪次啟用。'
+    },
+    pills: {
+      caseNo: '案號',
+      evidence: '證據',
+      categoryPoints: '分類·分值',
+      countdown: '倒數',
+      countdownNone: '未設截止',
+      emptyValue: '—'
+    }
+  },
+
+  home: {
+    greeting: {
+      morning: '早安',
+      afternoon: '午安',
+      evening: '晚安'
+    },
+    chips: {
+      programming: '繼續程式設計任務',
+      programmingTip: '聚焦輸入框，繼續手邊的工作',
+      forensics: '新建取證案件',
+      ctf: '接手 CTF 賽題',
+      idle: '閒時任務',
+      placeholderTip: 'kind 資料層落地前暫不可用'
+    },
+    chipsNote: '取證、CTF 與閒時任務入口為靜態佔位，隨 kind 資料層落地啟用。',
+    modeCards: {
+      forensics: '取證案件',
+      forensicsDesc: '證據完整性校驗、審計留痕與報告草稿。',
+      ctf: 'CTF 賽題',
+      ctfDesc: '單題的 flag 保管庫、提交歷史與倒數。',
+      project: '程式設計專案',
+      projectDesc: '完整工作區：儲存庫、終端機、預覽與 git 變更。'
+    }
+  },
+
   security: {
     approvals: {
       nav: '審批與權限',

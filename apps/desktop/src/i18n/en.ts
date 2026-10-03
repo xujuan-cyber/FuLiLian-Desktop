@@ -381,6 +381,67 @@ export const en: Translations = {
     noResults: 'No languages found'
   },
 
+  container: {
+    meta: {
+      project: 'Project',
+      forensics: 'Forensics',
+      ctf: 'CTF',
+      caseNo: 'Case',
+      statsEvidence: 'Evidence',
+      statsAudit: 'Audit',
+      statsReport: 'Report',
+      event: 'Event',
+      categoryPoints: 'Category·Points',
+      countdown: 'Countdown',
+      countdownNone: 'No deadline'
+    },
+    cards: {
+      evidenceTitle: 'Evidence',
+      evidenceEmpty: 'Import evidence to begin — SHA256 is computed on import.',
+      auditTitle: 'Audit trail',
+      auditEmpty: 'No audit entries yet.',
+      flagVaultTitle: 'Flag vault',
+      flagEmpty: 'No saved flags.',
+      submissionsTitle: 'Submissions',
+      submissionsEmpty: 'No submissions recorded.',
+      toolboxTitle: 'Toolbox',
+      toolboxEmpty: 'Quick launchers arrive with the data layer.'
+    },
+    pills: {
+      caseNo: 'Case',
+      evidence: 'Evidence',
+      categoryPoints: 'Category·Points',
+      countdown: 'Countdown',
+      countdownNone: 'No deadline',
+      emptyValue: '—'
+    }
+  },
+
+  home: {
+    greeting: {
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening'
+    },
+    chips: {
+      programming: 'Continue coding',
+      programmingTip: 'Focus the composer and keep working',
+      forensics: 'New forensics case',
+      ctf: 'Take on a CTF challenge',
+      idle: 'Idle-time task',
+      placeholderTip: 'Unavailable until the kind data layer lands'
+    },
+    chipsNote: 'Forensics, CTF and idle entries are placeholders until the kind data layer lands.',
+    modeCards: {
+      forensics: 'Forensics case',
+      forensicsDesc: 'Evidence with integrity checks, audit trail and report drafts.',
+      ctf: 'CTF challenge',
+      ctfDesc: 'Flag vault, submissions and countdown for one challenge.',
+      project: 'Coding project',
+      projectDesc: 'The full workspace: repo, terminal, preview and git changes.'
+    }
+  },
+
   security: {
     approvals: {
       nav: 'Approvals & permissions',

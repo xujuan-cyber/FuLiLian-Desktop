@@ -263,6 +263,67 @@ export const ja = defineLocale({
     noResults: '言語が見つかりません'
   },
 
+  container: {
+    meta: {
+      project: 'プロジェクト',
+      forensics: '取証',
+      ctf: 'CTF',
+      caseNo: '案件番号',
+      statsEvidence: '証拠',
+      statsAudit: '監査',
+      statsReport: '報告書',
+      event: 'イベント',
+      categoryPoints: '分野·配点',
+      countdown: 'カウントダウン',
+      countdownNone: '締切未設定'
+    },
+    cards: {
+      evidenceTitle: '証拠一覧',
+      evidenceEmpty: '証拠をインポートして開始——インポート時に SHA256 を計算します。',
+      auditTitle: '監査ログ',
+      auditEmpty: '監査記録はまだありません。',
+      flagVaultTitle: 'flag 保管庫',
+      flagEmpty: '保存済み flag はありません。',
+      submissionsTitle: '提出履歴',
+      submissionsEmpty: '提出の記録はありません。',
+      toolboxTitle: 'ツールボックス',
+      toolboxEmpty: 'クイック起動はデータ層と共に提供されます。'
+    },
+    pills: {
+      caseNo: '案件番号',
+      evidence: '証拠',
+      categoryPoints: '分野·配点',
+      countdown: 'カウントダウン',
+      countdownNone: '締切未設定',
+      emptyValue: '—'
+    }
+  },
+
+  home: {
+    greeting: {
+      morning: 'おはようございます',
+      afternoon: 'こんにちは',
+      evening: 'こんばんは'
+    },
+    chips: {
+      programming: 'プログラミングを続ける',
+      programmingTip: 'コンポーザーにフォーカスして作業を続けます',
+      forensics: '取証案件を新規作成',
+      ctf: 'CTF 問題に取り組む',
+      idle: 'アイドル時タスク',
+      placeholderTip: 'kind データ層の提供まで利用できません'
+    },
+    chipsNote: '取証・CTF・アイドル時タスクの入口はプレースホルダーです——kind データ層と共に有効化されます。',
+    modeCards: {
+      forensics: '取証案件',
+      forensicsDesc: '証拠の完全性検証、監査ログ、報告書ドラフト。',
+      ctf: 'CTF 問題',
+      ctfDesc: '1 問の flag 保管庫・提出履歴・カウントダウン。',
+      project: 'プログラミングプロジェクト',
+      projectDesc: '完全なワークスペース：リポジトリ、ターミナル、プレビュー、git 変更。'
+    }
+  },
+
   security: {
     approvals: {
       nav: '承認と権限',

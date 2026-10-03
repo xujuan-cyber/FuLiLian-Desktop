@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router'
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { openSession } from '@/app/open-session'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
+import { sessionContainerKind } from '@/app/chat/sidebar/container-kind'
 import { composerFill, composerFloatingStrip, composerSurfaceGlass } from '@/components/chat/composer-dock'
 import { Button } from '@/components/ui/button'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
@@ -79,6 +80,7 @@ import {
 import { useComposerScope } from './scope'
 import { ComposerStatusStack } from './status-stack'
 import { CodingStatusRow } from './status-stack/coding-row'
+import { ContainerPills } from './container-pills'
 import { SuggestionPills } from './suggestion-pills'
 import { extractClipboardImageBlobs, openDirectiveScope } from './text-utils'
 import { ComposerTriggerPopover } from './trigger-popover'
@@ -1216,6 +1218,10 @@ export function ChatBar({
           <div className={cn(composerFloatingStrip, 'px-[5px] pb-1.5 empty:hidden')}>
             <ActionBadges sessionId={statusSessionId} />
             <SuggestionPills sessionId={statusSessionId} />
+            {/* Work-mode metadata pills (§7 映射行) — static placeholders that
+                render nothing while every session is a project (no kind data
+                layer); the seam is the same sessionContainerKind() lookup. */}
+            <ContainerPills kind={sessionContainerKind()} />
           </div>
           {/* Session-scoped status stack (todos, subagents, background tasks,
               queue). An in-flow dock child: the dock is bottom-anchored, so it

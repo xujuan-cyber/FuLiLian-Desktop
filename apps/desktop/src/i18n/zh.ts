@@ -368,6 +368,67 @@ export const zh: Translations = {
     noResults: '未找到语言'
   },
 
+  container: {
+    meta: {
+      project: '项目',
+      forensics: '取证',
+      ctf: 'CTF',
+      caseNo: '案号',
+      statsEvidence: '证据',
+      statsAudit: '留痕',
+      statsReport: '报告',
+      event: '赛事',
+      categoryPoints: '分类·分值',
+      countdown: '倒计时',
+      countdownNone: '未设截止'
+    },
+    cards: {
+      evidenceTitle: '证据清单',
+      evidenceEmpty: '导入证据以开始——导入即计算 SHA256。',
+      auditTitle: '审计留痕',
+      auditEmpty: '暂无留痕记录。',
+      flagVaultTitle: 'flag 保管库',
+      flagEmpty: '暂无已保存 flag。',
+      submissionsTitle: '提交历史',
+      submissionsEmpty: '暂无提交记录。',
+      toolboxTitle: '工具箱',
+      toolboxEmpty: '快捷启动随数据层轮次启用。'
+    },
+    pills: {
+      caseNo: '案号',
+      evidence: '证据',
+      categoryPoints: '分类·分值',
+      countdown: '倒计时',
+      countdownNone: '未设截止',
+      emptyValue: '—'
+    }
+  },
+
+  home: {
+    greeting: {
+      morning: '早上好',
+      afternoon: '下午好',
+      evening: '晚上好'
+    },
+    chips: {
+      programming: '继续编程任务',
+      programmingTip: '聚焦输入框，继续手头的工作',
+      forensics: '新建取证案件',
+      ctf: '接手 CTF 赛题',
+      idle: '闲时任务',
+      placeholderTip: 'kind 数据层落地前暂不可用'
+    },
+    chipsNote: '取证、CTF 与闲时任务入口为静态占位，随 kind 数据层落地启用。',
+    modeCards: {
+      forensics: '取证案件',
+      forensicsDesc: '证据完整性校验、审计留痕与报告草稿。',
+      ctf: 'CTF 赛题',
+      ctfDesc: '单题的 flag 保管库、提交历史与倒计时。',
+      project: '编程项目',
+      projectDesc: '完整工作区：仓库、终端、预览与 git 变更。'
+    }
+  },
+
   security: {
     approvals: {
       nav: '审批与权限',

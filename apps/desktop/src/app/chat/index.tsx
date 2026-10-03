@@ -65,6 +65,7 @@ import { requestComposerInsert } from './composer/focus'
 import { droppedFileInlineRefs } from './composer/inline-refs'
 import { ComposerSurfaceProvider, useComposerScope, useComposerSurfaceId } from './composer/scope'
 import type { ChatBarState } from './composer/types'
+import { ContainerMeta } from './container-meta'
 import { type DroppedFile, partitionDroppedFiles } from './hooks/use-composer-actions'
 import { type DragKind, useFileDropZone } from './hooks/use-file-drop-zone'
 import { shouldShowIntro } from './intro-visibility'
@@ -166,6 +167,11 @@ function ChatHeader({
         }}
       >
         {showProfileTag && <ProfileTag className="pointer-events-auto" profile={activeStoredSession?.profile} />}
+        {/* Work-mode strip (§5.4): 6px mode dot + 10.5px kind badge. The kind
+            seam has no data layer yet — every session is a project, so this is
+            the green dot + 「项目」 badge; the forensics/CTF structure renders
+            only through the sessionContainerKind() seam (container-meta.tsx). */}
+        <ContainerMeta className="pointer-events-auto" />
         <SessionActionsMenu
           align="start"
           onDelete={selectedSessionId ? onDeleteSelectedSession : undefined}

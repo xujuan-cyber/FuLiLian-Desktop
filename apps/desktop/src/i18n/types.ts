@@ -330,6 +330,67 @@ export interface Translations {
     noResults: string
   }
 
+  container: {
+    meta: {
+      project: string
+      forensics: string
+      ctf: string
+      caseNo: string
+      statsEvidence: string
+      statsAudit: string
+      statsReport: string
+      event: string
+      categoryPoints: string
+      countdown: string
+      countdownNone: string
+    }
+    cards: {
+      evidenceTitle: string
+      evidenceEmpty: string
+      auditTitle: string
+      auditEmpty: string
+      flagVaultTitle: string
+      flagEmpty: string
+      submissionsTitle: string
+      submissionsEmpty: string
+      toolboxTitle: string
+      toolboxEmpty: string
+    }
+    pills: {
+      caseNo: string
+      evidence: string
+      categoryPoints: string
+      countdown: string
+      countdownNone: string
+      emptyValue: string
+    }
+  }
+
+  home: {
+    greeting: {
+      morning: string
+      afternoon: string
+      evening: string
+    }
+    chips: {
+      programming: string
+      programmingTip: string
+      forensics: string
+      ctf: string
+      idle: string
+      placeholderTip: string
+    }
+    chipsNote: string
+    modeCards: {
+      forensics: string
+      forensicsDesc: string
+      ctf: string
+      ctfDesc: string
+      project: string
+      projectDesc: string
+    }
+  }
+
   security: {
     approvals: {
       nav: string

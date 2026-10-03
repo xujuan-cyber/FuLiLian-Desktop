@@ -328,6 +328,65 @@ export const ar = defineLocale({
     searchPlaceholder: 'ابحث عن لغة...',
     noResults: 'لا توجد لغة مطابقة'
   },
+  container: {
+    meta: {
+      project: 'مشروع',
+      forensics: 'الأدلة الجنائية',
+      ctf: 'CTF',
+      caseNo: 'رقم الحالة',
+      statsEvidence: 'الأدلة',
+      statsAudit: 'التدقيق',
+      statsReport: 'التقرير',
+      event: 'الفعالية',
+      categoryPoints: 'الفئة·النقاط',
+      countdown: 'العد التنازلي',
+      countdownNone: 'لا موعد نهائي'
+    },
+    cards: {
+      evidenceTitle: 'قائمة الأدلة',
+      evidenceEmpty: 'استورد الأدلة للبدء — يُحسب SHA256 عند الاستيراد.',
+      auditTitle: 'سجل التدقيق',
+      auditEmpty: 'لا توجد مدخلات تدقيق بعد.',
+      flagVaultTitle: 'خزنة الأعلام',
+      flagEmpty: 'لا توجد أعلام محفوظة.',
+      submissionsTitle: 'سجل المحاولات',
+      submissionsEmpty: 'لا توجد محاولات مسجلة.',
+      toolboxTitle: 'صندوق الأدوات',
+      toolboxEmpty: 'تأتي أدوات التشغيل السريع مع طبقة البيانات.'
+    },
+    pills: {
+      caseNo: 'رقم الحالة',
+      evidence: 'الأدلة',
+      categoryPoints: 'الفئة·النقاط',
+      countdown: 'العد التنازلي',
+      countdownNone: 'لا موعد نهائي',
+      emptyValue: '—'
+    }
+  },
+  home: {
+    greeting: {
+      morning: 'صباح الخير',
+      afternoon: 'مساء الخير',
+      evening: 'طاب مساؤك'
+    },
+    chips: {
+      programming: 'متابعة البرمجة',
+      programmingTip: 'التركيز على صندوق الإدخال ومواصلة العمل',
+      forensics: 'حالة أدلة جنائية جديدة',
+      ctf: 'تولّي تحدّي CTF',
+      idle: 'مهمة وقت الفراغ',
+      placeholderTip: 'غير متاح حتى تتوفر طبقة بيانات kind'
+    },
+    chipsNote: 'مدخلات الأدلة الجنائية وCTF ووقت الفراغ عناصر مؤقتة — تُفعَّل مع طبقة بيانات kind.',
+    modeCards: {
+      forensics: 'حالة أدلة جنائية',
+      forensicsDesc: 'أدلة مع فحص السلامة وسجل تدقيق ومسودات تقارير.',
+      ctf: 'تحدّي CTF',
+      ctfDesc: 'خزنة أعلام وسجل محاولات وعد تنازلي لتحدّد واحد.',
+      project: 'مشروع برمجة',
+      projectDesc: 'مساحة العمل الكاملة: المستودع والطرفية والمعاينة وتغييرات git.'
+    }
+  },
   security: {
     approvals: {
       nav: 'الموافقات والأذونات',
