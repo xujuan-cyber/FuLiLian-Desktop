@@ -32,7 +32,6 @@ import {
 import { toggleHud } from '@/store/hud'
 import { $capture, $comboIndex, endCapture, setBinding } from '@/store/keybinds'
 import {
-  requestSessionSearchFocus,
   setFileBrowserOpen,
   toggleFileBrowserOpen,
   togglePanesFlipped,
@@ -255,7 +254,7 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'session.next': () => cycleTab(1),
     'session.prev': () => cycleTab(-1),
     ...sessionSlotHandlers,
-    'session.focusSearch': requestSessionSearchFocus,
+    'session.focusSearch': toggleCommandPalette,
     'session.togglePin': deps.toggleSelectedPin,
     'session.archive': deps.archiveSelectedSession,
     // openWorktreeDialog resolves the target. There is no test for a repo
