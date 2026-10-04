@@ -324,6 +324,11 @@ declare global {
         message: string
         componentStack: string
       }) => void
+      /**
+       * P13 · 上报一个渲染层启动埋点（fire-and-forget）。`name` 必须命中主进程
+       * 白名单、`t` 为绝对 epoch ms；非法入参在主进程侧静默丢弃。
+       */
+      reportBootMark?: (name: string, t: number) => void
       readDir: (path: string) => Promise<FulilianReadDirResult>
       gitRoot?: (path: string) => Promise<string | null>
       // Reveal a path in the OS file manager (Finder / Explorer).

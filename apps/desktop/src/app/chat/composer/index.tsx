@@ -11,6 +11,7 @@ import { composerFill, composerFloatingStrip, composerSurfaceGlass } from '@/com
 import { Button } from '@/components/ui/button'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
 import { useI18n } from '@/i18n'
+import { reportBootMark } from '@/lib/boot-marks'
 import { chatMessageText } from '@/lib/chat-messages'
 import { PR_COMMENT_URL_RE } from '@/lib/chat-runtime'
 import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
@@ -228,6 +229,14 @@ export function ChatBar({
   const gatewayState = useStore($gatewayState)
   const reconnecting = gatewayState === 'closed' || gatewayState === 'error'
   const inputDisabled = disabled && !reconnecting
+
+  // P13: composer 可交互（gateway 已打开、可发送）的那一刻 = boot:composer-ready。
+  // reportBootMark 内部按名字闩锁，只会真正上报一次。
+  useEffect(() => {
+    if (!disabled) {
+      reportBootMark('boot:composer-ready')
+    }
+  }, [disabled])
 
   // The draft engine — detached source of truth (DOM + draftRef + edge
   // selectors); typing never re-renders the chrome. ChatBar owns `queueEditRef`

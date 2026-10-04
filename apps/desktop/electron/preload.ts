@@ -307,6 +307,9 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
   // Fire-and-forget: persists a renderer error-boundary catch (with component
   // stack) to desktop.log so crashes survive the window (#79428).
   reportRendererError: report => ipcRenderer.send('fulilian:logs:renderer-error', report),
+  // P13 · 启动埋点窄通道：只接受（白名单名字, 有限数字 t）两个基本类型。主进程
+  // 侧二次校验，非法入参静默丢弃；渲染层自由文本永不进 desktop.log。
+  reportBootMark: (name, t) => ipcRenderer.send('fulilian:boot-mark', name, t),
   readDir: dirPath => ipcRenderer.invoke('fulilian:fs:readDir', dirPath),
   gitRoot: startPath => ipcRenderer.invoke('fulilian:fs:gitRoot', startPath),
   revealPath: targetPath => ipcRenderer.invoke('fulilian:fs:reveal', targetPath),

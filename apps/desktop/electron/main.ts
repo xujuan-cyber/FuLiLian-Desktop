@@ -79,6 +79,7 @@ import {
 } from './bootstrap-platform'
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
 import { runBootstrap } from './bootstrap-runner'
+import { createBootTiming, formatRendererBootMarkLine, parseRendererBootMark } from './boot-timing'
 import {
   BROWSER_WINDOW_HEIGHT,
   BROWSER_WINDOW_MIN_HEIGHT,
@@ -1656,6 +1657,10 @@ function rememberLog(chunk) {
 }
 
 installCrashForensics({ flush: flushDesktopLogBufferSync, log: rememberLog })
+
+// P13: 主进程启动分段埋点（resolve→spawn→ready→window shown）。输出复用既有
+// desktop.log 管线（rememberLog），每个锚点首现一次、有界行数。
+const bootTiming = createBootTiming({ sink: rememberLog })
 
 // A rejected loadURL leaves a blank window and, unhandled, no trace anywhere
 // the user can send us. `label` names the surface so the log says which one.
@@ -4637,6 +4642,16 @@ function createActiveBackend(backendArgs) {
 }
 
 function resolveFulilianBackend(backendArgs) {
+  bootTiming.mark('boot:resolve:start')
+
+  try {
+    return resolveFulilianBackendInner(backendArgs)
+  } finally {
+    bootTiming.mark('boot:resolve:end')
+  }
+}
+
+function resolveFulilianBackendInner(backendArgs) {
   // 1. Explicit override -- FULILIAN_DESKTOP_FULILIAN_ROOT points at a developer
   //    checkout. Honour it as-is (no bootstrap; the user is driving).
   const overrideRoot =
@@ -12426,6 +12441,8 @@ async function startFulilian() {
     const backendNonce = crypto.randomBytes(16).toString('hex')
     const parentIdentityEnv = parentWatchdogEnv(process.pid, parentStartMarker, backendNonce)
 
+    bootTiming.mark('boot:spawn')
+
     const fulilianProcess = spawn(
       backend.command,
       backend.args,
@@ -12559,6 +12576,9 @@ async function startFulilian() {
       }),
       backendStartFailed
     ])
+
+    // 后端已公告 FULILIAN_BACKEND_READY（端口已绑定）= boot:ready 锚点。
+    bootTiming.mark('boot:ready')
 
     if (readyFile) {
       fs.unlink(readyFile, () => {})
@@ -13991,6 +14011,9 @@ function createWindow() {
 
   const revealController = wireWindowReveal(createdMainWindow, {
     onRevealed: () => {
+      // P13: 主窗口真正显示（themed reveal 或 4s fallback），只认首次。
+      bootTiming.mark('boot:window-shown')
+
       // Persist geometry as soon as the window is visible so a crash before the
       // first clean resize/move/close still captures the restored bounds (#56726).
       schedulePersistWindowState()
@@ -16760,6 +16783,19 @@ ipcMain.on('fulilian:logs:renderer-error', (_event, report) => {
   const { label, boundary, message, componentStack } = report && typeof report === 'object' ? report : {}
   rememberLog(formatRendererBoundaryReport(label, boundary, message, componentStack))
   flushDesktopLogBufferSync()
+})
+
+// P13 · 渲染层启动埋点窄通道（fulilian:boot-mark）。名字必须命中固定白名单、
+// t 必须是有限数字，否则**静默丢弃** —— 渲染层自由文本 / console / 任意对象
+// 永不可能进入 desktop.log（护栏语义只强不弱，见 window-renderer-lifecycle）。
+ipcMain.on('fulilian:boot-mark', (_event, name, t) => {
+  const mark = parseRendererBootMark(name, t)
+
+  if (!mark) {
+    return
+  }
+
+  rememberLog(formatRendererBootMarkLine(mark.name, mark.t))
 })
 
 // Local filesystem + plugin-root IPC (readDir/reveal/rename/trash/…) — see fs-ipc.ts.
