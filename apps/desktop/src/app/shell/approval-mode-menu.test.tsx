@@ -73,7 +73,9 @@ describe('approval mode statusbar item', () => {
       </I18nProvider>
     )
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'スマート' }), { button: 0 })
+    // P9 loads the ja bundle on demand: the first frame is the English
+    // fallback, so wait for the localized trigger before interacting.
+    fireEvent.pointerDown(await screen.findByRole('button', { name: 'スマート' }), { button: 0 })
 
     expect(await screen.findByText('必要な場合にのみ確認します')).toBeTruthy()
     expect(screen.getByText('承認プロンプトなしで実行します')).toBeTruthy()

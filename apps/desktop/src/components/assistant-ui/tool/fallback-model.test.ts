@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { setRuntimeI18nLocale } from '@/i18n'
+import { loadTranslations, setRuntimeI18nLocale } from '@/i18n'
 
 import {
   buildToolView,
@@ -400,8 +400,13 @@ describe('buildToolView title actions', () => {
     expect(view.detail).toBe('')
   })
 
-  it('uses the runtime locale for title text and action placement', () => {
+  it('uses the runtime locale for title text and action placement', async () => {
     setRuntimeI18nLocale('ja')
+
+    // P9 loads the ja bundle on demand; the runtime translator serves the
+    // English fallback until the chunk lands, so await it before building the
+    // view. The expected strings below stay strictly Japanese.
+    await loadTranslations('ja')
 
     const read = buildToolView(part({ args: { path: '/tmp/demo.txt' }, result: undefined, toolName: 'read_file' }), '')
 

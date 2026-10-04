@@ -24,7 +24,10 @@ describe('CopyButton i18n', () => {
       </I18nProvider>
     )
 
-    const button = screen.getByRole('button', { name: '复制' })
+    // P9 loads the zh bundle on demand: with `initialLocale="zh"` the first
+    // frame is the English fallback and swaps once the chunk lands. Wait for
+    // the swap before asserting — the expected copy stays strictly Chinese.
+    const button = await screen.findByRole('button', { name: '复制' })
 
     expect(button.textContent).toContain('复制')
     fireEvent.click(button)

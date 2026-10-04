@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { I18nProvider } from '@/i18n'
@@ -63,28 +63,33 @@ afterEach(() => {
 })
 
 describe('ComposerTriggerPopover i18n', () => {
-  it('renders localized empty lookup copy for @ references', () => {
+  // P9 loads every non-English bundle on demand: with `initialLocale="zh"` the
+  // first frame renders the English fallback and swaps once the `zh` chunk
+  // lands. These cases therefore wait for the swap before asserting — the
+  // expected copy itself stays strictly Chinese (no weakened "en-or-zh" match).
+  it('renders localized empty lookup copy for @ references', async () => {
     const { container } = renderPopover('@')
 
-    expect(screen.getByText('没有匹配项。')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('没有匹配项。')).toBeTruthy())
+
     expect(container.textContent).toContain('试试')
     expect(container.textContent).toContain('@file:')
     expect(container.textContent).toContain('或')
     expect(container.textContent).toContain('@folder:')
   })
 
-  it('renders localized loading copy for slash commands', () => {
+  it('renders localized loading copy for slash commands', async () => {
     renderPopover('/', true)
 
     // While loading the popover shows only the spinner + loading copy — the
     // `/help` empty-state hint is reserved for the resolved (not-loading) state.
-    expect(screen.getByText('查找中…')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('查找中…')).toBeTruthy())
   })
 
-  it('renders the slash empty-state hint when not loading', () => {
+  it('renders the slash empty-state hint when not loading', async () => {
     const { container } = renderPopover('/')
 
-    expect(screen.getByText('没有匹配项。')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('没有匹配项。')).toBeTruthy())
     expect(container.textContent).toContain('/help')
   })
 })
