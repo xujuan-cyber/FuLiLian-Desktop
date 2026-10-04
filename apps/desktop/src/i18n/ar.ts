@@ -363,6 +363,16 @@ export const ar = defineLocale({
       emptyValue: '—'
     }
   },
+
+  tray: {
+    newForensics: 'قضية جنائية رقمية جديدة',
+    newCtf: 'تحدي CTF جديد',
+    newProject: 'مهمة برمجية جديدة',
+    runningHeading: 'قيد التشغيل',
+    needsInputHeading: 'بحاجة إلى إدخال',
+    openMainWindow: 'فتح النافذة الرئيسية',
+    quit: 'إنهاء'
+  },
   home: {
     greeting: {
       morning: 'صباح الخير',
@@ -928,6 +938,11 @@ export const ar = defineLocale({
       active: 'الاختصار مفعّل.',
       takenBy: 'يستخدم تطبيق آخر هذا الاختصار — اختر اختصارا مختلفا.',
       invalidShortcut: 'ليس اختصارا صالحا. أضف مفتاح تعديل واحدا على الأقل.'
+    },
+    tray: {
+      enabledTitle: 'التصغير إلى شريط النظام عند إغلاق النافذة',
+      enabledDesc:
+        'إغلاق النافذة الرئيسية يخفيها إلى شريط النظام بدلا من إنهاء التطبيق. يبقى التطبيق يعمل وتستمر المهام في الخلفية؛ لإنهائه نهائيا استخدم «إنهاء» من قائمة شريط النظام.'
     },
     credentials: {
       pasteKey: 'لصق المفتاح',

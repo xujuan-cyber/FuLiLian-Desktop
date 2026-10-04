@@ -299,6 +299,16 @@ export const ja = defineLocale({
     }
   },
 
+  tray: {
+    newForensics: 'フォレンジック案件を新規作成',
+    newCtf: 'CTF 問題を新規作成',
+    newProject: 'コーディングタスクを新規作成',
+    runningHeading: '実行中',
+    needsInputHeading: '入力待ち',
+    openMainWindow: 'メインウィンドウを開く',
+    quit: '終了'
+  },
+
   home: {
     greeting: {
       morning: 'おはようございます',
@@ -983,6 +993,11 @@ export const ja = defineLocale({
       active: 'ショートカットは有効です。',
       takenBy: 'このショートカットは他のアプリが使用しています。別のものを選んでください。',
       invalidShortcut: '有効なショートカットではありません。修飾キーを 1 つ以上含めてください。'
+    },
+    tray: {
+      enabledTitle: 'メインウィンドウを閉じたらトレイに最小化',
+      enabledDesc:
+        'メインウィンドウを閉じると終了せずにシステムトレイへ隠します。バックグラウンドの作業は継続され、完全に終了するにはトレイメニューの「終了」を使います。'
     },
     credentials: {
       pasteKey: 'キーを貼り付け',

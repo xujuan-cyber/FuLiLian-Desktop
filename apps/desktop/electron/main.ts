@@ -350,6 +350,7 @@ import { createStreamThrottle } from './stream-throttle'
 import { registerTerminalIpc } from './terminal-ipc'
 import { registerWslCliIpc } from './wsl-cli-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
+import { createDesktopTray, type DesktopTray } from './tray'
 import {
   backgroundMaterialFor,
   defaultTranslucencyState,
@@ -3137,6 +3138,8 @@ let updateInFlight = false
 // set, window-all-closed calls app.quit() on every platform so the process
 // actually dies and the hand-off script can proceed immediately.
 let isQuittingForHandoff = false
+let isQuitting = false // set once a real quit clears the guard: never hide on close
+let desktopTray: DesktopTray | null = null
 
 // Quit-guard latches: one while the confirmation is on screen (a second
 // Cmd-Q must not stack dialogs), one after the user has said "quit anyway"
@@ -12793,6 +12796,8 @@ function focusWindow(win) {
 
   win.focus()
 }
+// Front the main window (recreating it if needed) for the tray's click actions.
+const showMainWindow = () => ensureMainWindow(mainWindow, { isReady: app.isReady(), createWindow, focusWindow })
 
 function spawnSecondaryWindow({ sessionId, watch }: { sessionId?: string; watch?: boolean } = {}) {
   const icon = getAppIconPath()
@@ -14027,12 +14032,12 @@ function createWindow() {
   mainWindow.on('hide', () => sendWindowStateChanged())
   mainWindow.on('show', () => sendWindowStateChanged())
 
-  // Reopen where the user left off. close is the backstop, flushed
-  // synchronously before the window is gone.
+  // Reopen where the user left off. close is the backstop, flushed synchronously
+  // before the window is gone — a tray-intercepted close still persists it.
   bindGeometryPersistence(mainWindow, schedulePersistWindowState)
   mainWindow.on('maximize', schedulePersistWindowState)
   mainWindow.on('unmaximize', schedulePersistWindowState)
-  mainWindow.on('close', () => schedulePersistWindowState.flush())
+  mainWindow.on('close', event => { schedulePersistWindowState.flush(); desktopTray?.handleClose(event) })
 
   // the closed wrapper remains truthy, so clear only the window this callback owns.
   mainWindow.on('closed', () => {
@@ -17317,6 +17322,20 @@ app.whenReady().then(() => {
   // here and surfaced in Settings via the IPC state (never silent).
   applyQuickEntrySettings(readQuickEntrySettings())
 
+  // System tray (step 16 · T6): status dot, new-task entries, groups, quit.
+  desktopTray = createDesktopTray({
+    actions: {
+      focusSession: id => { const win = sessionWindows.get(id); if (win) focusWindow(win); else { showMainWindow(); mainWindow?.webContents.send('fulilian:focus-session', id) } },
+      newSession: kind => { showMainWindow(); mainWindow?.webContents.send('fulilian:new-session', { kind }) },
+      openMainWindow: showMainWindow,
+      quit: () => { desktopTray?.destroy(); app.quit() }
+    },
+    hideWindow: () => mainWindow?.hide(),
+    iconPath: getAppIconPath(),
+    log: rememberLog,
+    quitState: () => ({ quitting: isQuitting, quittingForHandoff: isQuittingForHandoff, quitInProgress: quitPromptOpen || quitConfirmedWithActiveWork })
+  })
+
   if (IS_MAC) {
     const reposition = () => wakeIndicatorController.reposition()
 
@@ -17428,6 +17447,7 @@ app.on('before-quit', event => {
     return
   }
 
+  isQuitting = true
   // A detached remote updater can outlive this Electron process. Do not tear
   // down its SSH observer/restore transaction at the generic SSH shutdown
   // deadline: join it first (BEFORE sealing the bootstrap coordinator, whose

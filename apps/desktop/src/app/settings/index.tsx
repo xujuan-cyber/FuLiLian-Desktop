@@ -10,6 +10,7 @@ import { getFulilianConfigDefaults, getFulilianConfigRecord, saveFulilianConfig 
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import {
+  AppWindow,
   Archive,
   BarChart3,
   Bell,
@@ -70,6 +71,7 @@ import { QuickEntrySettings } from './quick-entry-settings'
 import { SensitiveInfoSettings } from './sensitive-info-settings'
 import { SessionsSettings } from './sessions-settings'
 import { SettingsContent } from './primitives'
+import { TraySettings } from './tray-settings'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 
 // Nav views derive from the Workbench group table (DESIGN_PROPOSAL §5.5) so
@@ -241,6 +243,10 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
           return { icon: EyeOff, label: t.security.sensitive.nav }
         case 'sessions':
           return { icon: Archive, label: t.settings.nav.archivedChats }
+        case 'tray':
+          // Same string the row renders as its label — a second key would be
+          // exactly the drift the five-locale rule exists to avoid.
+          return { icon: AppWindow, label: t.settings.tray.enabledTitle }
         default:
           return { icon: Settings2, label: view }
       }
@@ -425,6 +431,10 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     ) : activeView === 'quick-entry' ? (
       <SettingsContent>
         <QuickEntrySettings />
+      </SettingsContent>
+    ) : activeView === 'tray' ? (
+      <SettingsContent>
+        <TraySettings />
       </SettingsContent>
     ) : activeView.startsWith('config:') ? (
       <ConfigSettings

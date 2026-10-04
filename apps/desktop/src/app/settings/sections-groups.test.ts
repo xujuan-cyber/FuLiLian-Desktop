@@ -20,6 +20,7 @@ const EXPECTED_PAGE_VIEWS = [
   // Basics
   'notifications',
   'keybinds',
+  'tray',
   // Work modes
   'forensics',
   'ctf',
@@ -149,7 +150,7 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
       expect(views).toContain(page)
     }
 
-    // 9 config sections + 19 page views = 28 rows in the regrouped nav.
+    // 9 config sections + 20 page views = 29 rows in the regrouped nav.
     expect(views.length).toBe(SECTIONS.length + EXPECTED_PAGE_VIEWS.length)
   })
 })

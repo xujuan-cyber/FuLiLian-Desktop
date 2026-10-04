@@ -24,6 +24,7 @@ export type SettingsView =
   | 'quick-entry'
   | 'sensitive-info'
   | 'sessions'
+  | 'tray'
   | `config:${string}`
 
 // The six Workbench groups (DESIGN_PROPOSAL §5.5). Pure re-grouping: section

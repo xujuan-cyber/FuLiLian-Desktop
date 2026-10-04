@@ -404,6 +404,16 @@ export const zh: Translations = {
     }
   },
 
+  tray: {
+    newForensics: '新建取证案件',
+    newCtf: '新建 CTF 赛题',
+    newProject: '新建编程任务',
+    runningHeading: '运行中',
+    needsInputHeading: '需输入',
+    openMainWindow: '打开主窗口',
+    quit: '退出'
+  },
+
   home: {
     greeting: {
       morning: '早上好',
@@ -1127,6 +1137,11 @@ export const zh: Translations = {
       active: '快捷键已生效。',
       takenBy: '此快捷键已被其他应用占用，请换一个。',
       invalidShortcut: '不是有效的快捷键。请至少包含一个修饰键。'
+    },
+    tray: {
+      enabledTitle: '关闭主窗口时最小化到托盘',
+      enabledDesc:
+        '关闭主窗口时隐藏到系统托盘而非退出。托盘会让应用继续运行，后台任务不中断；需要彻底结束请使用托盘菜单的「退出」。'
     },
     credentials: {
       pasteKey: '粘贴密钥',

@@ -417,6 +417,16 @@ export const en: Translations = {
     }
   },
 
+  tray: {
+    newForensics: 'New forensics case',
+    newCtf: 'New CTF challenge',
+    newProject: 'New coding task',
+    runningHeading: 'Running',
+    needsInputHeading: 'Needs input',
+    openMainWindow: 'Open main window',
+    quit: 'Quit'
+  },
+
   home: {
     greeting: {
       morning: 'Good morning',
@@ -945,6 +955,11 @@ export const en: Translations = {
       active: 'Shortcut is active.',
       takenBy: 'Another app already uses this shortcut — pick a different one.',
       invalidShortcut: 'Not a valid shortcut. Include at least one modifier key.'
+    },
+    tray: {
+      enabledTitle: 'Minimize to tray',
+      enabledDesc:
+        'Closing the main window hides it to the system tray instead of quitting. The tray keeps the app running so background work continues; quit from the tray menu to end it.'
     },
     credentials: {
       pasteKey: 'Paste key',

@@ -167,6 +167,14 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
       return () => ipcRenderer.removeListener('fulilian:quick-entry:shown', listener)
     }
   },
+  // System tray (step 16 · T6): the renderer pushes the aggregate session
+  // snapshot — rows plus the localized menu copy the main process cannot
+  // resolve itself — and mirrors the close-to-tray preference. Main owns the
+  // real Tray, its menu, and the main-window close interception.
+  tray: {
+    pushState: payload => ipcRenderer.send('fulilian:tray:state', payload),
+    setCloseToTray: on => ipcRenderer.send('fulilian:tray:close-to-tray', Boolean(on))
+  },
   getBootProgress: () => ipcRenderer.invoke('fulilian:boot-progress:get'),
   getConnectionConfig: profile => ipcRenderer.invoke('fulilian:connection-config:get', profile),
   saveConnectionConfig: payload => ipcRenderer.invoke('fulilian:connection-config:save', payload),

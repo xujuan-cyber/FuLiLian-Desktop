@@ -800,7 +800,7 @@ export interface SettingsGroupDef {
 }
 
 export const SETTINGS_GROUPS: SettingsGroupDef[] = [
-  { id: 'basics', views: ['config:chat', 'config:appearance', 'notifications', 'keybinds'] },
+  { id: 'basics', views: ['config:chat', 'config:appearance', 'notifications', 'keybinds', 'tray'] },
   { id: 'work-mode', views: ['forensics', 'ctf', 'config:workspace'] },
   {
     id: 'model-capabilities',

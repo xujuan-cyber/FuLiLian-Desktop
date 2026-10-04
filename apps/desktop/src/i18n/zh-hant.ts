@@ -291,6 +291,16 @@ export const zhHant = defineLocale({
     }
   },
 
+  tray: {
+    newForensics: '新增取證案件',
+    newCtf: '新增 CTF 賽題',
+    newProject: '新增程式任務',
+    runningHeading: '執行中',
+    needsInputHeading: '需輸入',
+    openMainWindow: '開啟主視窗',
+    quit: '結束'
+  },
+
   home: {
     greeting: {
       morning: '早安',
@@ -946,6 +956,11 @@ export const zhHant = defineLocale({
       active: '快速鍵已生效。',
       takenBy: '此快速鍵已被其他應用程式占用，請換一個。',
       invalidShortcut: '不是有效的快速鍵。請至少包含一個修飾鍵。'
+    },
+    tray: {
+      enabledTitle: '關閉主視窗時最小化到系統匣',
+      enabledDesc:
+        '關閉主視窗時隱藏到系統匣而非結束。系統匣會讓應用程式繼續執行，背景工作不中斷；要徹底結束請使用系統匣選單的「結束」。'
     },
     credentials: {
       pasteKey: '貼上金鑰',

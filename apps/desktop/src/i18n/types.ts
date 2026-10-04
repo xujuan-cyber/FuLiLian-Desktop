@@ -366,6 +366,18 @@ export interface Translations {
     }
   }
 
+  // System tray (step 16 · T6). The renderer resolves these and pushes them
+  // with each snapshot — the main process has no i18n runtime of its own.
+  tray: {
+    newForensics: string
+    newCtf: string
+    newProject: string
+    runningHeading: string
+    needsInputHeading: string
+    openMainWindow: string
+    quit: string
+  }
+
   home: {
     greeting: {
       morning: string
@@ -792,6 +804,10 @@ export interface Translations {
       active: string
       takenBy: string
       invalidShortcut: string
+    }
+    tray: {
+      enabledTitle: string
+      enabledDesc: string
     }
     credentials: {
       pasteKey: string
