@@ -8,7 +8,6 @@ import { createClientSessionState } from '@/lib/chat-runtime'
 import { sessionMessagesSignature } from '@/lib/session-signatures'
 import { $changeEventsAvailable, $cronChangeTick, $sessionsChangeTick } from '@/store/live-sync'
 import { $onBattery, batteryPollInterval } from '@/store/power'
-import { refreshActiveProfile } from '@/store/profile'
 import {
   $activeSessionId,
   $busy,
@@ -28,6 +27,8 @@ import {
   SESSION_WATCHDOG_TIMEOUT_MS,
   setSessionStalled
 } from '@/store/session-states'
+
+import { refreshActiveProfileAfterBoot } from '../refresh-active-profile-after-boot'
 
 import type { ClientSessionState } from '../../types'
 import type { GatewayRequester } from '../types'
@@ -604,7 +605,10 @@ export function useBackgroundSync({
     }
 
     void refreshCurrentModel()
-    void refreshActiveProfile()
+    // Deferred past the desktop boot window: the heavy /api/profiles skills
+    // walk must not contend with the boot-gating config/sessions burst on the
+    // serialized fulilian:api channel (see refresh-active-profile-after-boot).
+    refreshActiveProfileAfterBoot()
     void refreshSessions()
 
     // A RELATIVE workspace cwd (config `terminal.cwd: .`) renders as "." in the

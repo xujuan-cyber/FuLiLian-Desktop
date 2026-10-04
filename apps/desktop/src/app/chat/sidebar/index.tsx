@@ -29,6 +29,7 @@ import { comboTokens } from '@/lib/keybinds/combo'
 import { resolveProfileColor } from '@/lib/profile-color'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
+import { $desktopBoot } from '@/store/boot'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
 import { $bindings } from '@/store/keybinds'
@@ -408,6 +409,15 @@ export function ChatSidebar({
   const messagingOpenIds = useStore($sidebarMessagingOpenIds)
   // Per-platform count of rows currently revealed (starts at NON_SESSION_INITIAL_ROWS).
   const [messagingVisible, setMessagingVisible] = useState<Record<string, number>>({})
+
+  // Gate the profile rail's refresh off until the desktop boot settles, so the
+  // backend's seconds-long /api/profiles skills walk does not join the boot
+  // burst on the serialized fulilian:api channel. One-shot: the listener only
+  // flips this on the running:true→false transition, so boot progress ticks do
+  // not re-render the sidebar. The rail itself stays mounted throughout.
+  const [bootSettled, setBootSettled] = useState(() => !$desktopBoot.get().running)
+
+  useEffect(() => $desktopBoot.listen(state => setBootSettled(!state.running)), [])
 
   // Flash the ⌘N hint full-opacity (no transition) for the press, so hitting
   // the shortcut visibly pings its affordance in the sidebar.
@@ -1803,7 +1813,7 @@ export function ChatSidebar({
         <div className="shrink-0 px-0.5 pb-1 pt-0.5">
           {/* §4.3 bottom status lines: gateway state, then the profile rail. */}
           <SidebarGatewayStatusRow />
-          <ProfileRail />
+          <ProfileRail refreshEnabled={bootSettled} />
         </div>
       </SidebarContent>
       <ProjectDialog />

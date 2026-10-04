@@ -145,7 +145,7 @@ const stepThroughCells: Modifier = ({ containerNodeRect, draggingNodeRect, trans
 // (gateway, profile); the workspace still lives on one gateway at a time, only
 // the picker spans the fleet. Groups keep registry order regardless of which
 // one is active, so a square never moves under the pointer that clicked it.
-export function ProfileRail() {
+export function ProfileRail({ refreshEnabled = true }: { refreshEnabled?: boolean } = {}) {
   const { t } = useI18n()
   const p = t.profiles
   const profiles = useStore($profiles)
@@ -321,7 +321,7 @@ export function ProfileRail() {
   // rail's cached $profiles stale until something re-fetches it. See
   // use-profile-rail-refresh-on-active.ts for the extracted (and tested)
   // wiring.
-  useProfileRailRefreshOnActive()
+  useProfileRailRefreshOnActive(refreshEnabled)
 
   // Which profiles carry a per-profile remote override (connection.json
   // profiles.<name>) — refreshed whenever the profile list changes so the

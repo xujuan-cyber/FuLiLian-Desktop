@@ -14,13 +14,26 @@ import { refreshActiveProfile } from '@/store/profile'
  * used elsewhere in the sidebar (see refreshProjects/refreshProjectTree).
  * Extracted into its own hook (rather than left inline in ProfileRail) so the
  * focus/visibility wiring is unit-testable without rendering the whole rail.
+ *
+ * `enabled` (default true) lets ProfileRail gate the refresh off until the
+ * desktop boot has settled, keeping the heavy /api/profiles walk out of the
+ * boot window. Ignored (refreshes fire) by default so the extracted wiring and
+ * its tests keep their mount-time behavior.
  */
-export function useProfileRailRefreshOnActive(): void {
+export function useProfileRailRefreshOnActive(enabled = true): void {
   useEffect(() => {
-    void refreshActiveProfile()
+    // `enabled` is false while the desktop boot is still running: the rail
+    // mounts under the boot overlay, and its mount refresh would otherwise
+    // dispatch the backend's seconds-long /api/profiles skills walk into the
+    // boot burst on the serialized fulilian:api channel. The caller flips it
+    // true once the boot settles, which re-runs this effect and performs the
+    // (now post-boot) refresh.
+    if (enabled) {
+      void refreshActiveProfile()
+    }
 
     const onActive = () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === 'hidden' || !enabled) {
         return
       }
 
@@ -34,5 +47,5 @@ export function useProfileRailRefreshOnActive(): void {
       window.removeEventListener('focus', onActive)
       document.removeEventListener('visibilitychange', onActive)
     }
-  }, [])
+  }, [enabled])
 }
