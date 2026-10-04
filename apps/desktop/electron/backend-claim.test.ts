@@ -10,6 +10,7 @@ import {
   isPidOnlyStartMarker,
   pidOnlyStartMarker,
   probeStartMarker,
+  processGone,
   processStartMarker
 } from './backend-claim'
 
@@ -69,6 +70,25 @@ test('processStartMarker resolves a real marker for the current process', async 
 test('processStartMarker rejects for a PID that does not exist', async () => {
   // Largest PIDs are bounded well below this on every supported platform.
   await assert.rejects(processStartMarker(2 ** 30 + 12345))
+})
+
+// --- processGone: the native no-spawn short-circuit (#87169) -----------------
+
+test('processGone reports a nonexistent PID as gone', () => {
+  assert.equal(processGone(2 ** 30 + 12345), true)
+})
+
+test('processGone does not misreport a live PID as gone', () => {
+  assert.equal(processGone(process.pid), false)
+})
+
+test('processStartMarker fails fast for a nonexistent PID with a gone-coded error', async () => {
+  // On win32 this is the native short-circuit (ESRCH) that avoids the
+  // PowerShell cold start; on /proc platforms it is the ENOENT read failure.
+  await assert.rejects(
+    processStartMarker(2 ** 30 + 12345),
+    (error: NodeJS.ErrnoException) => error.code === 'ESRCH' || error.code === 'ENOENT'
+  )
 })
 
 // --- PID-only marker helpers --------------------------------------------------

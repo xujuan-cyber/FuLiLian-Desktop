@@ -42,6 +42,7 @@ import {
   isPidOnlyStartMarker,
   pidOnlyStartMarker,
   probeStartMarker,
+  processGone,
   processStartMarker
 } from './backend-claim'
 import { dashboardFallbackArgs, sourceDeclaresServe } from './backend-command'
@@ -3398,6 +3399,7 @@ async function stopOwnedBackend(identity) {
 const backendOwnership = createBackendOwnership({
   matchesIdentity: backendIdentityMatches,
   matchesParent: backendParentMatches,
+  processGone,
   stop: stopOwnedBackend,
   store: {
     read: () => {

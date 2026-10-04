@@ -353,3 +353,26 @@ test('an empty or missing ownership file is NOT corrupt — reap sweeps normally
   // Empty roster: rewriting [] is harmless and keeps the legacy behavior.
   assert.equal(writes.length, 1)
 })
+
+// #87169: a stale roster must not pay a PowerShell cold start per field per
+// entry. When the OS confirms the recorded PID is gone, drop the record with
+// zero probes — `stop` is still never called, so no live process is affected.
+test('startup reap drops a provably-gone incarnation without probing parent or identity', async () => {
+  const gone = { ...ownershipEntry({ pid: 60 }), parentPid: 400, parentStartMarker: 'os-start-parent' }
+  const live = ownershipEntry({ pid: 61 })
+  const store = memoryStore(stored([gone, live]))
+  const matchesIdentity = vi.fn(async () => true)
+  const matchesParent = vi.fn(async () => false)
+  const stop = vi.fn()
+  const processGone = vi.fn((pid: number) => pid === gone.pid)
+
+  const ownership = createOwnership(store, { matchesIdentity, matchesParent, processGone, stop })
+
+  assert.deepEqual(await ownership.reapOrphans(), [live.pid])
+  assert.deepEqual(processGone.mock.calls, [[gone.pid], [live.pid]])
+  // The gone entry never reached the parent or identity probe; the live one did.
+  assert.deepEqual(matchesParent.mock.calls, [[live]])
+  assert.deepEqual(matchesIdentity.mock.calls, [[live]])
+  assert.deepEqual(stop.mock.calls, [[live]])
+  assert.deepEqual(parseBackendOwnership(store.value()), [])
+})

@@ -36,6 +36,27 @@ export function execText(command: string, args: string[], { timeout = 3000 } = {
 }
 
 /**
+ * Native liveness check that needs no child process: true ONLY when the OS
+ * reports the PID does not exist. `process.kill(pid, 0)` is a syscall, so a
+ * provably-gone PID — the common stale-ownership case on the reap path — no
+ * longer pays a PowerShell 5.1 cold start (#87169) just to learn it is gone.
+ * EPERM (alive but not ours to signal) and every other error mean "not gone",
+ * so the caller still runs the real start-marker probe and the failure
+ * degraded to the existing rules.
+ */
+export function processGone(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+
+    return false
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException | null)?.code
+
+    return code === 'ESRCH' || code === 'ENOENT'
+  }
+}
+
+/**
  * Cross-platform process start marker: a value that changes when a PID is
  * reused, so `pid + marker` identifies one specific process incarnation.
  * Throws when the probe fails — callers decide what a failure means (see
@@ -63,6 +84,19 @@ export async function processStartMarker(pid: number): Promise<string> {
 
     if (electronMarker) {
       return electronMarker
+    }
+
+    // A PID that no longer exists cannot be the recorded incarnation, so the
+    // expensive PowerShell probe below would only confirm the obvious. Bail
+    // with an ESRCH-coded error — the same shape `processIdentityMatches` and
+    // `backendParentMatches` already map to a definitive "not this process",
+    // and `probeStartMarker` maps to a failed probe for the claim path.
+    if (processGone(pid)) {
+      const gone = new Error(`No process with PID ${pid} to read a start marker from`) as NodeJS.ErrnoException
+
+      gone.code = 'ESRCH'
+
+      throw gone
     }
 
     const ticks = await execText(
