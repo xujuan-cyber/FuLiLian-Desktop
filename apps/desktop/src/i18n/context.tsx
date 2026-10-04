@@ -94,10 +94,13 @@ export interface I18nProviderProps {
 
 export function I18nProvider({ children, configClient = defaultConfigClient, initialLocale }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(() => normalizeLocale(initialLocale))
-  // P9: only `en` ships on the first frame; a non-English active locale swaps
-  // in once its chunk lands. `translations` is a separate slice from `locale`
-  // precisely so that swap is a re-render, not a re-fetch of the provider tree.
-  const [translations, setTranslations] = useState<Translations>(() => getTranslations(normalizeLocale(initialLocale)))
+  // P9 patch (step 17, M1): `t` is no longer its own state slice — it is derived
+  // from `locale` DURING RENDER (`const t` below), so the active language and
+  // `locale` cannot diverge inside a commit. Only `en` ships on the first frame;
+  // a non-English locale swaps in once its chunk lands. `translationsVersion`
+  // exists solely to force that swap's re-render, because the catalog is a
+  // module-level cache the render phase cannot itself await.
+  const [, setTranslationsVersion] = useState(0)
   const [isLoadingConfig, setIsLoadingConfig] = useState(false)
   const [isSavingLocale, setIsSavingLocale] = useState(false)
   const [configLoadError, setConfigLoadError] = useState<Error | null>(null)
@@ -110,20 +113,24 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
     setRuntimeI18nLocale(locale)
     applyDocumentLocale(locale)
 
+    // The render already shows `getTranslations(locale)` (the English fallback
+    // while the chunk is absent). Only a not-yet-resident locale needs loading;
+    // when it lands we bump `translationsVersion` to re-render, which re-derives
+    // `t` from the SAME `locale` already on screen — no cross-locale mismatch.
+    if (hasTranslations(locale)) {
+      return
+    }
+
     let cancelled = false
-    const apply = () => {
+    const bump = () => {
       if (!cancelled) {
-        setTranslations(getTranslations(locale))
+        setTranslationsVersion(version => version + 1)
       }
     }
 
-    if (hasTranslations(locale)) {
-      apply()
-    } else {
-      // English fallback shows for the one microtask the chunk takes; the
-      // catch keeps a failed chunk from wedging the provider on the fallback.
-      void loadTranslations(locale).then(apply, apply)
-    }
+    // A failed chunk falls back to English (catalog contract); the bump just
+    // re-renders on that fallback rather than wedging the provider.
+    void loadTranslations(locale).then(bump, bump)
 
     return () => {
       cancelled = true
@@ -198,6 +205,11 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
     [configClient]
   )
 
+  // Derived synchronously from `locale`, so `t` and `locale` are always the same
+  // language inside a commit. A `translationsVersion` bump (when a lazy chunk
+  // lands) re-runs this render and re-reads the catalog for the same `locale`.
+  const t = getTranslations(locale)
+
   const value = useMemo<I18nContextValue>(
     () => ({
       configLoadError,
@@ -206,9 +218,9 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       locale,
       saveError,
       setLocale,
-      t: translations
+      t
     }),
-    [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale, translations]
+    [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale, t]
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
