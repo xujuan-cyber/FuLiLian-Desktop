@@ -12282,7 +12282,7 @@ async function startFulilian() {
     throw new Error('Fulilian Desktop is already running in another window.')
   }
 
-  await reapOrphanedBackendsOnce()
+  await bootTiming.span('reapOrphanedBackends', () => reapOrphanedBackendsOnce())
 
   // Latched-failure short-circuit: once bootstrap has failed in this
   // process, every subsequent startFulilian() call re-throws the same error
@@ -12362,7 +12362,9 @@ async function startFulilian() {
       return createPrimaryRemoteConnection(remote, fulilianLog.slice(-80), getWindowState())
     }
 
-    await advanceBootProgress('backend.resolve', 'Resolving Fulilian backend', 8)
+    await bootTiming.span('advanceBootProgressResolve', () =>
+      advanceBootProgress('backend.resolve', 'Resolving Fulilian backend', 8)
+    )
     // Resolve for the desktop's primary profile so a per-profile remote
     // override on the active profile is honored (falls back to env / global).
 
@@ -12373,7 +12375,9 @@ async function startFulilian() {
     // availability checks, stdio MCP servers) can find Homebrew-, nvm-, and
     // ~/.local/bin-installed CLIs. Single-flight with the whenReady warmup;
     // failure-hardened — a broken shell profile never blocks boot.
+    bootTiming.mark('boot:await:login-shell:begin')
     const loginShellPath = await ensureLoginShellPath()
+    bootTiming.mark('boot:await:login-shell:end')
 
     if (loginShellPath.applied) {
       rememberLog('[env] merged login-shell PATH into process.env for backend spawn')
@@ -12400,6 +12404,9 @@ async function startFulilian() {
       ensureLocalRuntime: ensureRuntime,
       prepareLocalBackend: async () => {
         await advanceBootProgress('backend.runtime', 'Resolving Fulilian runtime', 28)
+
+        // P13b 链尾锚点（fallback 口径）：首次 resolveFulilianBackend 之前。
+        bootTiming.mark('boot:chain:end')
 
         return resolveFulilianBackend(backendArgs)
       },
@@ -17302,11 +17309,14 @@ app.on('open-url', (event, url) => {
 })
 
 app.whenReady().then(() => {
+  // P13b 空档归因边界锚点：whenReady 回调体第一行。
+  bootTiming.mark('boot:chain:begin')
+
   // Warm the login-shell PATH resolution immediately so it usually completes
   // before the backend start path awaits the same single-flight promise.
-  void ensureLoginShellPath()
+  void bootTiming.span('warmupLoginShellPath', () => ensureLoginShellPath())
 
-  const systemCa = installWindowsSystemCaTrust(tls)
+  const systemCa = bootTiming.span('installWindowsSystemCaTrust', () => installWindowsSystemCaTrust(tls))
 
   if (systemCa.applied) {
     rememberLog(
@@ -17319,61 +17329,69 @@ app.whenReady().then(() => {
   // Keyring-less Linux `--password-store=basic` support. This must run before
   // createWindow() and anything that could touch safeStorage; the narrow
   // platform/switch/guard semantics live in the extracted helper.
-  enableBasicPasswordStoreEncryption({
-    platform: process.platform,
-    passwordStoreSwitch: app.commandLine.getSwitchValue('password-store'),
-    safeStorageApi: safeStorage
-  })
+  bootTiming.span('enableBasicPasswordStoreEncryption', () =>
+    enableBasicPasswordStoreEncryption({
+      platform: process.platform,
+      passwordStoreSwitch: app.commandLine.getSwitchValue('password-store'),
+      safeStorageApi: safeStorage
+    })
+  )
 
   // Keychain encryption is opt-in (default OFF). One-shot: rewrite any
   // legacy safeStorage-encrypted secrets as plain so no later launch ever
   // touches the OS keychain unless the user turns encryption on in
   // Settings → Gateway. Must run before createWindow() and the first
   // connection resolution.
-  migrateLegacyEncryptedSecretsOnce()
+  bootTiming.span('migrateLegacyEncryptedSecretsOnce', () => migrateLegacyEncryptedSecretsOnce())
 
-  if (IS_MAC) {
-    Menu.setApplicationMenu(buildApplicationMenu())
-  } else {
-    Menu.setApplicationMenu(null)
-  }
+  bootTiming.span('setApplicationMenu', () => {
+    if (IS_MAC) {
+      Menu.setApplicationMenu(buildApplicationMenu())
+    } else {
+      Menu.setApplicationMenu(null)
+    }
+  })
 
-  installMediaPermissions()
-  installDownloadHandling()
-  registerMediaProtocol()
-  installEmbedReferer()
-  installRemoteHeaderRules()
-  registerDeepLinkProtocol()
+  bootTiming.span('installMediaHandlers', () => {
+    installMediaPermissions()
+    installDownloadHandling()
+    registerMediaProtocol()
+    installEmbedReferer()
+    installRemoteHeaderRules()
+    registerDeepLinkProtocol()
+  })
 
-  ensureWslWindowsFonts()
-  configureSpellChecker()
-  registerPowerResumeListeners()
-  keepAwake.set(readPersistedKeepAwake())
-  f12Blocked = readPersistedDisableF12()
+  bootTiming.span('ensureWslWindowsFonts', () => ensureWslWindowsFonts())
+  bootTiming.span('configureSpellChecker', () => configureSpellChecker())
+  bootTiming.span('registerPowerResumeListeners', () => registerPowerResumeListeners())
+  bootTiming.span('keepAwakeSet', () => keepAwake.set(readPersistedKeepAwake()))
+  f12Blocked = bootTiming.span('readPersistedDisableF12', () => readPersistedDisableF12())
   // Seed this before the first window exists: a picker can open before
   // startFulilian() finishes resolving the configured backend.
-  const primaryProfile = primaryProfileKey()
+  const primaryProfile = bootTiming.span('primaryProfileKey', () => primaryProfileKey())
 
-  setActiveGatewayProfile(primaryProfile)
-  setWslBridgeProfileState(primaryProfile, !primaryBackendIsRemote())
+  bootTiming.span('setActiveGatewayProfile', () => setActiveGatewayProfile(primaryProfile))
+  bootTiming.span('setWslBridgeProfileState', () => setWslBridgeProfileState(primaryProfile, !primaryBackendIsRemote()))
   // Quick Entry's global chord — registered on ready so a cold launch restores
   // it without the renderer visiting Settings. A failed registration is logged
   // here and surfaced in Settings via the IPC state (never silent).
-  applyQuickEntrySettings(readQuickEntrySettings())
+  bootTiming.span('applyQuickEntrySettings', () => applyQuickEntrySettings(readQuickEntrySettings()))
 
   // System tray (step 16 · T6): status dot, new-task entries, groups, quit.
-  desktopTray = createDesktopTray({
-    actions: {
-      focusSession: id => { const win = sessionWindows.get(id); if (win) focusWindow(win); else { showMainWindow(); mainWindow?.webContents.send('fulilian:focus-session', id) } },
-      newSession: kind => { showMainWindow(); mainWindow?.webContents.send('fulilian:new-session', { kind }) },
-      openMainWindow: showMainWindow,
-      quit: () => { desktopTray?.destroy(); app.quit() }
-    },
-    hideWindow: () => mainWindow?.hide(),
-    iconPath: getAppIconPath(),
-    log: rememberLog,
-    quitState: () => ({ quitting: isQuitting, quittingForHandoff: isQuittingForHandoff, quitInProgress: quitPromptOpen || quitConfirmedWithActiveWork })
-  })
+  desktopTray = bootTiming.span('createDesktopTray', () =>
+    createDesktopTray({
+      actions: {
+        focusSession: id => { const win = sessionWindows.get(id); if (win) focusWindow(win); else { showMainWindow(); mainWindow?.webContents.send('fulilian:focus-session', id) } },
+        newSession: kind => { showMainWindow(); mainWindow?.webContents.send('fulilian:new-session', { kind }) },
+        openMainWindow: showMainWindow,
+        quit: () => { desktopTray?.destroy(); app.quit() }
+      },
+      hideWindow: () => mainWindow?.hide(),
+      iconPath: getAppIconPath(),
+      log: rememberLog,
+      quitState: () => ({ quitting: isQuitting, quittingForHandoff: isQuittingForHandoff, quitInProgress: quitPromptOpen || quitConfirmedWithActiveWork })
+    })
+  )
 
   if (IS_MAC) {
     const reposition = () => wakeIndicatorController.reposition()
@@ -17390,7 +17408,7 @@ app.whenReady().then(() => {
   // its worker waits for the install marker to clear, then reopens every scope
   // captured by the original transaction before removing the journal entry.
   void resumeManagedSshRecoveries()
-  createWindow()
+  bootTiming.span('createWindow', () => createWindow())
 
   // Win/Linux cold start: the launching fulilian:// URL is in our own argv.
   const _coldStartLink = _extractDeepLink(process.argv)

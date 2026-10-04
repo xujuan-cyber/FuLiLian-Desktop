@@ -9,10 +9,12 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'vitest'
 
 import {
+  BOOT_SPAN_LABELS,
   BOOT_TIMING_PREFIX,
   createBootTiming,
   formatBootMarkLine,
   formatBootMeasureLine,
+  formatBootSpanLine,
   formatRendererBootMarkLine,
   isBootMarkName,
   isRendererBootMarkName,
@@ -31,6 +33,18 @@ describe('format lines', () => {
   test('measure line renders a ms number with one decimal and a ms unit', () => {
     assert.equal(formatBootMeasureLine('resolve', 536.2), `${BOOT_TIMING_PREFIX} measure resolve = 536.2ms`)
     assert.equal(formatBootMeasureLine('spawn→ready', 12), `${BOOT_TIMING_PREFIX} measure spawn→ready = 12ms`)
+  })
+
+  test('span line renders a ms number with one decimal and a ms unit', () => {
+    assert.equal(formatBootSpanLine('createWindow', 120.4), `${BOOT_TIMING_PREFIX} span createWindow = 120.4ms`)
+    assert.equal(formatBootSpanLine('reapOrphanedBackends', 6642.6), `${BOOT_TIMING_PREFIX} span reapOrphanedBackends = 6642.6ms`)
+  })
+})
+
+describe('BOOT_SPAN_LABELS', () => {
+  test('is a bounded, duplicate-free fixed label set (span 行数 ≤ 20)', () => {
+    assert.ok(BOOT_SPAN_LABELS.length <= 20, `span 标签数必须 ≤ 20，实际 ${BOOT_SPAN_LABELS.length}`)
+    assert.equal(new Set(BOOT_SPAN_LABELS).size, BOOT_SPAN_LABELS.length, 'span 标签不得重复')
   })
 })
 
@@ -234,5 +248,90 @@ describe('createBootTiming', () => {
       `${BOOT_TIMING_PREFIX} measure app-start→window-shown = 3760ms`
     ])
     assert.equal(measures.some(line => /=\s*-/.test(line)), false)
+  })
+
+  test('span 计时同步调用并透传返回值，只产出一行', () => {
+    const { lines, timing, advance } = collect()
+
+    const value = timing.span('createWindow', () => {
+      advance(12.3)
+      return 'ok'
+    })
+
+    assert.equal(value, 'ok')
+    assert.deepEqual(lines, [`${BOOT_TIMING_PREFIX} span createWindow = 12.3ms`])
+  })
+
+  test('span 计时 Promise 直到 resolve，未 settle 前不产出', async () => {
+    const { lines, timing, advance } = collect()
+
+    let settle: (value: string) => void = () => {}
+    const pending = new Promise<string>(resolve => {
+      settle = resolve
+    })
+    const returned = timing.span('reapOrphanedBackends', () => pending)
+
+    advance(6400)
+    assert.deepEqual(lines, [])
+    settle('done')
+    assert.equal(await returned, 'done')
+    assert.deepEqual(lines, [`${BOOT_TIMING_PREFIX} span reapOrphanedBackends = 6400ms`])
+  })
+
+  test('span 内同步抛出的异常原样上抛，且仍产出该 span 行', () => {
+    const { lines, timing, advance } = collect()
+    const boom = new Error('boom')
+
+    assert.throws(
+      () =>
+        timing.span('createWindow', () => {
+          advance(3)
+          throw boom
+        }),
+      error => error === boom
+    )
+
+    assert.deepEqual(lines, [`${BOOT_TIMING_PREFIX} span createWindow = 3ms`])
+  })
+
+  test('span 内被 reject 的 Promise 原样上抛，且仍产出该 span 行', async () => {
+    const { lines, timing, advance } = collect()
+    const boom = new Error('nope')
+
+    const returned = timing.span('reapOrphanedBackends', () => Promise.reject(boom))
+    advance(7)
+
+    await assert.rejects(returned, error => error === boom)
+    assert.deepEqual(lines, [`${BOOT_TIMING_PREFIX} span reapOrphanedBackends = 7ms`])
+  })
+
+  test('span 按 label 首现一次闩锁，重复调用不再产出', () => {
+    const { lines, timing, advance } = collect()
+
+    timing.span('createWindow', () => {
+      advance(5)
+    })
+    timing.span('createWindow', () => {
+      advance(999)
+    })
+
+    assert.deepEqual(lines, [`${BOOT_TIMING_PREFIX} span createWindow = 5ms`])
+  })
+
+  test('span 与既有 mark/measure 共存，互不干扰', () => {
+    const { lines, timing, advance } = collect()
+
+    timing.mark('boot:chain:begin')
+    timing.span('createWindow', () => {
+      advance(200)
+    })
+    timing.mark('boot:chain:end')
+
+    assert.deepEqual(lines, [
+      `${BOOT_TIMING_PREFIX} mark boot:chain:begin`,
+      `${BOOT_TIMING_PREFIX} span createWindow = 200ms`,
+      `${BOOT_TIMING_PREFIX} mark boot:chain:end`,
+      `${BOOT_TIMING_PREFIX} measure chain:begin→chain:end = 200ms`
+    ])
   })
 })

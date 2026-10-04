@@ -26,7 +26,12 @@ export const BOOT_MARK_NAMES = [
   'boot:resolve:start',
   'boot:resolve:end',
   'boot:spawn',
-  'boot:ready'
+  'boot:ready',
+  // P13b: whenReady 链边界锚点 + 共享 single-flight await 边界锚点（均首现一次）。
+  'boot:chain:begin',
+  'boot:chain:end',
+  'boot:await:login-shell:begin',
+  'boot:await:login-shell:end'
 ] as const
 
 export type BootMarkName = (typeof BOOT_MARK_NAMES)[number]
@@ -35,6 +40,36 @@ export type BootMarkName = (typeof BOOT_MARK_NAMES)[number]
 export const RENDERER_BOOT_MARK_NAMES = ['boot:html-parse', 'boot:react-mount', 'boot:composer-ready'] as const
 
 export type RendererBootMarkName = (typeof RENDERER_BOOT_MARK_NAMES)[number]
+
+/**
+ * P13b：区间计时（span）标签固定集合 —— 每个标签只产出一次（首现），集合
+ * 大小 ≤ 20，故整条链路 span 行数有界（不刷屏）。顺序与
+ * `app.whenReady()` 回调体 + `createWindow()` + `startFulilian()` 前缀的
+ * **调用顺序**一致，便于与真机日志逐行对齐。禁止输出集合外的任意字符串标签。
+ */
+export const BOOT_SPAN_LABELS = [
+  'warmupLoginShellPath',
+  'installWindowsSystemCaTrust',
+  'enableBasicPasswordStoreEncryption',
+  'migrateLegacyEncryptedSecretsOnce',
+  'setApplicationMenu',
+  'installMediaHandlers',
+  'ensureWslWindowsFonts',
+  'configureSpellChecker',
+  'registerPowerResumeListeners',
+  'keepAwakeSet',
+  'readPersistedDisableF12',
+  'primaryProfileKey',
+  'setActiveGatewayProfile',
+  'setWslBridgeProfileState',
+  'applyQuickEntrySettings',
+  'createDesktopTray',
+  'createWindow',
+  'reapOrphanedBackends',
+  'advanceBootProgressResolve'
+] as const
+
+export type BootSpanLabel = (typeof BOOT_SPAN_LABELS)[number]
 
 /** 固定可 grep 前缀：`grep '\[boot-timing\]' desktop.log`。 */
 export const BOOT_TIMING_PREFIX = '[boot-timing]'
@@ -64,6 +99,11 @@ export function formatRendererBootMarkLine(name: RendererBootMarkName, epochMs: 
 /** measure 行：`<label> = <ms>ms`，ms 为 1 位小数。 */
 export function formatBootMeasureLine(label: string, ms: number): string {
   return `${BOOT_TIMING_PREFIX} measure ${label} = ${ms}ms`
+}
+
+/** span 行：`span <label> = <ms>ms`，ms 为 1 位小数（与 measure 同款渲染）。 */
+export function formatBootSpanLine(label: BootSpanLabel, ms: number): string {
+  return `${BOOT_TIMING_PREFIX} span ${label} = ${ms}ms`
 }
 
 export interface RendererBootMark {
@@ -111,7 +151,13 @@ const BOOT_MEASURE_PLAN: readonly BootMeasureSpec[] = [
   { label: 'ready→window-shown', from: 'boot:ready', to: 'boot:window-shown' },
   { label: 'resolve→window-shown', from: 'boot:resolve:start', to: 'boot:window-shown' },
   { label: 'app-start→window-shown', from: 'boot:app-start', to: 'boot:window-shown' },
-  { label: 'window-shown→resolve:start', from: 'boot:window-shown', to: 'boot:resolve:start' }
+  { label: 'window-shown→resolve:start', from: 'boot:window-shown', to: 'boot:resolve:start' },
+  // P13b：whenReady 链边界。本机实测 `window-shown` 晚于 `chain:begin`
+  // （链体在窗口显示前就已开始），故 `window-shown→chain:begin` 恒为负值、
+  // 被「倒挂跳过」诚实抑制；`chain:begin→chain:end` 则覆盖
+  // 「whenReady 起 → 首次 resolveFulilianBackend 前」的整段（含空档）。
+  { label: 'window-shown→chain:begin', from: 'boot:window-shown', to: 'boot:chain:begin' },
+  { label: 'chain:begin→chain:end', from: 'boot:chain:begin', to: 'boot:chain:end' }
 ]
 
 export interface BootTimingOptions {
@@ -124,6 +170,12 @@ export interface BootTimingOptions {
 export interface BootTiming {
   mark: (name: BootMarkName) => void
   has: (name: BootMarkName) => boolean
+  /**
+   * P13b 区间计时：包裹一次同步调用或返回 Promise 的调用，完成后产出**一次**
+   * `span <label> = <ms>ms`（同一 label 只认首现）。`fn` 抛错 / reject 时
+   * **原样上抛**（计时不改变行为），但仍产出该 span 行。
+   */
+  span: <T>(label: BootSpanLabel, fn: () => T) => T
 }
 
 /**
@@ -135,6 +187,7 @@ export interface BootTiming {
 export function createBootTiming({ now = () => performance.now(), sink }: BootTimingOptions): BootTiming {
   const marks = new Map<BootMarkName, number>()
   const emitted = new Set<string>()
+  const emittedSpans = new Set<BootSpanLabel>()
 
   // 顺序无关：每次 mark 后重扫全部计划，两端齐备且未产出的立即产出。
   const emitReadyMeasures = () => {
@@ -173,6 +226,45 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
       marks.set(name, now())
       sink(formatBootMarkLine(name))
       emitReadyMeasures()
+    },
+    span<T>(label: BootSpanLabel, fn: () => T): T {
+      const startedAt = now()
+
+      // 同一 label 只落一行（首现一次），避免每次 resolve / 重试刷屏。
+      const record = () => {
+        if (emittedSpans.has(label)) {
+          return
+        }
+
+        emittedSpans.add(label)
+        sink(formatBootSpanLine(label, Math.round((now() - startedAt) * 10) / 10))
+      }
+
+      let result: T
+
+      try {
+        result = fn()
+      } catch (error) {
+        // 计时不改变行为：异常原样上抛，但仍产出该 span 行。
+        record()
+        throw error
+      }
+
+      if (result && typeof (result as { then?: unknown }).then === 'function') {
+        return (result as unknown as Promise<unknown>).then(
+          value => {
+            record()
+            return value
+          },
+          error => {
+            record()
+            throw error
+          }
+        ) as unknown as T
+      }
+
+      record()
+      return result
     }
   }
 }
