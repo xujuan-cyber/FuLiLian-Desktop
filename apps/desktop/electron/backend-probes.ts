@@ -33,7 +33,18 @@
  * as bootstrap-platform.ts and hardening.ts).
  */
 
-import { execFileSync } from 'node:child_process'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+// 异步执行底座：探针原为**同步**子进程调用，真机实测阻塞 ≈639 ms 且正好压在
+// 窗口 reveal 之前（P1 v2 立项理由）。改 `execFile` 后主线程可在等待期间处理
+// `ready-to-show`。回调版与原同步版的 option 语义一致（timeout /
+// windowsHide / shell / cwd / env / stdio）。
+const execFileAsync = promisify(execFile) as (
+  file: string,
+  args: readonly string[],
+  options?: any
+) => Promise<{ stdout: string; stderr: string }>
 
 /** Default probe budget. 5s false-negativeed healthy Windows cold starts (#61764). */
 const DEFAULT_PROBE_TIMEOUT_MS = 15_000
@@ -76,7 +87,7 @@ function isTimeoutError(err: unknown): boolean {
     return true
   }
 
-  // Node marks timed-out execFileSync with SIGTERM on some platforms.
+  // Node marks a timed-out execFile with SIGTERM on some platforms.
   if (e.signal === 'SIGTERM') {
     return true
   }
@@ -85,10 +96,14 @@ function isTimeoutError(err: unknown): boolean {
 }
 
 /**
- * Run execFileSync; on timeout only, retry once before failing.
+ * Run the probe asynchronously; on timeout only, retry once before failing.
  * Non-timeout failures (ENOENT, non-zero exit) fail immediately.
+ *
+ * 语义与旧 `execProbeSync` 逐项一致，仅把同步阻塞换成可让出主线程的异步等待：
+ * 默认 15 s 预算（`PROBE_TIMEOUT_MS`）、超时后重试一次（`isTimeoutError` 判定
+ * 不变）、非超时错误立即上抛、`windowsHide` / `shell` / `stdio` 参数透传。
  */
-function execProbeSync(
+async function execProbe(
   command: string,
   args: string[],
   options: {
@@ -99,16 +114,16 @@ function execProbeSync(
     shell?: boolean
     windowsHide?: boolean
   }
-): void {
+): Promise<void> {
   try {
-    execFileSync(command, args, options)
+    await execFileAsync(command, args, options)
   } catch (err) {
     if (!isTimeoutError(err)) {
       throw err
     }
 
     // One cold-cache / AV miss should not force fulilian-setup --update (#61764).
-    execFileSync(command, args, options)
+    await execFileAsync(command, args, options)
   }
 }
 
@@ -139,15 +154,18 @@ function fulilianRuntimeImportProbe() {
  *
  * @param {string} pythonPath - Absolute path to a python.exe / python.
  * @param {object} [opts.env] - Additional environment for the probe.
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-function canImportFulilianCli(pythonPath: string, opts: { env?: Record<string, string> } = {}) {
+async function canImportFulilianCli(
+  pythonPath: string,
+  opts: { env?: Record<string, string> } = {}
+): Promise<boolean> {
   if (!pythonPath) {
     return false
   }
 
   try {
-    execProbeSync(pythonPath, ['-c', fulilianRuntimeImportProbe()], {
+    await execProbe(pythonPath, ['-c', fulilianRuntimeImportProbe()], {
       env: { ...process.env, ...(opts.env || {}) },
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
@@ -175,10 +193,10 @@ function canImportFulilianCli(pythonPath: string, opts: { env?: Record<string, s
  * @param {string} fulilianCommand - Resolved absolute path to a fulilian
  *   executable (or an interpreter+script wrapper).
  * @param {boolean} [opts.shell] - Whether to run through a shell. For
- *   .cmd/.bat shims on Windows execFileSync needs shell:true to find
+ *   .cmd/.bat shims on Windows execFile needs shell:true to find
  *   the cmd interpreter; mirrors the same flag isCommandScript() drives
  *   in resolveFulilianBackend.
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
 /**
  * An explicit desktop backend command is a deployment contract, not a PATH
@@ -190,13 +208,13 @@ function shouldTrustFulilianOverride(fulilianOverride?: string) {
   return typeof fulilianOverride === 'string' && fulilianOverride.trim().length > 0
 }
 
-function verifyFulilianCli(fulilianCommand: string, opts?: { shell?: boolean }) {
+async function verifyFulilianCli(fulilianCommand: string, opts?: { shell?: boolean }): Promise<boolean> {
   if (!fulilianCommand) {
     return false
   }
 
   try {
-    execProbeSync(fulilianCommand, ['--version'], {
+    await execProbe(fulilianCommand, ['--version'], {
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
       shell: Boolean(opts?.shell),
@@ -212,7 +230,8 @@ function verifyFulilianCli(fulilianCommand: string, opts?: { shell?: boolean }) 
 export {
   canImportFulilianCli,
   DEFAULT_PROBE_TIMEOUT_MS,
-  execProbeSync,
+  execFileAsync,
+  execProbe,
   fulilianRuntimeImportProbe,
   PROBE_TIMEOUT_MS,
   resolveProbeTimeoutMs,

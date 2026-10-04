@@ -71,6 +71,26 @@ export const BOOT_SPAN_LABELS = [
 
 export type BootSpanLabel = (typeof BOOT_SPAN_LABELS)[number]
 
+/**
+ * P1：resolve 阶梯内部子段标签（与 BOOT_SPAN_LABELS 同构的**第二个固定集合**）。
+ * 单独成集的理由：BOOT_SPAN_LABELS 保有「≤ 20 条」的既有不变量断言
+ * （`boot-timing.test.ts` 冻结、本任务不得改），resolve 子段不得挤占其额度。
+ * `span()` 同时接受两套标签，仍按「每 label 首现一次」闩锁 ⇒ 全链 span 行数有界。
+ */
+export const RESOLVE_SPAN_LABELS = [
+  'resolveCacheRead',
+  'resolveCacheWrite',
+  'resolveCandidateScan',
+  'resolvePathProbe',
+  'resolvePythonProbe',
+  'resolveImportProbe'
+] as const
+
+export type ResolveSpanLabel = (typeof RESOLVE_SPAN_LABELS)[number]
+
+/** 两套固定标签的并集（`span()` 的入参类型）。 */
+export type AnySpanLabel = BootSpanLabel | ResolveSpanLabel
+
 /** 固定可 grep 前缀：`grep '\[boot-timing\]' desktop.log`。 */
 export const BOOT_TIMING_PREFIX = '[boot-timing]'
 
@@ -102,7 +122,7 @@ export function formatBootMeasureLine(label: string, ms: number): string {
 }
 
 /** span 行：`span <label> = <ms>ms`，ms 为 1 位小数（与 measure 同款渲染）。 */
-export function formatBootSpanLine(label: BootSpanLabel, ms: number): string {
+export function formatBootSpanLine(label: AnySpanLabel, ms: number): string {
   return `${BOOT_TIMING_PREFIX} span ${label} = ${ms}ms`
 }
 
@@ -175,7 +195,7 @@ export interface BootTiming {
    * `span <label> = <ms>ms`（同一 label 只认首现）。`fn` 抛错 / reject 时
    * **原样上抛**（计时不改变行为），但仍产出该 span 行。
    */
-  span: <T>(label: BootSpanLabel, fn: () => T) => T
+  span: <T>(label: AnySpanLabel, fn: () => T) => T
 }
 
 /**
@@ -187,7 +207,7 @@ export interface BootTiming {
 export function createBootTiming({ now = () => performance.now(), sink }: BootTimingOptions): BootTiming {
   const marks = new Map<BootMarkName, number>()
   const emitted = new Set<string>()
-  const emittedSpans = new Set<BootSpanLabel>()
+  const emittedSpans = new Set<AnySpanLabel>()
 
   // 顺序无关：每次 mark 后重扫全部计划，两端齐备且未产出的立即产出。
   const emitReadyMeasures = () => {
@@ -227,7 +247,7 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
       sink(formatBootMarkLine(name))
       emitReadyMeasures()
     },
-    span<T>(label: BootSpanLabel, fn: () => T): T {
+    span<T>(label: AnySpanLabel, fn: () => T): T {
       const startedAt = now()
 
       // 同一 label 只落一行（首现一次），避免每次 resolve / 重试刷屏。

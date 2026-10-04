@@ -29,24 +29,24 @@ import {
 // (a tiny script we write to disk that exits 0 on --version).
 const NODE_BIN = process.execPath
 
-test('canImportFulilianCli returns false when path is falsy', () => {
-  assert.equal(canImportFulilianCli(''), false)
-  assert.equal(canImportFulilianCli(null), false)
-  assert.equal(canImportFulilianCli(undefined), false)
+test('canImportFulilianCli returns false when path is falsy', async () => {
+  assert.equal(await canImportFulilianCli(''), false)
+  assert.equal(await canImportFulilianCli(null), false)
+  assert.equal(await canImportFulilianCli(undefined), false)
 })
 
-test('canImportFulilianCli returns false when interpreter cannot run -c', () => {
+test('canImportFulilianCli returns false when interpreter cannot run -c', async () => {
   // node IS an interpreter, but `node -c "import fulilian_cli"` is a
   // SyntaxError -- different exit reason from a real Python's
   // ModuleNotFoundError, but the predicate is "exit 0 or not" and
   // both land on "not", which is exactly what we want for the
   // resolver fall-through.
-  assert.equal(canImportFulilianCli(NODE_BIN), false)
+  assert.equal(await canImportFulilianCli(NODE_BIN), false)
 })
 
-test('canImportFulilianCli returns false when binary does not exist', () => {
+test('canImportFulilianCli returns false when binary does not exist', async () => {
   const ghost = path.join(os.tmpdir(), 'fulilian-probes-ghost-' + Date.now() + '.exe')
-  assert.equal(canImportFulilianCli(ghost), false)
+  assert.equal(await canImportFulilianCli(ghost), false)
 })
 
 test('fulilian runtime import probe checks config dependencies', () => {
@@ -68,18 +68,18 @@ test('empty Fulilian override is not authoritative', () => {
   assert.equal(shouldTrustFulilianOverride(undefined), false)
 })
 
-test('verifyFulilianCli returns false when command is falsy', () => {
-  assert.equal(verifyFulilianCli(''), false)
-  assert.equal(verifyFulilianCli(null), false)
-  assert.equal(verifyFulilianCli(undefined), false)
+test('verifyFulilianCli returns false when command is falsy', async () => {
+  assert.equal(await verifyFulilianCli(''), false)
+  assert.equal(await verifyFulilianCli(null), false)
+  assert.equal(await verifyFulilianCli(undefined), false)
 })
 
-test('verifyFulilianCli returns false when binary does not exist', () => {
+test('verifyFulilianCli returns false when binary does not exist', async () => {
   const ghost = path.join(os.tmpdir(), 'fulilian-probes-ghost-' + Date.now() + '.exe')
-  assert.equal(verifyFulilianCli(ghost), false)
+  assert.equal(await verifyFulilianCli(ghost), false)
 })
 
-test('verifyFulilianCli returns true when --version exits 0', () => {
+test('verifyFulilianCli returns true when --version exits 0', async () => {
   // Write a tiny script that exits 0 regardless of args, then invoke
   // it through node. This stands in for a working fulilian binary --
   // verifyFulilianCli only cares about the exit code.
@@ -89,10 +89,10 @@ test('verifyFulilianCli returns true when --version exits 0', () => {
   try {
     // Use node as the launcher and our script as the "command". Pass
     // shell:false (default) -- node is a real binary, no shim.
-    // execFileSync passes ['--version'] as args, which node ignores
+    // The probe passes ['--version'] as args, which node ignores
     // gracefully (well, it prints its version and exits 0, which is
     // perfect -- exit code 0 is the only signal we read).
-    assert.equal(verifyFulilianCli(NODE_BIN), true)
+    assert.equal(await verifyFulilianCli(NODE_BIN), true)
   } finally {
     try {
       fs.unlinkSync(scriptPath)
@@ -102,12 +102,12 @@ test('verifyFulilianCli returns true when --version exits 0', () => {
   }
 })
 
-test('verifyFulilianCli swallows timeouts (does not throw)', () => {
+test('verifyFulilianCli swallows timeouts (does not throw)', async () => {
   // We can't easily provoke a real hang in CI without slowing the
   // suite, but we CAN confirm that an invocation that DOES throw
   // (because the binary is missing) returns false rather than
   // propagating. Same code path the timeout case takes.
-  assert.equal(verifyFulilianCli('/definitely/not/a/real/binary/anywhere'), false)
+  assert.equal(await verifyFulilianCli('/definitely/not/a/real/binary/anywhere'), false)
 })
 
 test('default probe timeout is 15s (not the old 5s death-loop value)', () => {

@@ -58,12 +58,14 @@ import {
 import { backendCommandMatches, createBackendOwnership, createBackendShutdownCoordinator } from './backend-ownership'
 import {
   canImportFulilianCli,
-  execProbeSync,
+  execFileAsync,
+  execProbe,
   PROBE_TIMEOUT_MS,
   shouldTrustFulilianOverride,
   verifyFulilianCli
 } from './backend-probes'
 import { waitForDashboardPortAnnouncement } from './backend-ready'
+import { buildResolveCacheFingerprint, createBackendResolveCache } from './backend-resolve-cache'
 import { isPidAliveWindows, waitForBackendRelease } from './backend-release-gate'
 import {
   isHostKeyChangedBootFailure,
@@ -832,6 +834,22 @@ const DESKTOP_INSTALLATION_PATH = path.join(app.getPath('userData'), 'desktop-in
 const DESKTOP_UPDATE_CONFIG_PATH = path.join(app.getPath('userData'), 'updates.json')
 const DESKTOP_WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-state.json')
 const DESKTOP_BACKEND_OWNERSHIP_PATH = path.join(app.getPath('userData'), 'backend-ownership.json')
+// P1：解析结果落盘缓存（只缓存成功解析；命中即零探针返回；损坏/不匹配静默回退）。
+const DESKTOP_BACKEND_RESOLVE_CACHE_PATH = path.join(app.getPath('userData'), 'backend-resolve-cache.json')
+// P1 缓存 IO：读缺失/不可读 → null；写失败静默（缓存是加速手段，绝不破坏启动）。
+const backendResolveCacheIo = {
+  readFile: (filePath: string) => {
+    try {
+      return fs.readFileSync(filePath, 'utf8')
+    } catch {
+      return null
+    }
+  },
+  writeFile: (filePath: string, contents: string) => {
+    fs.writeFileSync(filePath, contents, 'utf8')
+  }
+}
+const backendResolveCache = createBackendResolveCache(DESKTOP_BACKEND_RESOLVE_CACHE_PATH, backendResolveCacheIo)
 const DESKTOP_MANAGED_SSH_RECOVERY_PATH = path.join(app.getPath('userData'), 'managed-ssh-update-recovery.json')
 // active-profile.json records which Fulilian profile the desktop launches its
 // local backend as. When set, startFulilian() passes `fulilian --profile <name>
@@ -2279,13 +2297,48 @@ function isCommandScript(command) {
   return IS_WINDOWS && /\.(cmd|bat)$/i.test(command || '')
 }
 
-function unwrapWindowsVenvFulilianCommand(command, backendArgs) {
+// P1：`resolveVenvFulilianCommand()`（windows-fulilian-path.ts，本轮禁改）要求一个
+// **同步**的 `canImportFulilianCli` dep。为让启动主链不再同步阻塞，先按模块自身
+// 的判定镜像推导目标 venv python（非 venv shim 不 spawn，直接 false），await 一次
+// 异步 import 探针，再把 dep 换成「返回该已解析结果」的常量——该结果与模块内联
+// 探针逐字同源（同一 python、同一 PYTHONPATH）。
+async function probeWindowsVenvShimImport(command) {
+  if (!IS_WINDOWS || !command || isCommandScript(command)) {
+    return false
+  }
+
+  const resolved = path.resolve(String(command))
+  const scriptsDir = path.dirname(resolved)
+
+  if (!/^fulilian(?:\.exe)?$/i.test(path.basename(resolved)) || path.basename(scriptsDir).toLowerCase() !== 'scripts') {
+    return false
+  }
+
+  const root = path.dirname(path.dirname(scriptsDir))
+  const python = getVenvPython(path.dirname(scriptsDir))
+
+  if (!fileExists(python)) {
+    return false
+  }
+
+  return canImportFulilianCli(python, {
+    env: {
+      PYTHONPATH: [...(directoryExists(root) ? [root] : []), process.env.PYTHONPATH]
+        .filter((entry): entry is string => Boolean(entry))
+        .join(path.delimiter)
+    }
+  })
+}
+
+async function unwrapWindowsVenvFulilianCommand(command, backendArgs) {
+  const importable = await probeWindowsVenvShimImport(command)
+
   return resolveVenvFulilianCommand(command, backendArgs, {
     isWindows: IS_WINDOWS,
     isCommandScript,
     fileExists,
     directoryExists,
-    canImportFulilianCli,
+    canImportFulilianCli: () => importable,
     getVenvPython,
     getVenvSitePackagesEntries,
     buildDesktopBackendEnv,
@@ -2309,7 +2362,7 @@ function unwrapWindowsVenvFulilianCommand(command, backendArgs) {
 // is cached per resolved runtime so we probe at most once per backend.
 const _serveSupportCache = new Map()
 
-function backendSupportsServe(backend) {
+async function backendSupportsServe(backend) {
   if (!backend || !backend.command) {
     return true
   }
@@ -2340,13 +2393,13 @@ function backendSupportsServe(backend) {
       // is cached for the process lifetime, silently routing a modern
       // runtime through the legacy `dashboard` form. Share the probe budget
       // and its timeout-only retry instead of a thinner local bound.
-      execProbeSync(backend.command, [...prefix, 'serve', '--help'], {
+      await execProbe(backend.command, [...prefix, 'serve', '--help'], {
         cwd: backend.root || undefined,
         env: { ...process.env, FULILIAN_HOME, ...(backend.env || {}) },
         timeout: PROBE_TIMEOUT_MS,
         stdio: 'ignore',
         // `.cmd`/`.bat` shim backends carry shell: true in their descriptor
-        // (see resolveFulilianBackend step 4); execFileSync of a .cmd without
+        // (see resolveFulilianBackend step 4); an async execFile of a .cmd without
         // shell throws EINVAL on modern Node, which the catch below would
         // mis-cache as "serve unsupported" for the process lifetime.
         shell: Boolean(backend.shell),
@@ -2369,8 +2422,8 @@ function backendSupportsServe(backend) {
 // Given a resolved backend whose args target `serve`, return the args the
 // runtime actually understands: unchanged when `serve` is supported, or
 // rewritten to `dashboard --no-open` for older runtimes.
-function getBackendArgsForRuntime(backend) {
-  return backendSupportsServe(backend) ? backend.args : dashboardFallbackArgs(backend.args)
+async function getBackendArgsForRuntime(backend) {
+  return (await backendSupportsServe(backend)) ? backend.args : dashboardFallbackArgs(backend.args)
 }
 
 function normalizeExecutablePathForCompare(commandPath) {
@@ -2420,7 +2473,7 @@ function isFulilianSourceRoot(root) {
   return directoryExists(root) && fileExists(path.join(root, 'fulilian_cli', 'main.py'))
 }
 
-function findPythonForRoot(root) {
+async function findPythonForRoot(root) {
   const override = process.env.FULILIAN_DESKTOP_PYTHON
 
   if (override && fileExists(override)) {
@@ -2442,7 +2495,7 @@ function findPythonForRoot(root) {
   return findSystemPython()
 }
 
-function findSystemPython() {
+async function findSystemPython() {
   if (!IS_WINDOWS) {
     // POSIX systems: PATH lookup is safe.
     for (const command of ['python3', 'python']) {
@@ -2503,14 +2556,16 @@ function findSystemPython() {
   for (const hive of ['HKLM', 'HKCU']) {
     for (const version of SUPPORTED_VERSIONS) {
       try {
-        const out = execFileSync(
-          'reg',
-          ['query', `${hive}\\SOFTWARE\\Python\\PythonCore\\${version}\\InstallPath`, '/ve', '/reg:64'],
-          // Registry reads are near-instant; the bound only exists so a
-          // pathologically wedged reg.exe can't hang the synchronous boot
-          // resolver forever (this ran unbounded before).
-          hiddenWindowsChildOptions({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5_000 })
-        )
+        const out = (
+          await execFileAsync(
+            'reg',
+            ['query', `${hive}\\SOFTWARE\\Python\\PythonCore\\${version}\\InstallPath`, '/ve', '/reg:64'],
+            // Registry reads are near-instant; the bound only exists so a
+            // pathologically wedged reg.exe can't hang the boot resolver
+            // forever (this ran unbounded before).
+            hiddenWindowsChildOptions({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5_000 })
+          )
+        ).stdout
 
         // Output format: "    (Default)    REG_SZ    C:\Path\To\Python\"
         const match = out.match(/REG_SZ\s+(.+?)\s*$/m)
@@ -2559,19 +2614,21 @@ function findSystemPython() {
   if (pyExe) {
     for (const version of SUPPORTED_VERSIONS) {
       try {
-        const out = execFileSync(
-          pyExe,
-          [`-${version}`, '-c', 'import sys; print(sys.executable)'],
-          hiddenWindowsChildOptions({
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore'],
-            // Bare interpreter startup — much lighter than the fulilian-import
-            // probes, but still python.exe under cold cache / AV scan, so
-            // share the probe budget rather than running unbounded (this
-            // synchronous exec previously had no timeout at all).
-            timeout: PROBE_TIMEOUT_MS
-          })
-        )
+        const out = (
+          await execFileAsync(
+            pyExe,
+            [`-${version}`, '-c', 'import sys; print(sys.executable)'],
+            hiddenWindowsChildOptions({
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore'],
+              // Bare interpreter startup — much lighter than the fulilian-import
+              // probes, but still python.exe under cold cache / AV scan, so
+              // share the probe budget rather than running unbounded (this
+              // exec previously had no timeout at all).
+              timeout: PROBE_TIMEOUT_MS
+            })
+          )
+        ).stdout
 
         const candidate = out.trim()
 
@@ -4344,27 +4401,27 @@ function readBootstrapMarker() {
 // or a DMG launch over a prior CLI install satisfies this WITHOUT the desktop
 // ever having written the bootstrap marker -- so we must be able to recognise
 // "already installed" off the filesystem alone, not just the marker.
-function isActiveRuntimeUsable() {
+async function isActiveRuntimeUsable() {
   const venvPython = getVenvPython(VENV_ROOT)
 
-  return (
-    isFulilianSourceRoot(ACTIVE_FULILIAN_ROOT) &&
-    fileExists(venvPython) &&
-    canImportFulilianCli(venvPython, {
-      env: {
-        PYTHONPATH: [ACTIVE_FULILIAN_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
-      }
-    })
-  )
+  if (!isFulilianSourceRoot(ACTIVE_FULILIAN_ROOT) || !fileExists(venvPython)) {
+    return false
+  }
+
+  return canImportFulilianCli(venvPython, {
+    env: {
+      PYTHONPATH: [ACTIVE_FULILIAN_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
+    }
+  })
 }
 
-function activeRuntimeState() {
+async function activeRuntimeState() {
   // We DELIBERATELY do NOT verify that the checkout is currently at the
   // pinned commit -- users update via the in-app update path or `fulilian
   // update`, which moves HEAD legitimately. The marker only attests "a
   // desktop-managed bootstrap ran here at least once"; runtime usability is
   // what decides whether we can actually launch.
-  return classifyActiveRuntime(readBootstrapMarker(), BOOTSTRAP_MARKER_SCHEMA_VERSION, isActiveRuntimeUsable())
+  return classifyActiveRuntime(readBootstrapMarker(), BOOTSTRAP_MARKER_SCHEMA_VERSION, await isActiveRuntimeUsable())
 }
 
 function writeBootstrapMarker(payload) {
@@ -4590,8 +4647,8 @@ function writeDefaultProjectDir(dir) {
   }
 }
 
-function createPythonBackend(root, label, backendArgs, options: any = {}) {
-  const python = findPythonForRoot(root)
+async function createPythonBackend(root, label, backendArgs, options: any = {}) {
+  const python = await findPythonForRoot(root)
 
   if (!python) {
     return null
@@ -4626,9 +4683,9 @@ function createPythonBackend(root, label, backendArgs, options: any = {}) {
 // canonical install location shared with the CLI installer. The venv at
 // VENV_ROOT may not exist yet on first run; bootstrap=true tells
 // ensureRuntime() to create / refresh it before launch.
-function createActiveBackend(backendArgs) {
+async function createActiveBackend(backendArgs) {
   const venvPython = getVenvPython(VENV_ROOT)
-  const command = fileExists(venvPython) ? venvPython : findSystemPython()
+  const command = fileExists(venvPython) ? venvPython : await findSystemPython()
 
   return {
     kind: 'python',
@@ -4646,24 +4703,45 @@ function createActiveBackend(backendArgs) {
   }
 }
 
-function resolveFulilianBackend(backendArgs) {
+async function resolveFulilianBackend(backendArgs) {
   bootTiming.mark('boot:resolve:start')
 
   try {
-    return resolveFulilianBackendInner(backendArgs)
+    // P1：成功解析落盘缓存；命中即零探针返回（指纹不符/损坏/失败路径由缓存层静默回退）。
+    const fingerprint = buildResolveCacheFingerprint({
+      platform: process.platform, isPackaged: IS_PACKAGED, activeRoot: ACTIVE_FULILIAN_ROOT, sourceRepoRoot: SOURCE_REPO_ROOT, installStamp: INSTALL_STAMP, env: process.env
+    })
+    // 修复（hard reinstall）请求必须走完整阶梯：缓存短路会绕过 step 3 的
+    // `!bootstrapRepairRequested` 判定，让 repair 失效 ⇒ 此处显式禁用读缓存。
+    const cached = bootstrapRepairRequested
+      ? null
+      : await bootTiming.span('resolveCacheRead', () => backendResolveCache.load(fingerprint))
+
+    if (cached) {
+      rememberLog('[boot-timing] resolve-cache hit')
+      return cached
+    }
+
+    const backend = await resolveFulilianBackendInner(backendArgs)
+
+    await bootTiming.span('resolveCacheWrite', () => backendResolveCache.store(fingerprint, backend))
+
+    return backend
   } finally {
     bootTiming.mark('boot:resolve:end')
   }
 }
 
-function resolveFulilianBackendInner(backendArgs) {
+async function resolveFulilianBackendInner(backendArgs) {
   // 1. Explicit override -- FULILIAN_DESKTOP_FULILIAN_ROOT points at a developer
   //    checkout. Honour it as-is (no bootstrap; the user is driving).
   const overrideRoot =
     process.env.FULILIAN_DESKTOP_FULILIAN_ROOT && path.resolve(process.env.FULILIAN_DESKTOP_FULILIAN_ROOT)
 
   if (overrideRoot && isFulilianSourceRoot(overrideRoot)) {
-    const backend = createPythonBackend(overrideRoot, `Fulilian source at ${overrideRoot}`, backendArgs)
+    const backend = await bootTiming.span('resolveCandidateScan', () =>
+      createPythonBackend(overrideRoot, `Fulilian source at ${overrideRoot}`, backendArgs)
+    )
 
     if (backend) {
       return backend
@@ -4675,7 +4753,9 @@ function resolveFulilianBackendInner(backendArgs) {
   //    installed `fulilian` on PATH so local Python edits are actually exercised.
   //    (In dev with no checkout, SOURCE_REPO_ROOT won't pass isFulilianSourceRoot.)
   if (!IS_PACKAGED && isFulilianSourceRoot(SOURCE_REPO_ROOT)) {
-    const backend = createPythonBackend(SOURCE_REPO_ROOT, `Fulilian source at ${SOURCE_REPO_ROOT}`, backendArgs)
+    const backend = await bootTiming.span('resolveCandidateScan', () =>
+      createPythonBackend(SOURCE_REPO_ROOT, `Fulilian source at ${SOURCE_REPO_ROOT}`, backendArgs)
+    )
 
     if (backend) {
       return backend
@@ -4690,7 +4770,7 @@ function resolveFulilianBackendInner(backendArgs) {
   //    builds could leave a healthy install behind without the marker. If the
   //    active runtime is usable, launch it directly; only fall through to
   //    bootstrap when the runtime itself is unusable.
-  const activeRuntime = activeRuntimeState()
+  const activeRuntime = await bootTiming.span('resolveCandidateScan', () => activeRuntimeState())
 
   if (activeRuntime.shouldUseActiveRuntime && !bootstrapRepairRequested) {
     if (!activeRuntime.hasValidMarker) {
@@ -4737,7 +4817,7 @@ function resolveFulilianBackendInner(backendArgs) {
     }
 
     if (fulilianCommand) {
-      const unwrapped = unwrapWindowsVenvFulilianCommand(fulilianCommand, backendArgs)
+      const unwrapped = await unwrapWindowsVenvFulilianCommand(fulilianCommand, backendArgs)
 
       if (unwrapped) {
         return unwrapped
@@ -4758,7 +4838,7 @@ function resolveFulilianBackendInner(backendArgs) {
       // out under load; the pinned backend is the only valid runtime there.
       if (
         shouldTrustFulilianOverride(fulilianOverride) ||
-        verifyFulilianCli(fulilianCommand, { shell: shellForProbe })
+        (await bootTiming.span('resolvePathProbe', () => verifyFulilianCli(fulilianCommand, { shell: shellForProbe })))
       ) {
         // `unwrapped` above already answered "is this a Windows venv shim?" —
         // it was null (not a shim, or its import probe failed). Do NOT re-run
@@ -4785,7 +4865,7 @@ function resolveFulilianBackendInner(backendArgs) {
   // 5. Last-ditch: pip-installed fulilian_cli module via system Python.
   //    Same rationale as #4 -- the user installed this; we use it but don't
   //    take ownership.
-  const python = findSystemPython()
+  const python = await bootTiming.span('resolvePythonProbe', () => findSystemPython())
 
   if (python) {
     // Same smoke-test rationale as step 4: a system Python in the
@@ -4796,7 +4876,7 @@ function resolveFulilianBackendInner(backendArgs) {
     // Verify the import works before trusting the candidate; on
     // failure, fall through to step 6 so the bootstrap runner pulls
     // a uv-managed 3.11 into %LOCALAPPDATA%\fulilian\fulilian-agent\venv.
-    if (canImportFulilianCli(python)) {
+    if (await bootTiming.span('resolveImportProbe', () => canImportFulilianCli(python))) {
       return {
         kind: 'python',
         label: `installed fulilian_cli module via ${python}`,
@@ -4947,7 +5027,7 @@ async function ensureRuntime(backend) {
 
     // Re-resolve now that the install exists. The new resolution lands in
     // step 3 (bootstrap-complete marker) and we recurse to wire venvPython.
-    return ensureRuntime(resolveFulilianBackend(backend.args))
+    return ensureRuntime(await resolveFulilianBackend(backend.args))
   }
 
   // bootstrap=true with a real backend (createActiveBackend path) means we
@@ -12040,9 +12120,9 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   // step 3 in fulilian_cli/main.py), so the child re-homes to this profile.
   // --port 0: the OS assigns an ephemeral port; the child announces it on stdout.
   const backendArgs = ['--profile', profile, 'serve', '--host', '127.0.0.1', '--port', '0']
-  const backend = await ensureRuntime(resolveFulilianBackend(backendArgs))
+  const backend = await ensureRuntime(await resolveFulilianBackend(backendArgs))
   // Route old runtimes (no `serve`) through the legacy `dashboard --no-open`.
-  backend.args = getBackendArgsForRuntime(backend)
+  backend.args = await getBackendArgsForRuntime(backend)
   const fulilianCwd = resolveFulilianCwd()
   const webDist = resolveWebDist()
   const readyFile = backend.readyFile ? makeDashboardReadyFile() : null
@@ -12410,7 +12490,7 @@ async function startFulilian() {
         // P13b 链尾锚点（fallback 口径）：首次 resolveFulilianBackend 之前。
         bootTiming.mark('boot:chain:end')
 
-        return resolveFulilianBackend(backendArgs)
+        return await resolveFulilianBackend(backendArgs)
       },
       resolveRemote: () => {
         // Classify immediately before each throwing resolve. This callback runs
@@ -12440,7 +12520,7 @@ async function startFulilian() {
 
     const backend = setup.backend
     // Route old runtimes (no `serve`) through the legacy `dashboard --no-open`.
-    backend.args = getBackendArgsForRuntime(backend)
+    backend.args = await getBackendArgsForRuntime(backend)
     const fulilianCwd = resolveFulilianCwd()
     const webDist = resolveWebDist()
     const readyFile = backend.readyFile ? makeDashboardReadyFile() : null
@@ -14425,7 +14505,7 @@ ipcMain.handle('fulilian:window:openInTerminal', async (_event, sessionId, opts)
 
   try {
     const profile = typeof opts?.profile === 'string' ? opts.profile.trim() : ''
-    const backend = resolveFulilianBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
+    const backend = await resolveFulilianBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
 
     if (!backend.command) {
       return { ok: false, error: 'Fulilian is not installed yet' }
@@ -17058,7 +17138,7 @@ async function runDesktopUninstall(mode) {
   let pythonPath = null
 
   if (modeRemovesAgent(mode)) {
-    const sysPy = findSystemPython()
+    const sysPy = await findSystemPython()
 
     if (sysPy) {
       py = sysPy
