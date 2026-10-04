@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { fieldCopyForSchemaKey } from '@/app/settings/field-copy'
 
-import { TRANSLATIONS } from './catalog'
+import { loadAllTranslations, TRANSLATIONS } from './catalog'
 import { setRuntimeI18nLocale, translateNow } from './runtime'
 import { zh } from './zh'
 
 describe('desktop i18n runtime translator', () => {
-  beforeEach(() => {
+  // P9: locale bundles load on demand, so a translator test must first pull
+  // every language the way the app would once `display.language` selects it.
+  beforeEach(async () => {
+    await loadAllTranslations()
     setRuntimeI18nLocale('en')
   })
 

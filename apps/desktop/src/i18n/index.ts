@@ -1,4 +1,10 @@
-export { TRANSLATIONS } from './catalog'
+export {
+  getTranslations,
+  hasTranslations,
+  loadAllTranslations,
+  loadTranslations,
+  TRANSLATIONS
+} from './catalog'
 export {
   getConfigDisplayLanguage,
   type I18nConfigClient,

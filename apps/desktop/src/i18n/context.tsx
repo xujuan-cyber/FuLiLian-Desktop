@@ -2,7 +2,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import { type FulilianConfigRecord, getFulilianConfigRecord, saveFulilianConfig } from '@/fulilian'
 
-import { TRANSLATIONS } from './catalog'
+import { getTranslations, hasTranslations, loadTranslations } from './catalog'
 import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
 import { setRuntimeI18nLocale } from './runtime'
 import type { Locale, Translations } from './types'
@@ -83,7 +83,7 @@ const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
   saveError: null,
   setLocale: async () => {},
-  t: TRANSLATIONS[DEFAULT_LOCALE]
+  t: getTranslations(DEFAULT_LOCALE)
 })
 
 export interface I18nProviderProps {
@@ -94,6 +94,10 @@ export interface I18nProviderProps {
 
 export function I18nProvider({ children, configClient = defaultConfigClient, initialLocale }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(() => normalizeLocale(initialLocale))
+  // P9: only `en` ships on the first frame; a non-English active locale swaps
+  // in once its chunk lands. `translations` is a separate slice from `locale`
+  // precisely so that swap is a re-render, not a re-fetch of the provider tree.
+  const [translations, setTranslations] = useState<Translations>(() => getTranslations(normalizeLocale(initialLocale)))
   const [isLoadingConfig, setIsLoadingConfig] = useState(false)
   const [isSavingLocale, setIsSavingLocale] = useState(false)
   const [configLoadError, setConfigLoadError] = useState<Error | null>(null)
@@ -105,6 +109,25 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
     localeRef.current = locale
     setRuntimeI18nLocale(locale)
     applyDocumentLocale(locale)
+
+    let cancelled = false
+    const apply = () => {
+      if (!cancelled) {
+        setTranslations(getTranslations(locale))
+      }
+    }
+
+    if (hasTranslations(locale)) {
+      apply()
+    } else {
+      // English fallback shows for the one microtask the chunk takes; the
+      // catch keeps a failed chunk from wedging the provider on the fallback.
+      void loadTranslations(locale).then(apply, apply)
+    }
+
+    return () => {
+      cancelled = true
+    }
   }, [locale])
 
   useEffect(() => {
@@ -183,9 +206,9 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       locale,
       saveError,
       setLocale,
-      t: TRANSLATIONS[locale]
+      t: translations
     }),
-    [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale]
+    [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale, translations]
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>

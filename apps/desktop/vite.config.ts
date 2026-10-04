@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import babel from '@rolldown/plugin-babel'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 
@@ -101,9 +101,55 @@ const emojibaseAssets = () => ({
   }
 })
 
+// P9 (step 17): the shell's text face arrives ~1 MB after the bundle because
+// nothing hints it. `@font-face` lives in the bundled CSS, which the browser
+// only parses once the entry module graph is executing, so with
+// `font-display: swap` every cold start paints fallback metrics and then
+// reflows. One `<link rel="preload">` for the face the FIRST FRAME actually
+// uses — body sans at weight 400 — starts that fetch alongside the script.
+// Only that one: the bold face and the two mono faces are not on the
+// first-paint path, and preloading all four (~4 MB) would merely contend with
+// the entry script for bandwidth. The link is appended to the END of <head>,
+// so it cannot reorder the P13 `boot:html-parse` inline script at the top.
+const FIRST_FRAME_FONTS = [/FulilianSans-Regular[^/]*\.woff2$/]
+
+const fontPreload = (): Plugin => ({
+  name: 'fulilian:font-preload',
+  transformIndexHtml: {
+    order: 'post',
+    handler(html, ctx) {
+      const bundle = ctx.bundle
+
+      if (!bundle) {
+        return html
+      }
+
+      return FIRST_FRAME_FONTS.flatMap(pattern => {
+        const asset = Object.values(bundle).find(entry => entry.type === 'asset' && pattern.test(entry.fileName))
+
+        return asset
+          ? [
+              {
+                tag: 'link',
+                attrs: {
+                  rel: 'preload',
+                  as: 'font',
+                  type: 'font/woff2',
+                  href: `./${asset.fileName}`,
+                  crossorigin: ''
+                },
+                injectTo: 'head' as const
+              }
+            ]
+          : []
+      })
+    }
+  }
+})
+
 export default defineConfig(({ command }) => ({
   base: './',
-  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets()],
+  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets(), fontPreload()],
   css: {
     // Pin an explicit (empty) PostCSS config. Tailwind is handled entirely by
     // `@tailwindcss/vite`, so the renderer needs no PostCSS plugins — and
@@ -126,13 +172,15 @@ export default defineConfig(({ command }) => ({
     //     bundle hit ~28 MB that eval was ~1s of launch on an M-series.
     //   · Default splitting emits a chunk per shiki grammar/theme — thousands
     //     of files, which electron-builder OOMs scanning (#38888).
-    // `advancedChunks` is the middle ground: heavyweight libraries merge into
-    // a handful of named vendor chunks loaded on first use, app-level dynamic
-    // imports stay lazy, and the file count stays in the tens.
+    // `codeSplitting` (the current name for the old `advancedChunks` option —
+    // rolldown renamed it, warning on the former) is the middle ground:
+    // heavyweight libraries merge into a handful of named vendor chunks loaded
+    // on first use, app-level dynamic imports stay lazy, and the file count
+    // stays in the tens.
     chunkSizeWarningLimit: 25000,
     rolldownOptions: {
       output: {
-        advancedChunks: {
+        codeSplitting: {
           groups: [
             // Shared foundations FIRST (first match wins): an unmatched
             // module shared by the entry and a heavy chunk gets merged INTO
@@ -142,13 +190,13 @@ export default defineConfig(({ command }) => ({
             { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/ },
             {
               name: 'vendor-md',
-              test: /node_modules[\\/](property-information|hast-util-[^\\/]+|mdast-util-[^\\/]+|micromark[^\\/]*|unist-util-[^\\/]+|vfile[^\\/]*|unified|stringify-entities|space-separated-tokens|comma-separated-tokens|zwitch|html-void-elements|devlop|style-to-js|style-to-object|clsx)[\\/]/
+              test: /node_modules[\\/](property-information|hast-util-[^\\/]+|mdast-util-[^\\/]+|micromark[^\\/]*|unist-util-[^\\/]+|vfile[^\\/]*|unified|stringify-entities|space-separated-tokens|comma-separated-tokens|zwitch|html-void-elements|devlop|style-to-js|style-to-object)[\\/]/
             },
             // Shared utility packages the entry ALSO uses — kept out of the
             // heavy groups for the same boot-path reason.
             {
               name: 'vendor-util',
-              test: /node_modules[\\/](lodash-es|es-toolkit|uuid|dayjs|d3-array|d3-color|d3-force|d3-interpolate|d3-time[^\\/]*|dompurify|stylis)[\\/]/
+              test: /node_modules[\\/](lodash-es|es-toolkit|uuid|dayjs|d3-array|d3-color|d3-force|d3-interpolate|d3-time[^\\/]*|dompurify|stylis|clsx)[\\/]/
             },
             // One chunk per heavyweight, lazy-only library family.
             // @streamdown/code lives WITH shiki because it statically imports
@@ -161,7 +209,21 @@ export default defineConfig(({ command }) => ({
               name: 'shiki',
               test: /node_modules[\\/](shiki|@shikijs|react-shiki|@streamdown[\\/]code|oniguruma-to-es|oniguruma-parser|regex(-[^\\/]+)?)[\\/]/
             },
-            { name: 'katex', test: /node_modules[\\/]katex[\\/]/ }
+            { name: 'katex', test: /node_modules[\\/]katex[\\/]/ },
+            // P9 (step 17): collapse the swarm of tiny shared chunks the
+            // automatic splitter emits — one per tabler icon, one per radix
+            // primitive — into a single `vendor-shared` chunk. Only modules
+            // the FIRST-FRAME graph already pulls are eligible (the `$initial`
+            // tag), and only small ones (`maxModuleSize`): heavyweight vendor
+            // stays where it is, so this shrinks the entry's declared
+            // `modulepreload` list (~100 links for a few hundred KB of
+            // modules) without moving bulk onto — or off — the boot path.
+            {
+              name: 'vendor-shared',
+              test: /node_modules[\\/]/,
+              tags: ['$initial'],
+              maxModuleSize: 24576
+            }
           ]
         }
       }

@@ -1,4 +1,4 @@
-import { TRANSLATIONS } from './catalog'
+import { getTranslations, loadTranslations } from './catalog'
 import { DEFAULT_LOCALE } from './languages'
 import type { Locale } from './types'
 
@@ -53,6 +53,11 @@ export function translateFrom(
 
 export function setRuntimeI18nLocale(locale: Locale) {
   runtimeLocale = locale
+  // P9 (step 17): bundles are loaded per language now. Kick the active
+  // locale's chunk so module-level translators (`translateNow`, plugin
+  // `ctx.i18n.t`) resolve it once it lands; until then `getTranslations`
+  // serves the English fallback, matching the old behaviour on a missing key.
+  void loadTranslations(locale)
 }
 
 /** The locale module-level translators resolve against (the app's active
@@ -62,5 +67,5 @@ export function getRuntimeI18nLocale(): Locale {
 }
 
 export function translateNow(key: string, ...args: unknown[]): string {
-  return translateFrom(locale => TRANSLATIONS[locale], runtimeLocale, key, args)
+  return translateFrom(locale => getTranslations(locale), runtimeLocale, key, args)
 }

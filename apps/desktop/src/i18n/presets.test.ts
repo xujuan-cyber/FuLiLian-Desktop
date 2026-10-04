@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
-import { TRANSLATIONS } from './catalog'
+import { loadAllTranslations, TRANSLATIONS } from './catalog'
 import { en } from './en'
 import type { Locale } from './types'
 
@@ -133,6 +133,12 @@ const resolveText = (value: unknown): string => (typeof value === 'function' ? S
 const referencePaths = flatten(en.presets).sort()
 
 describe('capability-preset i18n', () => {
+  // P9: the app catalog loads non-English bundles on demand; resolve the
+  // runtime halves of these assertions against a fully-resident catalog.
+  beforeAll(async () => {
+    await loadAllTranslations()
+  })
+
   it('covers every preset key in each contract locale', () => {
     for (const locale of CONTRACT_LOCALES) {
       expect(declaredPaths(locale), `${LOCALE_FILES[locale]} preset keys`).toEqual(referencePaths)
