@@ -1658,9 +1658,12 @@ function rememberLog(chunk) {
 
 installCrashForensics({ flush: flushDesktopLogBufferSync, log: rememberLog })
 
-// P13: 主进程启动分段埋点（resolve→spawn→ready→window shown）。输出复用既有
-// desktop.log 管线（rememberLog），每个锚点首现一次、有界行数。
+// P13: 主进程启动分段埋点（app-start→window-shown→resolve→spawn→ready）。
+// 输出复用既有 desktop.log 管线（rememberLog），每个锚点首现一次、有界行数。
 const bootTiming = createBootTiming({ sink: rememberLog })
+
+// P13 起点锚点：主进程内最早的可得时刻（本模块加载到此即标记）。
+bootTiming.mark('boot:app-start')
 
 // A rejected loadURL leaves a blank window and, unhandled, no trace anywhere
 // the user can send us. `label` names the surface so the log says which one.

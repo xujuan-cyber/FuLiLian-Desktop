@@ -2,9 +2,10 @@
  * P13 · 全链路启动埋点（主进程侧纯逻辑）。
  *
  * 目的：把「冷启动到 composer 可用」拆成可复现的分段。主进程锚点覆盖
- * `resolve → spawn → ready → window shown`；每个锚点只落一行到既有
- * desktop.log 管线（复用 main.ts 的 `rememberLog` + `desktop-log-line.ts`），
- * 不新建第二套日志落盘机制。
+ * `app-start → window-shown → resolve → spawn → ready`（**本机实测顺序**：
+ * 本应用先显窗口、后解析后端）；每个锚点只落一行到既有 desktop.log 管线
+ * （复用 main.ts 的 `rememberLog` + `desktop-log-line.ts`），不新建第二套
+ * 日志落盘机制。
  *
  * 渲染层（HTML parse → React mount → composer ready）经一条**窄 IPC 通道**
  * 回传：名字必须命中**固定白名单**、时间必须是**有限数字**，否则静默丢弃。
@@ -16,13 +17,16 @@
  * 日志落盘由调用方注入 `sink`，因此可在 `node` 环境下单测。
  */
 
-/** 主进程启动锚点（固定集合，顺序即典型发生顺序）。 */
+/** 主进程启动锚点（固定集合）。顺序为**本机实测发生顺序**：
+ *  `app-start → window-shown → resolve:start → resolve:end → spawn → ready`
+ *  —— 阶段顺序因机而异，measure 产出与此数组顺序无关。 */
 export const BOOT_MARK_NAMES = [
+  'boot:app-start',
+  'boot:window-shown',
   'boot:resolve:start',
   'boot:resolve:end',
   'boot:spawn',
-  'boot:ready',
-  'boot:window-shown'
+  'boot:ready'
 ] as const
 
 export type BootMarkName = (typeof BOOT_MARK_NAMES)[number]
@@ -89,14 +93,25 @@ interface BootMeasureSpec {
   to: BootMarkName
 }
 
-/** 分段计划：仅在两端锚点都已出现时产出 measure。后端未 ready 的机器上
- *  `spawn→ready` / `ready→window-shown` 自然不产出（不报错、不刷屏）。 */
+/**
+ * 分段计划：每次 mark 后遍历**全部**计划，凡「两端锚点齐备 且 该 label
+ * 未产出」即产出 —— 与锚点到达顺序无关。
+ *
+ * `to - from < 0` 的组合**显式跳过**：阶段顺序因机而异（本应用实测
+ * `window-shown` 早于 `resolve:start`），负值无意义，也**不得**静默取绝对值。
+ *
+ *  - `spawn→ready`：后端未 ready 的机器上两端不齐，自然不产出（不报错、不刷屏）。
+ *  - `ready→window-shown` / `resolve→window-shown`：**本机永不产出** ——
+ *    实测 `window-shown` 先于 `resolve:start`，二者恒为负值，被跳过。
+ */
 const BOOT_MEASURE_PLAN: readonly BootMeasureSpec[] = [
   { label: 'resolve', from: 'boot:resolve:start', to: 'boot:resolve:end' },
   { label: 'resolve→spawn', from: 'boot:resolve:end', to: 'boot:spawn' },
   { label: 'spawn→ready', from: 'boot:spawn', to: 'boot:ready' },
   { label: 'ready→window-shown', from: 'boot:ready', to: 'boot:window-shown' },
-  { label: 'resolve→window-shown', from: 'boot:resolve:start', to: 'boot:window-shown' }
+  { label: 'resolve→window-shown', from: 'boot:resolve:start', to: 'boot:window-shown' },
+  { label: 'app-start→window-shown', from: 'boot:app-start', to: 'boot:window-shown' },
+  { label: 'window-shown→resolve:start', from: 'boot:window-shown', to: 'boot:resolve:start' }
 ]
 
 export interface BootTimingOptions {
@@ -112,7 +127,7 @@ export interface BootTiming {
 }
 
 /**
- * 记录启动锚点并在分段两端齐备时立即产出 measure。
+ * 记录启动锚点，并在**任一** mark 之后立即产出「两端齐备」的分段（顺序无关）。
  *
  * **每个名字只认首次出现**（冷启动那一刻），重复调用被忽略 —— 这样整条链路
  * 产出有界的十几行日志，而不是每次 resolve / 每个窗口都刷屏。
@@ -121,9 +136,10 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
   const marks = new Map<BootMarkName, number>()
   const emitted = new Set<string>()
 
-  const emitMeasuresEndingAt = (name: BootMarkName) => {
+  // 顺序无关：每次 mark 后重扫全部计划，两端齐备且未产出的立即产出。
+  const emitReadyMeasures = () => {
     for (const spec of BOOT_MEASURE_PLAN) {
-      if (spec.to !== name || emitted.has(spec.label)) {
+      if (emitted.has(spec.label)) {
         continue
       }
 
@@ -134,8 +150,16 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
         continue
       }
 
+      const delta = to - from
+
+      // 阶段顺序因机而异（本应用实测 window-shown 早于 resolve）：
+      // 跳过倒挂组合 —— 绝不产出负值，也不静默取绝对值。
+      if (delta < 0) {
+        continue
+      }
+
       emitted.add(spec.label)
-      sink(formatBootMeasureLine(spec.label, Math.round((to - from) * 10) / 10))
+      sink(formatBootMeasureLine(spec.label, Math.round(delta * 10) / 10))
     }
   }
 
@@ -148,7 +172,7 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
 
       marks.set(name, now())
       sink(formatBootMarkLine(name))
-      emitMeasuresEndingAt(name)
+      emitReadyMeasures()
     }
   }
 }

@@ -174,4 +174,65 @@ describe('createBootTiming', () => {
       `${BOOT_TIMING_PREFIX} measure resolve = 200ms`
     ])
   })
+
+  test('乱序序列：真机顺序（window-shown 早于 resolve）仍顺序无关地产出，且不产出负值', () => {
+    const { lines, timing, advance } = collect()
+
+    timing.mark('boot:app-start')
+    advance(2000)
+    timing.mark('boot:window-shown')
+    advance(6400)
+    timing.mark('boot:resolve:start')
+    advance(905.1)
+    timing.mark('boot:resolve:end')
+    advance(50)
+    timing.mark('boot:spawn')
+    advance(3000)
+    timing.mark('boot:ready')
+
+    const measures = lines.filter(line => line.includes('measure'))
+    assert.deepEqual(measures, [
+      `${BOOT_TIMING_PREFIX} measure app-start→window-shown = 2000ms`,
+      `${BOOT_TIMING_PREFIX} measure window-shown→resolve:start = 6400ms`,
+      `${BOOT_TIMING_PREFIX} measure resolve = 905.1ms`,
+      `${BOOT_TIMING_PREFIX} measure resolve→spawn = 50ms`,
+      `${BOOT_TIMING_PREFIX} measure spawn→ready = 3000ms`
+    ])
+
+    // 负值 / 倒挂组合绝不产出（本机实测 window-shown 早于 resolve:start）。
+    assert.equal(measures.some(line => /=\s*-/.test(line)), false)
+    for (const line of measures) {
+      const ms = Number(line.slice(line.lastIndexOf('= ') + 2, -2))
+      assert.ok(ms >= 0, `measure must not be negative: ${line}`)
+    }
+    assert.equal(lines.includes(`${BOOT_TIMING_PREFIX} measure resolve→window-shown = -6400ms`), false)
+    assert.equal(lines.includes(`${BOOT_TIMING_PREFIX} measure ready→window-shown = -10355ms`), false)
+  })
+
+  test('正序序列：app-start → resolve → spawn → ready → window-shown 正常产出', () => {
+    const { lines, timing, advance } = collect()
+
+    timing.mark('boot:app-start')
+    advance(50)
+    timing.mark('boot:resolve:start')
+    advance(500)
+    timing.mark('boot:resolve:end')
+    advance(10)
+    timing.mark('boot:spawn')
+    advance(3000)
+    timing.mark('boot:ready')
+    advance(200)
+    timing.mark('boot:window-shown')
+
+    const measures = lines.filter(line => line.includes('measure'))
+    assert.deepEqual(measures, [
+      `${BOOT_TIMING_PREFIX} measure resolve = 500ms`,
+      `${BOOT_TIMING_PREFIX} measure resolve→spawn = 10ms`,
+      `${BOOT_TIMING_PREFIX} measure spawn→ready = 3000ms`,
+      `${BOOT_TIMING_PREFIX} measure ready→window-shown = 200ms`,
+      `${BOOT_TIMING_PREFIX} measure resolve→window-shown = 3710ms`,
+      `${BOOT_TIMING_PREFIX} measure app-start→window-shown = 3760ms`
+    ])
+    assert.equal(measures.some(line => /=\s*-/.test(line)), false)
+  })
 })
