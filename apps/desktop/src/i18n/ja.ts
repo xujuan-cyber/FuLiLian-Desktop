@@ -299,6 +299,39 @@ export const ja = defineLocale({
     }
   },
 
+  // ステップ 16 · T9: 4グループレイアウト（方案 §3-T9）— 設定ページと
+  // ? チートシートが store/keybinds-registry.ts 経由で共通参照する。
+  keybinds: {
+    conflictSuggestion: combo => `代替案: ${combo}`,
+    groups: {
+      global: 'グローバル',
+      sessionApproval: 'セッションと承認',
+      editing: '編集',
+      navigationView: 'ナビゲーションと表示'
+    },
+    sheet: {
+      hint: '? キーでいつでも開く',
+      close: '閉じる',
+      goSettings: 'キーボード設定',
+      reserved: '予約',
+      footerNote:
+        'すべてのショートカットはキーボード設定で再割り当てできます。競合は赤く表示され、代替案が提示されます。'
+    },
+    actions: {
+      't9.newForensics': 'フォレンジック案件を新規作成',
+      't9.newCtf': 'CTF 問題を新規作成',
+      't9.newProject': 'コーディングタスクを新規作成',
+      't9.quickCapture': 'クイックキャプチャ',
+      't9.sessionSlots': 'セッション切替（スロット 1-9）',
+      't9.approvalOnce': '一度だけ許可',
+      't9.approvalSession': 'このセッションは常に許可',
+      't9.approvalDeny': '拒否',
+      't9.evidenceQuote': '証拠を引用（フォレンジックモード）',
+      't9.zoom': '表示の拡大縮小',
+      't9.quickSheet': 'ショートカット早見表'
+    }
+  },
+
   tray: {
     newForensics: 'フォレンジック案件を新規作成',
     newCtf: 'CTF 問題を新規作成',

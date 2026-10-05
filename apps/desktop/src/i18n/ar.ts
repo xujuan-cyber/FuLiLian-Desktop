@@ -232,12 +232,30 @@ export const ar = defineLocale({
     pressKey: 'اضغط مفتاحا...',
     set: 'مضبوط',
     conflictWith: label => `مرتبط أيضا بـ “${label}”`,
+    // الخطوة 16 · T9: صفوف التعارض تقترح بديلا حرا.
+    conflictSuggestion: combo => `بديل مقترح: ${combo}`,
     categories: {
       composer: 'المحرّر',
       profiles: 'الملفات الشخصية',
       session: 'الجلسة',
       navigation: 'التنقل',
       view: 'العرض'
+    },
+    // الخطوة 16 · T9: تخطيط المجموعات الأربع (المخطط §3-T9) مشترك بين صفحة
+    // الإعدادات وورقة الغش عبر store/keybinds-registry.ts.
+    groups: {
+      global: 'عام',
+      sessionApproval: 'الجلسات والموافقات',
+      editing: 'التحرير',
+      navigationView: 'التنقل والعرض'
+    },
+    sheet: {
+      hint: 'اضغط ? في أي وقت',
+      close: 'إغلاق',
+      goSettings: 'إعدادات لوحة المفاتيح',
+      reserved: 'محجوز',
+      footerNote:
+        'جميع الاختصارات قابلة لإعادة التعيين في إعدادات لوحة المفاتيح؛ وتُعلَّم التعارضات مع بديل مقترح.'
     },
     actions: {
       'keybinds.openPanel': 'فتح اختصارات لوحة المفاتيح',
@@ -316,7 +334,19 @@ export const ar = defineLocale({
       'composer.slash': 'لوحة الأوامر المائلة',
       'composer.help': 'مساعدة سريعة',
       'composer.history': 'التنقل في النافذة المنبثقة / السجل',
-      'composer.cancel': 'إغلاق النافذة المنبثقة · إلغاء التشغيل'
+      'composer.cancel': 'إغلاق النافذة المنبثقة · إلغاء التشغيل',
+      // الخطوة 16 · T9: صفوف ورقة الغش (store/keybinds-registry.ts).
+      't9.newForensics': 'قضية جنائية رقمية جديدة',
+      't9.newCtf': 'تحدي CTF جديد',
+      't9.newProject': 'مهمة برمجية جديدة',
+      't9.quickCapture': 'الالتقاط السريع',
+      't9.sessionSlots': 'تبديل الجلسة (الخانات 1-9)',
+      't9.approvalOnce': 'السماح مرة واحدة',
+      't9.approvalSession': 'السماح دائما في هذه الجلسة',
+      't9.approvalDeny': 'رفض',
+      't9.evidenceQuote': 'اقتباس الدليل (وضع التحقيق)',
+      't9.zoom': 'تكبير الواجهة',
+      't9.quickSheet': 'ورقة اختصارات لوحة المفاتيح'
     }
   },
   language: {

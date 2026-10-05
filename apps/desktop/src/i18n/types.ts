@@ -310,7 +310,25 @@ export interface Translations {
     pressKey: string
     set: string
     conflictWith: (label: string) => string
+    // Step 16 · T9: conflict rows suggest a free modifier-stacked alternative.
+    conflictSuggestion: (combo: string) => string
     categories: Record<string, string>
+    // Step 16 · T9 four-group layout (方案 §3-T9) shared by the settings page
+    // and the ? cheat sheet via store/keybinds-registry.ts.
+    groups: {
+      global: string
+      sessionApproval: string
+      editing: string
+      navigationView: string
+    }
+    // ? cheat-sheet copy. `title` reuses keybinds.title.
+    sheet: {
+      hint: string
+      close: string
+      goSettings: string
+      reserved: string
+      footerNote: string
+    }
     actions: Record<string, string>
   }
 

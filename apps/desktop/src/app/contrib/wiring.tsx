@@ -20,6 +20,7 @@ import { ConfirmHost } from '@/components/confirm-host'
 import { DesktopInstallOverlay } from '@/components/desktop-install-overlay'
 import { FindBar } from '@/components/find-bar'
 import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overlay'
+import { KeybindsSheet } from '@/components/keybinds-sheet'
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shell/tree/store'
@@ -1168,6 +1169,9 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <GatewayConnectingOverlay />
       <BootFailureOverlay />
       <CommandPalette />
+      {/* Step 16 · T9: the ? keybind cheat sheet (store-driven; ?/Esc dispatch
+          lives in use-keybinds). Mounted beside the other global overlays. */}
+      <KeybindsSheet />
       <PluginInstallModal />
       <PetGenerateOverlay />
       <SessionSwitcher />

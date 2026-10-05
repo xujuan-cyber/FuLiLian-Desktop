@@ -119,13 +119,18 @@ export function resetAllBindings(): void {
   $bindings.set(defaultBindings())
 }
 
-// Other actions that already use `combo` (excluding `actionId` itself).
+// Other actions that already use `combo` (excluding `actionId` itself). Both
+// sides go through `canonicalizeCombo` so a `ctrl+…` default collides with its
+// `mod+…` twin off macOS (T9 conflict detection parity with `$comboIndex`).
 export function conflictsFor(actionId: string, combo: string): string[] {
   const bindings = $bindings.get()
+  const canonical = canonicalizeCombo(combo)
 
   return allKeybindActions()
     .map(action => action.id)
-    .filter(id => id !== actionId && bindingsFor(id, bindings).includes(combo))
+    .filter(
+      id => id !== actionId && bindingsFor(id, bindings).some(other => canonicalizeCombo(other) === canonical)
+    )
 }
 
 // ── Capture ─────────────────────────────────────────────────────────────────

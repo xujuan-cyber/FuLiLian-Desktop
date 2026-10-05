@@ -266,12 +266,30 @@ export const en: Translations = {
     pressKey: 'Press a key…',
     set: 'set',
     conflictWith: label => `Also bound to “${label}”`,
+    // Step 16 · T9: conflict rows offer a free modifier-stacked alternative.
+    conflictSuggestion: combo => `Suggested alternative: ${combo}`,
     categories: {
       composer: 'Composer',
       profiles: 'Profiles',
       session: 'Session',
       navigation: 'Navigation',
       view: 'View'
+    },
+    // Step 16 · T9 four-group layout (方案 §3-T9) shared by the settings page
+    // and the ? cheat sheet via store/keybinds-registry.ts.
+    groups: {
+      global: 'Global',
+      sessionApproval: 'Sessions & approvals',
+      editing: 'Editing',
+      navigationView: 'Navigation & view'
+    },
+    sheet: {
+      hint: 'Press ? anytime',
+      close: 'Close',
+      goSettings: 'Keyboard settings',
+      reserved: 'Reserved',
+      footerNote:
+        'All shortcuts are rebindable in keyboard settings; conflicts are flagged with a suggested alternative.'
     },
     actions: {
       'keybinds.openPanel': 'Open keyboard shortcuts',
@@ -362,7 +380,19 @@ export const en: Translations = {
       'composer.slash': 'Slash command palette',
       'composer.help': 'Quick help',
       'composer.history': 'Cycle popover / history',
-      'composer.cancel': 'Close popover · cancel run'
+      'composer.cancel': 'Close popover · cancel run',
+      // Step 16 · T9 curated rows (store/keybinds-registry.ts KEYBIND_TABLE).
+      't9.newForensics': 'New forensics case',
+      't9.newCtf': 'New CTF challenge',
+      't9.newProject': 'New coding task',
+      't9.quickCapture': 'Quick capture',
+      't9.sessionSlots': 'Switch session (slots 1-9)',
+      't9.approvalOnce': 'Allow once',
+      't9.approvalSession': 'Always allow this session',
+      't9.approvalDeny': 'Reject',
+      't9.evidenceQuote': 'Quote evidence (forensics mode)',
+      't9.zoom': 'Zoom interface',
+      't9.quickSheet': 'Shortcut cheat sheet'
     }
   },
 

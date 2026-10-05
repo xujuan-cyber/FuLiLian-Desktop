@@ -6,6 +6,7 @@ import { type KeybindRuntimeDeps, paletteOwnsNumberCombo, useKeybinds } from './
 
 import { I18nProvider } from '@/i18n'
 import { $commandPaletteOpen } from '@/store/command-palette'
+import { $keybindsSheetOpen } from '@/store/keybinds-registry'
 import { $newChatProfile, $profiles } from '@/store/profile'
 import { actionAllowedInInput } from '@/lib/keybinds/combo'
 
@@ -101,5 +102,61 @@ describe('useKeybinds dispatcher vs the open palette (T8)', () => {
     })
 
     expect($newChatProfile.get()).toBeNull()
+  })
+})
+
+// Step 16 · T9: the ? cheat sheet dispatch — '?' (shift+/) toggles on a
+// non-editable target, Esc closes before any Esc-bound action fires
+// underneath, and editable targets keep their literal '?'.
+describe('useKeybinds dispatcher vs the ? cheat sheet (T9)', () => {
+  afterEach(() => {
+    cleanup()
+    $keybindsSheetOpen.set(false)
+  })
+
+  it('? (shift+/) opens the sheet, and pressing ? again closes it', () => {
+    renderKeybinds()
+    expect($keybindsSheetOpen.get()).toBe(false)
+
+    act(() => {
+      fireEvent.keyDown(window, { code: 'Slash', key: '?', shiftKey: true })
+    })
+    expect($keybindsSheetOpen.get()).toBe(true)
+
+    act(() => {
+      fireEvent.keyDown(window, { code: 'Slash', key: '?', shiftKey: true })
+    })
+    expect($keybindsSheetOpen.get()).toBe(false)
+  })
+
+  it('Escape closes the open sheet before composer.cancel can fire underneath', () => {
+    renderKeybinds()
+    act(() => {
+      $keybindsSheetOpen.set(true)
+    })
+
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' })
+    })
+
+    expect($keybindsSheetOpen.get()).toBe(false)
+  })
+
+  it('keeps the literal ? while an editable target holds focus', () => {
+    renderKeybinds()
+
+    const input = document.createElement('input')
+
+    document.body.appendChild(input)
+
+    try {
+      act(() => {
+        fireEvent.keyDown(input, { code: 'Slash', key: '?', shiftKey: true })
+      })
+
+      expect($keybindsSheetOpen.get()).toBe(false)
+    } finally {
+      input.remove()
+    }
   })
 })

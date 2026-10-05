@@ -291,6 +291,38 @@ export const zhHant = defineLocale({
     }
   },
 
+  // 步驟 16 · T9：四組佈局（方案 §3-T9）— 設定頁與 ？ 速查頁經
+  // store/keybinds-registry.ts 同源共享。
+  keybinds: {
+    conflictSuggestion: combo => `建議改用：${combo}`,
+    groups: {
+      global: '全域',
+      sessionApproval: '工作階段與審批',
+      editing: '編輯',
+      navigationView: '導覽與檢視'
+    },
+    sheet: {
+      hint: '按 ? 隨時喚起',
+      close: '關閉',
+      goSettings: '鍵盤設定',
+      reserved: '預留',
+      footerNote: '所有鍵位均可在鍵盤設定中自訂；衝突鍵位會自動標紅並給出替代建議。'
+    },
+    actions: {
+      't9.newForensics': '新增取證案件',
+      't9.newCtf': '新增 CTF 賽題',
+      't9.newProject': '新增程式任務',
+      't9.quickCapture': '快速擷取',
+      't9.sessionSlots': '切換工作階段（槽位 1-9）',
+      't9.approvalOnce': '允許一次',
+      't9.approvalSession': '本工作階段總是允許',
+      't9.approvalDeny': '拒絕',
+      't9.evidenceQuote': '引用證據（取證模式）',
+      't9.zoom': '縮放介面',
+      't9.quickSheet': '快捷鍵速查'
+    }
+  },
+
   tray: {
     newForensics: '新增取證案件',
     newCtf: '新增 CTF 賽題',

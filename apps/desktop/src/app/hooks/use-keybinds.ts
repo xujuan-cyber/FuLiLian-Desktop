@@ -31,6 +31,7 @@ import {
 } from '@/store/find-in-page'
 import { toggleHud } from '@/store/hud'
 import { $capture, $comboIndex, endCapture, setBinding } from '@/store/keybinds'
+import { $keybindsSheetOpen, setKeybindsSheetOpen, toggleKeybindsSheet } from '@/store/keybinds-registry'
 import {
   setFileBrowserOpen,
   toggleFileBrowserOpen,
@@ -103,10 +104,9 @@ export interface KeybindRuntimeDeps {
  * True when the OPEN command palette owns this combo (step 16 · T8): Ctrl 1-9
  * jump to the Nth result zone while ⌘K is up, so the profile/tab-slot chords
  * below must yield. Scoped to "palette open" only — closed, mod+1..9 stay with
- * the profile slots. Keymap alignment note (T9 seam): the T9 keybind table
- * reserves Ctrl 1/2/3 for new-three-modes and Ctrl+Alt+1-9 for session slots;
- * the palette-local zone jump never fires while the palette is closed, so the
- * two scopes don't collide.
+ * the profile slots; the OS-side chords (tray accelerators, quick-capture)
+ * live in `store/keybinds-registry.ts` under their own scopes and are never
+ * dispatched here.
  */
 export const paletteOwnsNumberCombo = (combo: string): boolean => /^mod\+[1-9]$/.test(combo)
 
@@ -403,6 +403,16 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
         return
       }
 
+      // Step 16 · T9: Esc closes the ? cheat sheet before any Esc-bound action
+      // (composer.cancel etc.) can fire underneath it.
+      if ($keybindsSheetOpen.get() && event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        setKeybindsSheetOpen(false)
+
+        return
+      }
+
       const combo = comboFromEvent(event)
 
       if (!combo) {
@@ -424,6 +434,17 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
       // in React — can claim the chord. (Tab/↵/Esc inside the palette are
       // cmdk/Radix machinery and never reach this dispatcher as actions.)
       if ($commandPaletteOpen.get() && paletteOwnsNumberCombo(combo)) {
+        return
+      }
+
+      // Step 16 · T9: '?' (shift+/) toggles the keybinds cheat sheet. Editable
+      // targets keep their literal '?' (composer text, palette search, …); the
+      // capture branch above already swallowed rebind presses. Sits before the
+      // combo-index lookup so the type-to-focus path never steals the chord.
+      if (combo === 'shift+/' && !isEditableTarget(event.target)) {
+        event.preventDefault()
+        toggleKeybindsSheet()
+
         return
       }
 

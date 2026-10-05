@@ -259,12 +259,29 @@ export const zh: Translations = {
     pressKey: '请按下按键…',
     set: '设置',
     conflictWith: label => `已绑定到“${label}”`,
+    // 步骤 16 · T9：冲突行给出空闲的组合键替代建议。
+    conflictSuggestion: combo => `建议改用：${combo}`,
     categories: {
       composer: '输入框',
       profiles: '配置',
       session: '会话',
       navigation: '导航',
       view: '视图'
+    },
+    // 步骤 16 · T9 四组重排（方案 §3-T9），键位设置与 ？ 速查页经
+    // store/keybinds-registry.ts 同源共享。
+    groups: {
+      global: '全局',
+      sessionApproval: '会话与审批',
+      editing: '编辑',
+      navigationView: '导航与视图'
+    },
+    sheet: {
+      hint: '按 ? 随时唤起',
+      close: '关闭',
+      goSettings: '键盘设置',
+      reserved: '预留',
+      footerNote: '所有键位均可在键盘设置中自定义；冲突键位会自动标红并给出替代建议。'
     },
     actions: {
       'keybinds.openPanel': '打开键盘快捷键',
@@ -349,7 +366,19 @@ export const zh: Translations = {
       'composer.slash': '斜杠命令面板',
       'composer.help': '快速帮助',
       'composer.history': '切换弹窗/历史',
-      'composer.cancel': '关闭弹窗·取消运行'
+      'composer.cancel': '关闭弹窗·取消运行',
+      // 步骤 16 · T9 速查页条目（store/keybinds-registry.ts KEYBIND_TABLE）。
+      't9.newForensics': '新建取证案件',
+      't9.newCtf': '新建 CTF 赛题',
+      't9.newProject': '新建编程任务',
+      't9.quickCapture': '快速捕获',
+      't9.sessionSlots': '切换会话（槽位 1-9）',
+      't9.approvalOnce': '允许一次',
+      't9.approvalSession': '本会话总是允许',
+      't9.approvalDeny': '拒绝',
+      't9.evidenceQuote': '引用证据（取证模式）',
+      't9.zoom': '缩放界面',
+      't9.quickSheet': '快捷键速查'
     }
   },
 
