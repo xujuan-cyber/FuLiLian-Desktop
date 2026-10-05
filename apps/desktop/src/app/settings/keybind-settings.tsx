@@ -10,14 +10,13 @@ import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
 import {
   allKeybindActions,
-  KEYBIND_CATEGORIES,
   KEYBIND_PANEL_ACTION,
   KEYBIND_READONLY,
   type KeybindActionMeta,
   type KeybindReadonly,
   KEYBINDS_AREA
 } from '@/lib/keybinds/actions'
-import { formatCombo } from '@/lib/keybinds/combo'
+import { canonicalizeCombo, formatCombo } from '@/lib/keybinds/combo'
 import { arraysEqual } from '@/lib/storage'
 import {
   $bindings,
@@ -29,6 +28,14 @@ import {
   resetAllBindings,
   resetBinding
 } from '@/store/keybinds'
+import {
+  fixedRowsForGroup,
+  groupForAction,
+  groupForReadonly,
+  KEYBIND_GROUP_ORDER,
+  type ResolvedKeybindRow,
+  suggestAlternative
+} from '@/store/keybinds-registry'
 
 import { SettingsContent } from './primitives'
 
@@ -93,6 +100,23 @@ export function KeybindSettings() {
     })
   }, [isSearching, query, k.actions])
 
+  // Fixed (non-rebindable) T9 table rows — tray/quick-capture/zoom chords and
+  // the reserved honesty rows — follow the same four-group layout (T9-1) and
+  // join the search results flat.
+  const filteredFixed = useMemo(() => {
+    if (!isSearching) {
+      return null
+    }
+
+    const lower = query.toLowerCase()
+
+    return KEYBIND_GROUP_ORDER.flatMap(group => fixedRowsForGroup(group)).filter(row => {
+      const label = k.actions[row.id] ?? row.id
+
+      return label.toLowerCase().includes(lower) || row.id.includes(lower)
+    })
+  }, [isSearching, query, k.actions])
+
   return (
     <SettingsContent>
       <div className="flex items-center justify-between gap-3 pb-3">
@@ -124,7 +148,7 @@ export function KeybindSettings() {
 
       {isSearching ? (
         <div className="px-2 py-1.5">
-          {filteredActions?.length === 0 && filteredReadonly?.length === 0 ? (
+          {filteredActions?.length === 0 && filteredReadonly?.length === 0 && filteredFixed?.length === 0 ? (
             <p className="px-2.5 py-4 text-center text-[0.82rem] text-muted-foreground">—</p>
           ) : (
             <>
@@ -134,33 +158,36 @@ export function KeybindSettings() {
               {filteredReadonly?.map(shortcut => (
                 <ReadonlyRow key={shortcut.id} shortcut={shortcut} />
               ))}
+              {filteredFixed?.map(row => <FixedRow key={row.id} row={row} />)}
             </>
           )}
         </div>
       ) : (
         <div className="px-2 py-1.5">
-          {KEYBIND_CATEGORIES.map(category => {
+          {/* T9-1 four-group layout (方案 §3-T9): 全局 / 会话与审批 / 编辑 /
+              导航与视图 — the same grouping the ? cheat sheet shows, driven by
+              the shared registry (store/keybinds-registry.ts). */}
+          {KEYBIND_GROUP_ORDER.map(group => {
             const actions = actionList.filter(
-              action => action.category === category && action.id !== KEYBIND_PANEL_ACTION
+              action => action.id !== KEYBIND_PANEL_ACTION && groupForAction(action.id, action.category) === group
             )
 
-            const readonly = KEYBIND_READONLY.filter(shortcut => shortcut.category === category)
+            const readonly = KEYBIND_READONLY.filter(shortcut => groupForReadonly(shortcut.id, shortcut.category) === group)
 
-            if (actions.length === 0 && readonly.length === 0) {
+            const fixed = fixedRowsForGroup(group)
+
+            if (actions.length === 0 && readonly.length === 0 && fixed.length === 0) {
               return null
             }
 
-            const sectionOpen = !collapsed.has(category)
+            const sectionOpen = !collapsed.has(group)
 
             return (
-              <section key={category}>
-                <CategoryHeader
-                  label={k.categories[category] ?? category}
-                  onToggle={() => toggleCategory(category)}
-                  open={sectionOpen}
-                />
+              <section data-group={group} key={group}>
+                <CategoryHeader label={k.groups[group]} onToggle={() => toggleCategory(group)} open={sectionOpen} />
                 {sectionOpen && actions.map(action => <KeybindRow action={action} key={action.id} />)}
                 {sectionOpen && readonly.map(shortcut => <ReadonlyRow key={shortcut.id} shortcut={shortcut} />)}
+                {sectionOpen && fixed.map(row => <FixedRow key={row.id} row={row} />)}
               </section>
             )
           })}
@@ -203,19 +230,56 @@ function KeybindRow({ action }: { action: KeybindActionMeta }) {
   const label = k.actions[action.id] ?? action.label ?? action.id
   const isDefault = arraysEqual(combos, [...action.defaults])
 
-  const conflict = combos
-    .flatMap(combo => conflictsFor(action.id, combo).map(other => k.actions[other] ?? other))
-    .find(Boolean)
+  // T9-1 conflict detection: duplicate bindings are flagged RED with a free
+  // modifier-stacked alternative (方案 §3-T9「重复绑定标红并给替代」). The
+  // taken set mirrors what the dispatcher actually claims: every action's
+  // live bindings, the fixed readonly chords, and the registry's fixed T9
+  // rows — canonicalized so ctrl/mod fold together off macOS.
+  const conflictLabels = combos.flatMap(combo => conflictsFor(action.id, combo).map(other => k.actions[other] ?? other))
+  const conflictLabel = conflictLabels.find(Boolean)
+
+  const suggestion = useMemo(() => {
+    if (!conflictLabel) {
+      return null
+    }
+
+    const taken = new Set<string>()
+
+    for (const other of allKeybindActions()) {
+      for (const combo of bindingsFor(other.id, bindings)) {
+        taken.add(canonicalizeCombo(combo))
+      }
+    }
+
+    for (const shortcut of KEYBIND_READONLY) {
+      for (const combo of shortcut.keys) {
+        taken.add(canonicalizeCombo(combo))
+      }
+    }
+
+    for (const group of KEYBIND_GROUP_ORDER) {
+      for (const row of fixedRowsForGroup(group)) {
+        for (const combo of row.combos) {
+          taken.add(canonicalizeCombo(combo))
+        }
+      }
+    }
+
+    const conflicting = combos.find(combo => conflictsFor(action.id, combo).length > 0)
+
+    return conflicting ? suggestAlternative(conflicting, taken) : null
+  }, [action.id, bindings, combos, conflictLabel])
 
   return (
-    <div className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1 transition-colors hover:bg-(--chrome-action-hover)">
-      <span className="min-w-0 flex-1 truncate text-[0.82rem] text-foreground/90">{label}</span>
+    <>
+      <div className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1 transition-colors hover:bg-(--chrome-action-hover)">
+        <span className="min-w-0 flex-1 truncate text-[0.82rem] text-foreground/90">{label}</span>
 
-      {conflict && (
-        <span className="flex size-4 items-center justify-center text-amber-500/90" title={k.conflictWith(conflict)}>
-          <Codicon name="warning" size="0.8125rem" />
-        </span>
-      )}
+        {conflictLabel && (
+          <span className="flex size-4 items-center justify-center text-destructive" title={k.conflictWith(conflictLabel)}>
+            <Codicon name="warning" size="0.8125rem" />
+          </span>
+        )}
 
       {/* Click the caps to rebind — the on-screen editor does the same thing. */}
       <Tip label={k.rebind}>
@@ -251,7 +315,14 @@ function KeybindRow({ action }: { action: KeybindActionMeta }) {
           </button>
         </Tip>
       )}
-    </div>
+      </div>
+
+      {/* T9-1: the suggested free alternative renders under the red-flagged
+          row (language copy via k.conflictSuggestion, chord via formatCombo). */}
+      {conflictLabel && suggestion && (
+        <p className="ps-2.5 text-[0.68rem] text-destructive/80">{k.conflictSuggestion(formatCombo(suggestion))}</p>
+      )}
+    </>
   )
 }
 
@@ -268,6 +339,32 @@ function ReadonlyRow({ shortcut }: { shortcut: KeybindReadonly }) {
       <div className="flex shrink-0 items-center gap-1">
         {shortcut.keys.map(key => (
           <KbdCombo combo={key} key={key} />
+        ))}
+      </div>
+      <span aria-hidden className="size-6 shrink-0" />
+    </div>
+  )
+}
+
+// Fixed T9-table row (registry KEYBIND_TABLE, T9-1): OS-side chords (T6 tray
+// trio, T7 quick capture), approval-scope keys, zoom — same dead-cap layout as
+// ReadonlyRow, plus the reserved badge for honesty rows (T9-5).
+function FixedRow({ row }: { row: ResolvedKeybindRow }) {
+  const { t } = useI18n()
+  const k = t.keybinds
+  const label = k.actions[row.id] ?? row.id
+
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-1">
+      <span className="min-w-0 flex-1 truncate text-[0.82rem] text-foreground/75">{label}</span>
+      {row.status === 'reserved' && (
+        <span className="shrink-0 rounded-full border border-(--ui-stroke-tertiary) px-1.5 py-px text-[0.625rem] text-muted-foreground">
+          {k.sheet.reserved}
+        </span>
+      )}
+      <div className="flex shrink-0 items-center gap-1">
+        {row.combos.map(combo => (
+          <KbdCombo combo={combo} key={combo} />
         ))}
       </div>
       <span aria-hidden className="size-6 shrink-0" />
