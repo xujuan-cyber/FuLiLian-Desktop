@@ -234,7 +234,10 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
   const profileEpoch = useRef(0)
 
   const refresh = useCallback(
-    async ({ replaceSelection = false }: { replaceSelection?: boolean } = {}) => {
+    async ({
+      invalidateConfig = false,
+      replaceSelection = false
+    }: { invalidateConfig?: boolean; replaceSelection?: boolean } = {}) => {
       const epoch = profileEpoch.current
       setLoading(true)
       setError('')
@@ -269,9 +272,16 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
           setSelectedMoaPreset(prev => (prev && moaModels.presets[prev] ? prev : moaModels.default_preset))
         }
 
-        // The config record loads via its own shared query; a model switch can
-        // change it server-side (aux slots), so nudge that cache to refetch.
-        void invalidateFulilianConfig(scopeProfile)
+        // The config record loads via its own shared query. Only a WRITE (an
+        // applied main-model switch / aux reassignment below, or a profile
+        // switch) can change it server-side, so those callers pass
+        // `invalidateConfig` and we nudge that cache to refetch. The plain
+        // mount load must NOT invalidate: the record is already fetched by its
+        // own query on entry, and invalidating here (as it did before) stacked a
+        // second GET /api/config on every settings visit for no new data.
+        if (invalidateConfig) {
+          void invalidateFulilianConfig(scopeProfile)
+        }
       } catch (err) {
         if (profileEpoch.current === epoch) {
           setError(err instanceof Error ? err.message : String(err))
@@ -299,7 +309,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
     setSelectedProvider('')
     setSelectedModel('')
     setApiKeyDraft('')
-    void refresh({ replaceSelection: true })
+    void refresh({ invalidateConfig: true, replaceSelection: true })
   })
 
   const providerOptions = providers.length ? providers : NO_PROVIDERS
@@ -662,7 +672,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
         onMainModelChanged?.(provider, model)
       }
 
-      await refresh()
+      await refresh({ invalidateConfig: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -704,7 +714,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
           },
           scopeProfile
         )
-        await refresh()
+        await refresh({ invalidateConfig: true })
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
       } finally {
@@ -735,7 +745,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
           scopeProfile
         )
         setEditingAuxTask(null)
-        await refresh()
+        await refresh({ invalidateConfig: true })
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
       } finally {
@@ -778,7 +788,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
         scopeProfile
       )
       setSwitchStaleAux([])
-      await refresh()
+      await refresh({ invalidateConfig: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

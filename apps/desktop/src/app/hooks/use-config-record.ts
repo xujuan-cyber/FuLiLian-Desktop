@@ -24,7 +24,14 @@ export const FULILIAN_CONFIG_KEY = ['fulilian-config-record'] as const
 export const fulilianConfigKey = (profile?: ProfileScope) =>
   profile == null ? FULILIAN_CONFIG_KEY : ([...FULILIAN_CONFIG_KEY, profileScopeKey(profile)] as const)
 
-// staleTime 0 → serve cache instantly, background-revalidate on every mount.
+// staleTime 60 s → the shared cache paints instantly and stays fresh instead of
+// background-revalidating on every mount. Step 17 · P4: `staleTime: 0` made each
+// settings-page entry revalidate this record even when nothing could have
+// changed it, stacking a redundant GET /api/config on top of the writes'
+// write-through + explicit invalidation. 60 s matches the app-wide default
+// (`lib/query-client.ts` defaultOptions.staleTime) and the sibling schema query
+// (5 min) in spirit — long enough to kill the per-mount storm, short enough that
+// any drift not covered by a write-through or invalidate self-heals quickly.
 // `profile` scopes both the query key and the fetch; omitting it preserves the
 // exact app-wide behavior (base key, `profileScoped(undefined)` fallback).
 export const useFulilianConfigRecord = (profile?: ProfileScope) =>
@@ -34,7 +41,7 @@ export const useFulilianConfigRecord = (profile?: ProfileScope) =>
     // capabilityScoped falls back to the app-wide active profile (passing null
     // would wrongly target the primary backend).
     queryFn: () => getFulilianConfigRecord(profile ?? undefined),
-    staleTime: 0
+    staleTime: 60_000
   })
 
 // setFulilianConfigCache writes the app-wide (base-key) record. Pass a profile to

@@ -149,7 +149,20 @@ function ConfigSettingsInner({
     setSaveVersion(0)
   })
 
+  // The live ElevenLabs voice list is consumed by exactly one field —
+  // `tts.elevenlabs.voice_id` — which renders only on the Voice section and only
+  // when the selected TTS provider is ElevenLabs (voiceFieldVisible). Gate the
+  // account-scoped fetch on that same condition: every other section/provider
+  // skips it. Step 17 · P4: this fetch was unconditional on every config-page
+  // mount, so opening Chat/Model/Workspace fired a useless voices request.
+  const wantsElevenLabsVoices =
+    activeSectionId === 'voice' && String(getNested(config ?? {}, 'tts.provider') ?? '') === 'elevenlabs'
+
   useEffect(() => {
+    if (!wantsElevenLabsVoices) {
+      return
+    }
+
     let cancelled = false
 
     getElevenLabsVoices(scopeProfile)
@@ -169,8 +182,9 @@ function ConfigSettingsInner({
       })
 
     return () => void (cancelled = true)
-    // scopeProfile is constant per mount (the inner component is keyed on it).
-  }, [scopeProfile])
+    // scopeProfile is constant per mount (the inner component is keyed on it);
+    // the gate flips only when the user switches the voice provider.
+  }, [scopeProfile, wantsElevenLabsVoices])
 
   // eslint-disable-next-line no-restricted-syntax -- autosave bookkeeping refs, not an atom mirror
   useEffect(() => {

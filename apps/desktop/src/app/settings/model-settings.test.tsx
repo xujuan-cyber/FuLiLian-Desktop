@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { queryClient } from '@/lib/query-client'
+
 // Radix Select calls scrollIntoView on its items when the content opens; jsdom
 // doesn't implement it (nor hasPointerCapture / releasePointerCapture), so stub
 // them to let the dropdown open in tests.
@@ -590,6 +592,40 @@ describe('ModelSettings MoA preset editor', () => {
       )
     } finally {
       vi.useRealTimers()
+    }
+  })
+})
+
+// Step 17 · P4-C: the model page's catalog refresh used to invalidate the shared
+// config record unconditionally — including on the plain mount load, which
+// stacked a second GET /api/config on every Model-section visit even though the
+// record's own query had just fetched it. Invalidation is now gated to real
+// writes (an applied main switch, an aux reassignment) and profile switches.
+describe('ModelSettings config-record invalidation (P4-C)', () => {
+  it('does not invalidate the shared config record on the plain mount load', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    try {
+      await renderModelSettings()
+      await waitFor(() => expect(getGlobalModelInfo).toHaveBeenCalled())
+      await waitFor(() => expect(getAuxiliaryModels).toHaveBeenCalled())
+
+      expect(spy).not.toHaveBeenCalledWith({ queryKey: ['fulilian-config-record'] })
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('still invalidates the shared config record after a main-model write', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    try {
+      await renderModelSettings()
+      fireEvent.click(await screen.findByRole('button', { name: 'Apply' }))
+
+      await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['fulilian-config-record'] }))
+    } finally {
+      spy.mockRestore()
     }
   })
 })
