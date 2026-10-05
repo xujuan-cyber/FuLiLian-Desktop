@@ -9,6 +9,8 @@ apps/desktop/build/
 apps/desktop/demo/
 apps/desktop/dist/
 apps/desktop/release/
+# 步骤16 T11：previews:render 渲染产物（固定输出目录，不入库）
+apps/desktop/.previews-render/
 apps/desktop/src/**/*.d.ts
 !apps/desktop/src/global.d.ts
 apps/desktop/src/**/*.js
