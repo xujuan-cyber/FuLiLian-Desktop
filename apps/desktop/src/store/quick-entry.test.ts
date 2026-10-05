@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   initialQuickComposerState,
-  QUICK_TARGET_CURRENT,
   QUICK_TARGET_NEW,
+  QUICK_TARGET_NOTE,
   type QuickComposerEvent,
   quickComposerReducer,
   type QuickComposerState,
@@ -27,8 +27,9 @@ function run(events: QuickComposerEvent[], from: QuickComposerState = initialQui
   return { sent, state }
 }
 
-// Most flows only make sense once the primary renderer has reported a live
-// gateway — this is the push the quick window receives on open.
+// The primary renderer's push the quick window receives on open. Note that
+// capture writes are LOCAL (draft stash / inbox), so `connected` no longer
+// gates submit — it only drives the reconnect hint.
 const connect: QuickComposerEvent = {
   connected: true,
   sessions: [
@@ -39,21 +40,22 @@ const connect: QuickComposerEvent = {
 }
 
 describe('quickComposerReducer', () => {
-  it('starts visible, empty, DISCONNECTED, and targeting the current chat', () => {
+  it('starts visible, empty, disconnected, in project mode, targeting the new-draft slot', () => {
     expect(initialQuickComposerState).toEqual({
       connected: false,
       draft: '',
+      mode: 'project',
       sessions: [],
       submitting: false,
-      target: QUICK_TARGET_CURRENT,
+      target: QUICK_TARGET_NEW,
       visible: true
     })
   })
 
-  it('submit sends the trimmed draft with the target, clears it, and hides', () => {
+  it('submit sends the trimmed draft with its capture mode and target, clears it, and hides', () => {
     const { sent, state } = run([connect, { draft: '  ship it  ', type: 'edit' }, { type: 'submit' }])
 
-    expect(sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'ship it' }])
+    expect(sent).toEqual([{ mode: 'project', target: QUICK_TARGET_NEW, text: 'ship it' }])
     expect(state.draft).toBe('')
     expect(state.submitting).toBe(true)
     expect(state.visible).toBe(false)
@@ -71,35 +73,21 @@ describe('quickComposerReducer', () => {
     expect(spaces.state.draft).toBe('   ')
   })
 
-  it('submit is DISABLED while disconnected — the draft survives for the reconnect', () => {
+  it('capture works while the gateway is down — drafts land locally, never on the wire', () => {
+    // The main window sits minimized to the tray; the push says the backend is
+    // unreachable. A capture must still land (step 16 · T7 acceptance: capture
+    // stays available from the tray-minimized state).
     const { sent, state } = run([{ draft: 'hello?', type: 'edit' }, { type: 'submit' }])
 
-    expect(sent).toEqual([])
-    expect(state.visible).toBe(true)
-    expect(state.draft).toBe('hello?')
-
-    // The gateway comes back: the same draft now sends.
-    const after = run([connect, { type: 'submit' }], state)
-    expect(after.sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'hello?' }])
-  })
-
-  it('a disconnect push mid-composition keeps the draft but blocks the send', () => {
-    const { sent, state } = run([
-      connect,
-      { draft: 'almost done', type: 'edit' },
-      { connected: false, sessions: [], type: 'state' },
-      { type: 'submit' }
-    ])
-
-    expect(sent).toEqual([])
+    expect(sent).toEqual([{ mode: 'project', target: QUICK_TARGET_NEW, text: 'hello?' }])
+    expect(state.visible).toBe(false)
     expect(state.connected).toBe(false)
-    expect(state.draft).toBe('almost done')
   })
 
   it('a second submit while already submitting cannot double-send', () => {
     const { sent, state } = run([connect, { draft: 'hello', type: 'edit' }, { type: 'submit' }, { type: 'submit' }])
 
-    expect(sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'hello' }])
+    expect(sent).toEqual([{ mode: 'project', target: QUICK_TARGET_NEW, text: 'hello' }])
     expect(state.submitting).toBe(true)
   })
 
@@ -107,32 +95,54 @@ describe('quickComposerReducer', () => {
     const { sent } = run([
       connect,
       { target: 's2', type: 'target' },
-      { draft: 'send this there', type: 'edit' },
+      { draft: 'capture this there', type: 'edit' },
       { type: 'submit' }
     ])
 
-    expect(sent).toEqual([{ target: 's2', text: 'send this there' }])
+    expect(sent).toEqual([{ mode: 'project', target: 's2', text: 'capture this there' }])
   })
 
-  it('the new-session target rides the submit payload', () => {
+  it('the chip carries its mode on the payload', () => {
     const { sent } = run([
       connect,
-      { target: QUICK_TARGET_NEW, type: 'target' },
-      { draft: 'fresh start', type: 'edit' },
+      { mode: 'ctf', type: 'mode' },
+      { target: 's1', type: 'target' },
+      { draft: 'rop gadget notes', type: 'edit' },
       { type: 'submit' }
     ])
 
-    expect(sent).toEqual([{ target: QUICK_TARGET_NEW, text: 'fresh start' }])
+    expect(sent).toEqual([{ mode: 'ctf', target: 's1', text: 'rop gadget notes' }])
   })
 
-  it('a picked session that vanishes from the pushed list falls back to current', () => {
+  it('the note chip routes to the no-container inbox regardless of the session picker', () => {
+    const noted = run([connect, { mode: 'note', type: 'mode' }]).state
+
+    expect(noted.mode).toBe('note')
+    expect(noted.target).toBe(QUICK_TARGET_NOTE)
+
+    // Even a stale picked target cannot redirect a note away from the inbox.
+    const redirected = quickComposerReducer(noted, { target: 's1', type: 'target' }).state
+    const submitted = run([{ draft: 'buy milk', type: 'edit' }, { type: 'submit' }], redirected)
+
+    expect(submitted.sent).toEqual([{ mode: 'note', target: QUICK_TARGET_NOTE, text: 'buy milk' }])
+  })
+
+  it('leaving note mode returns the target to the new-draft slot', () => {
+    const noted = run([connect, { mode: 'note', type: 'mode' }]).state
+    const back = quickComposerReducer(noted, { mode: 'forensics', type: 'mode' }).state
+
+    expect(back.mode).toBe('forensics')
+    expect(back.target).toBe(QUICK_TARGET_NEW)
+  })
+
+  it('a picked session that vanishes from the pushed list falls back to the new-draft slot', () => {
     const { state } = run([
       connect,
       { target: 's2', type: 'target' },
       { connected: true, sessions: [{ id: 's1', title: 'Fix the build' }], type: 'state' }
     ])
 
-    expect(state.target).toBe(QUICK_TARGET_CURRENT)
+    expect(state.target).toBe(QUICK_TARGET_NEW)
   })
 
   it('a state push that still contains the picked session keeps it', () => {
@@ -151,7 +161,7 @@ describe('quickComposerReducer', () => {
 
     expect(sent).toEqual([])
     expect(state.draft).toBe('')
-    expect(state.target).toBe(QUICK_TARGET_CURRENT)
+    expect(state.target).toBe(QUICK_TARGET_NEW)
     expect(state.visible).toBe(false)
   })
 
@@ -166,19 +176,25 @@ describe('quickComposerReducer', () => {
   it('the blur that follows a submit does not re-send or resurrect the draft', () => {
     const { sent, state } = run([connect, { draft: 'go', type: 'edit' }, { type: 'submit' }, { type: 'blur' }])
 
-    expect(sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'go' }])
+    expect(sent).toEqual([{ mode: 'project', target: QUICK_TARGET_NEW, text: 'go' }])
     expect(state.draft).toBe('')
     expect(state.submitting).toBe(false)
     expect(state.visible).toBe(false)
   })
 
   it('being re-summoned resets the capture surface but KEEPS the pushed gateway truth', () => {
-    const afterSubmit = run([connect, { draft: 'first', type: 'edit' }, { type: 'submit' }]).state
+    const afterSubmit = run([
+      connect,
+      { mode: 'note', type: 'mode' },
+      { draft: 'first', type: 'edit' },
+      { type: 'submit' }
+    ]).state
     const { sent, state } = run([{ type: 'shown' }], afterSubmit)
 
     expect(sent).toEqual([])
     expect(state.draft).toBe('')
-    expect(state.target).toBe(QUICK_TARGET_CURRENT)
+    expect(state.mode).toBe('project')
+    expect(state.target).toBe(QUICK_TARGET_NEW)
     expect(state.visible).toBe(true)
     // The gateway did not disconnect just because the window was re-opened.
     expect(state.connected).toBe(true)
@@ -210,7 +226,7 @@ describe('quickComposerReducer', () => {
     const first = run([connect, { draft: 'one', type: 'edit' }, { type: 'submit' }])
     const second = run([{ type: 'shown' }, { draft: 'two', type: 'edit' }, { type: 'submit' }], first.state)
 
-    expect(first.sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'one' }])
-    expect(second.sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'two' }])
+    expect(first.sent).toEqual([{ mode: 'project', target: QUICK_TARGET_NEW, text: 'one' }])
+    expect(second.sent).toEqual([{ mode: 'project', target: QUICK_TARGET_NEW, text: 'two' }])
   })
 })

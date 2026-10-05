@@ -4,9 +4,17 @@ import {
   initQuickEntryBridge,
   QUICK_TARGET_CURRENT,
   QUICK_TARGET_NEW,
+  QUICK_TARGET_NOTE,
   type QuickEntrySessionOption,
+  type QuickEntrySubmitPayload,
   setQuickEntrySubmitHandler
 } from '@/store/quick-entry'
+import { appendQuickCaptureNote } from '@/store/quick-capture-inbox'
+import {
+  requestComposerDraftSync,
+  stashSessionDraft,
+  takeSessionDraft
+} from '@/store/composer'
 import { $gatewayState, $sessions } from '@/store/session'
 import { sessionTileDelegate } from '@/store/session-states'
 import { isAuxiliaryWindow } from '@/store/windows'
@@ -32,17 +40,43 @@ function sessionOptions(): QuickEntrySessionOption[] {
 }
 
 /**
- * Wires the global-hotkey Quick Entry window back into the app, both ways:
+ * Step 16 · T7 capture semantics: land the text as a DRAFT in the target
+ * container's composer slot — the SAME per-session stash the composer itself
+ * persists to (`store/composer`), so nothing new is invented and the draft is
+ * exactly what the user finds when they open that session.
  *
- * - **Inbound:** text captured there is routed by target and submitted through
- *   THIS window's normal prompt machinery — current chat rides `submitText`, a
- *   picked stored session rides the session-tile delegate (resume + submit,
- *   background, without touching the primary view — the same path tiled
- *   sessions use), and "new session" is a fresh draft + submit, exactly what
- *   clicking New Chat and typing does. One submit pipeline, no bespoke RPC.
- * - **Outbound:** gateway connection state + the recent-session list are pushed
- *   to the quick window (via main, which caches the latest push), so its input
- *   disables with a reconnect hint whenever the backend is unreachable.
+ * The flush/reload pair is the HUD handoff sequence: whatever the mounted
+ * composer is holding goes into the stash first, the captured text is merged
+ * on top (never clobbering an existing draft), and the composer repaints if
+ * its scope matches the target. Exported so the write path stays unit-testable
+ * without mounting the hook.
+ */
+export function applyQuickCaptureToDraft(payload: { target: string; text: string }): void {
+  const scope = payload.target === QUICK_TARGET_NEW ? null : payload.target
+
+  requestComposerDraftSync('flush', 'main')
+
+  const existing = takeSessionDraft(scope)
+  const separator = existing.text.trim() ? '\n\n' : ''
+  stashSessionDraft(scope, `${existing.text}${separator}${payload.text}`, existing.attachments)
+
+  requestComposerDraftSync('reload', 'main')
+}
+
+/**
+ * Wires the global-hotkey quick capture window back into the app, both ways:
+ *
+ * - **Inbound:** a capture payload rides its mode. The note mode lands in the
+ *   no-container inbox (`store/quick-capture-inbox`); every other mode writes
+ *   the target container's session draft via `applyQuickCaptureToDraft`. The
+ *   LEGACY wire shape (no mode — an older quick window) keeps the v1
+ *   prompt-send routing: current chat → `submitText`, a picked stored session
+ *   → the session-tile delegate (resume + submit in the background), new →
+ *   fresh draft + submit. One payload channel, no bespoke RPC.
+ * - **Outbound:** gateway connection state + the recent-session list are
+ *   pushed to the capture window (via main, which caches the latest push), so
+ *   its picker lists real targets and its hint reflects the gateway truth —
+ *   capture itself writes locally and never needs the wire.
  *
  * Handlers register ONCE through refs tracking the latest callbacks —
  * re-registering on identity churn leaves a nulled-handler window that can drop
@@ -61,7 +95,23 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
       return
     }
 
-    setQuickEntrySubmitHandler(({ target, text }) => {
+    setQuickEntrySubmitHandler((payload: QuickEntrySubmitPayload) => {
+      // v2 capture payload (mode present): write locally, never send a prompt.
+      if (payload.mode) {
+        if (payload.mode === 'note' || payload.target === QUICK_TARGET_NOTE) {
+          appendQuickCaptureNote(payload.text)
+
+          return
+        }
+
+        applyQuickCaptureToDraft(payload)
+
+        return
+      }
+
+      // Legacy v1 payload: the old fire-a-prompt routing.
+      const { target, text } = payload
+
       if (target === QUICK_TARGET_NEW) {
         // Same as the user clicking New Chat and typing: fresh draft, then the
         // normal submit creates the backend session.

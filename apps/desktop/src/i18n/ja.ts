@@ -309,6 +309,21 @@ export const ja = defineLocale({
     quit: '終了'
   },
 
+  quickCapture: {
+    title: 'クイックキャプチャ',
+    placeholder: 'メモを書き残す…',
+    modeForensics: 'フォレンジック',
+    modeCtf: 'CTF',
+    modeProject: '開発',
+    modeNote: 'メモ',
+    targetLabel: '記入先',
+    targetNewDraft: '新規下書き',
+    targetEmpty: '記入できるコンテナはまだありません',
+    hintDraft: 'セッションの下書きに保存します。現在の作業は中断されません。',
+    hintNote: 'コンテナなしの受信箱に保存します。',
+    offlineHint: 'ゲートウェイはオフラインです——キャプチャはローカルに記録されます。'
+  },
+
   home: {
     greeting: {
       morning: 'おはようございます',
@@ -987,7 +1002,7 @@ export const ja = defineLocale({
     quickEntry: {
       enabledTitle: 'クイック入力',
       enabledDesc:
-        'グローバルショートカットで小さな入力欄をどこからでも呼び出し、Fulilian を開かずにプロンプトを送信します。',
+        'グローバルショートカットでクイックキャプチャウィンドウをどこからでも呼び出します。入力はセッションの下書きまたはメモ受信箱に保存され、送信は行われず、Fulilian を前面に出す必要もありません。',
       shortcutTitle: 'クイック入力のショートカット',
       shortcutDesc: '修飾キーが 1 つ以上必要です（例: CommandOrControl+Shift+Space）。',
       active: 'ショートカットは有効です。',

@@ -310,7 +310,7 @@ import {
   spliceRegistrySessionRows,
   tagRegistrySessionResponse
 } from './profile-session-routing'
-import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
+import { createQuickEntryShortcut, formatQuickCaptureAuditLine, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
@@ -16670,8 +16670,9 @@ ipcMain.handle('fulilian:quick-entry:settings:set', async (_event, patch) => {
 
 // Quick window → main → PRIMARY renderer. We never submit here: the renderer
 // owns the one prompt-submit path, and forwarding keeps it that way. The
-// payload is `{ target, text }` — target routing (current chat / a picked
-// session / new) is the renderer's job too.
+// payload is `{ target, text, mode? }` — target routing (draft slot / a picked
+// session / note inbox / legacy current-chat) is the renderer's job too; the
+// optional capture mode (step 16 · T7) rides along for the same reason.
 ipcMain.on('fulilian:quick-entry:submit', (_event, payload) => {
   hideQuickEntryWindow()
 
@@ -16679,6 +16680,20 @@ ipcMain.on('fulilian:quick-entry:submit', (_event, payload) => {
 
   if (!text) {
     return
+  }
+
+  // Step 16 · T7: a forensics-mode capture leaves its audit trail HERE, at the
+  // one choke point every submit transits — even when it is dropped below for
+  // lack of a primary window. The line records mode/target/LENGTH/outcome only,
+  // never the captured content (see quick-entry.ts formatQuickCaptureAuditLine).
+  const auditLine = formatQuickCaptureAuditLine(
+    payload,
+    text.length,
+    mainWindow && !mainWindow.isDestroyed() ? 'forwarded' : 'dropped-no-primary-window'
+  )
+
+  if (auditLine) {
+    rememberLog(auditLine)
   }
 
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -16690,6 +16705,7 @@ ipcMain.on('fulilian:quick-entry:submit', (_event, payload) => {
   // Deliberately does NOT raise/focus the main window — the user asked to fire
   // a prompt from wherever they were, not to be yanked into the app.
   mainWindow.webContents.send('fulilian:quick-entry:submit', {
+    mode: typeof payload?.mode === 'string' ? payload.mode : undefined,
     target: typeof payload?.target === 'string' && payload.target ? payload.target : 'current',
     text
   })

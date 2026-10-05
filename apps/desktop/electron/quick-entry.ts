@@ -418,4 +418,49 @@ export function quickEntryWindowBounds(workArea?: { height: number; width: numbe
   return { height, width, x, y }
 }
 
+// ── Step 16 · T7 forensics audit trail ──────────────────────────────────────
+
+// Forensics captures are audit-mandatory (方案 §3-T7). No dedicated audit
+// pipeline exists yet (electron, renderer stores, and the Python backend were
+// all checked), so the sanctioned trail is ONE structured line into the
+// existing desktop.log stream via main's `rememberLog`: a fixed marker plus
+// mode / target / content LENGTH / outcome — never the captured content.
+const QUICK_CAPTURE_AUDIT_MARKER = '[quick-capture:audit]'
+
+const QUICK_CAPTURE_AUDIT_OUTCOMES = new Set(['dropped-no-primary-window', 'forwarded'])
+
+/**
+ * Flatten a payload field into a log-safe atom: log-injection-proof (no
+ * whitespace, control characters, or `=`) and length-capped, with a fallback
+ * for absent values so the line always parses as key=value pairs.
+ */
+function auditAtom(raw: unknown, fallback: string): string {
+  const safe = String(raw ?? '')
+    .slice(0, 64)
+    .replace(/[^\w.:-]+/g, '_')
+
+  return safe || fallback
+}
+
+/**
+ * The audit line a quick-capture submit must leave, or null when the capture
+ * is not audit-mandatory (only the forensics mode is, per 方案 §3-T7; kind
+ * metadata does not exist yet, so the mode is the honest signal). Pure —
+ * `rememberLog` already stamps the line with the wall-clock time. Unit-tested
+ * so the exact trail a forensics capture leaves is pinned.
+ */
+export function formatQuickCaptureAuditLine(
+  payload: { mode?: null | string; target?: null | string },
+  textChars: number,
+  outcome: 'dropped-no-primary-window' | 'forwarded'
+): null | string {
+  if (payload?.mode !== 'forensics' || !QUICK_CAPTURE_AUDIT_OUTCOMES.has(outcome)) {
+    return null
+  }
+
+  const chars = Number.isFinite(textChars) && textChars > 0 ? Math.floor(textChars) : 0
+
+  return `${QUICK_CAPTURE_AUDIT_MARKER} mode=forensics target=${auditAtom(payload.target, 'unknown')} chars=${chars} outcome=${outcome}`
+}
+
 export { DEFAULT_QUICK_ENTRY_SHORTCUT, QUICK_ENTRY_TOP_FRACTION, QUICK_ENTRY_WINDOW_HEIGHT, QUICK_ENTRY_WINDOW_WIDTH }

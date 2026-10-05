@@ -1,12 +1,16 @@
 /**
  * Quick Entry (renderer side) — the mini composer's own state, and the
- * primary window's bridge back into the real prompt-submit path.
+ * primary window's bridge back into the app.
  *
- * The quick window carries NO gateway connection: it hands its text to the main
- * process, which forwards it to the primary renderer, which sends it through the
- * SAME `submitText` the normal composer uses (see
- * app/contrib/hooks/use-quick-entry-bridge). There is no second submit path and
- * no new gateway RPC.
+ * Since step 16 · T7 the window is the quick CAPTURE surface: a submit carries
+ * a capture mode and lands as a DRAFT in the target container's composer stash
+ * (the same `store/composer` persistence the composer itself uses) or, for the
+ * note mode, in the no-container inbox (`store/quick-capture-inbox`). The
+ * quick window carries NO gateway connection: it hands its payload to the main
+ * process, which forwards it to the primary renderer, which performs the write
+ * through the SAME stash the composer uses (see app/contrib/hooks/
+ * use-quick-entry-bridge). The v1 prompt-send routing survives only as the
+ * tolerance path for the legacy wire shape.
  *
  * The device-local preference (enabled + shortcut) is authoritative in the MAIN
  * process — it owns the OS registration and must restore it on a cold launch
@@ -109,6 +113,21 @@ export interface QuickEntrySessionOption {
 export const QUICK_TARGET_CURRENT = 'current'
 /** Start a brand-new session for this prompt. */
 export const QUICK_TARGET_NEW = 'new'
+/** Step 16 · T7 quick capture: the no-container inbox (a future notification
+ *  center lists these; until then the inbox is its own honest store). */
+export const QUICK_TARGET_NOTE = 'note'
+
+/**
+ * Which work-mode the capture belongs to (DESIGN_PROPOSAL §4.1 vocabulary).
+ * The mode rides the submit payload as recorded intent: the target dropdown
+ * only ever lists REAL targets, and the kind data layer does not exist yet
+ * (`container-kind.ts` still answers `'project'` for everything), so today the
+ * mode is metadata for the routing seam — the forensics audit-trail exit can
+ * switch on it once that pipeline lands.
+ */
+export type QuickCaptureMode = 'ctf' | 'forensics' | 'note' | 'project'
+
+export const QUICK_CAPTURE_MODES: readonly QuickCaptureMode[] = ['forensics', 'ctf', 'project', 'note']
 
 /**
  * The primary renderer's push into the quick window: is the gateway usable, and
@@ -123,7 +142,10 @@ export interface QuickEntryStatePush {
 
 /** What a quick-window submit carries back to the primary renderer. */
 export interface QuickEntrySubmitPayload {
-  /** QUICK_TARGET_CURRENT, QUICK_TARGET_NEW, or a stored session id. */
+  /** T7 capture mode when the v2 capture window produced it; absent on the
+   *  v1 wire shape (an older quick window), which keeps prompt-send routing. */
+  mode?: QuickCaptureMode
+  /** QUICK_TARGET_CURRENT, QUICK_TARGET_NEW, QUICK_TARGET_NOTE, or a stored session id. */
   target: string
   text: string
 }
@@ -137,14 +159,18 @@ export interface QuickEntrySubmitPayload {
  * needs React or Electron.
  */
 export interface QuickComposerState {
-  /** Last pushed gateway truth. False (the initial value) disables submit. */
+  /** Last pushed gateway truth. Capture writes are LOCAL (draft stash +
+   *  inbox), so unlike v1 this no longer gates submit — it only drives the
+   *  reconnect hint. */
   connected: boolean
   draft: string
+  /** Which work-mode chip is active (step 16 · T7). */
+  mode: QuickCaptureMode
   /** Recent sessions the picker offers, pushed by the primary renderer. */
   sessions: QuickEntrySessionOption[]
   /** True between a send and the window actually hiding. Blocks a double-send. */
   submitting: boolean
-  /** Where a submit lands: current / new / a stored session id. */
+  /** Where a submit lands: new / note / a stored session id (legacy: current). */
   target: string
   /** Whether the window should be visible. False asks the shell to hide. */
   visible: boolean
@@ -154,6 +180,7 @@ export type QuickComposerEvent =
   | { type: 'blur' }
   | { type: 'dismiss' }
   | { type: 'edit'; draft: string }
+  | { mode: QuickCaptureMode; type: 'mode' }
   | { type: 'shown' }
   | { type: 'state'; connected: boolean; sessions: QuickEntrySessionOption[] }
   | { type: 'submit' }
@@ -167,12 +194,16 @@ export interface QuickComposerTransition {
 
 export const initialQuickComposerState: QuickComposerState = {
   // Disconnected until the primary renderer's first push proves otherwise — a
-  // capture window that accepts text it can never deliver is a lie.
+  // hint only now: capture itself writes local drafts and never needs the wire.
   connected: false,
   draft: '',
+  // Capture-first default: the draft slot the composer already shows for a new
+  // session. Real targets only — no "current chat" guess while the main window
+  // sits minimized in the tray.
+  mode: 'project',
   sessions: [],
   submitting: false,
-  target: QUICK_TARGET_CURRENT,
+  target: QUICK_TARGET_NEW,
   visible: true
 }
 
@@ -184,7 +215,7 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       // hides — the send already left for the main process.
       return {
         send: null,
-        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: false }
+        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_NEW, visible: false }
       }
     }
 
@@ -192,23 +223,47 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       return { send: null, state: { ...state, draft: event.draft } }
     }
 
-    case 'shown': {
-      // Re-summoned: a fresh capture surface every time — never a stale draft or
-      // a leftover target — but the pushed gateway truth carries over.
+    case 'mode': {
+      // The note chip routes to the no-container inbox, so the container picker
+      // has nothing to offer; leaving note mode returns to the draft default.
+      if (event.mode === 'note') {
+        return { send: null, state: { ...state, mode: 'note', target: QUICK_TARGET_NOTE } }
+      }
+
       return {
         send: null,
-        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: true }
+        state: {
+          ...state,
+          mode: event.mode,
+          target: state.target === QUICK_TARGET_NOTE ? QUICK_TARGET_NEW : state.target
+        }
+      }
+    }
+
+    case 'shown': {
+      // Re-summoned: a fresh capture surface every time — never a stale draft,
+      // mode, or target — but the pushed gateway truth carries over.
+      return {
+        send: null,
+        state: {
+          ...state,
+          draft: '',
+          mode: 'project',
+          submitting: false,
+          target: QUICK_TARGET_NEW,
+          visible: true
+        }
       }
     }
 
     case 'state': {
       // Adopt the pushed truth. A selected session that no longer exists in the
-      // pushed list must not silently swallow the prompt — fall back to current.
+      // pushed list must not silently swallow the capture — fall back to the
+      // new-draft slot. Note mode keeps its inbox target regardless.
       const targetStillValid =
-        event.connected &&
-        (state.target === QUICK_TARGET_CURRENT ||
-          state.target === QUICK_TARGET_NEW ||
-          event.sessions.some(session => session.id === state.target))
+        state.target === QUICK_TARGET_NEW ||
+        state.target === QUICK_TARGET_NOTE ||
+        event.sessions.some(session => session.id === state.target)
 
       return {
         send: null,
@@ -216,7 +271,7 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
           ...state,
           connected: event.connected,
           sessions: event.sessions,
-          target: targetStillValid ? state.target : QUICK_TARGET_CURRENT
+          target: targetStillValid ? state.target : QUICK_TARGET_NEW
         }
       }
     }
@@ -224,14 +279,24 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
     case 'submit': {
       const text = state.draft.trim()
 
-      // Nothing to send — or nowhere to send it (gateway down): stay open and
-      // keep the draft so a stray Enter can't make the text vanish.
-      if (!text || state.submitting || !state.connected) {
+      // Nothing to send — or a double-fire while already submitting: stay open
+      // and keep the draft so a stray Enter can't make the text vanish.
+      // Capture writes are LOCAL (draft stash / inbox), so the gateway being
+      // down never blocks one — that is the whole point of capturing from the
+      // tray-minimized state.
+      if (!text || state.submitting) {
         return { send: null, state }
       }
 
+      if (state.mode === 'note') {
+        return {
+          send: { mode: 'note', target: QUICK_TARGET_NOTE, text },
+          state: { ...state, draft: '', submitting: true, visible: false }
+        }
+      }
+
       return {
-        send: { target: state.target, text },
+        send: { mode: state.mode, target: state.target, text },
         state: { ...state, draft: '', submitting: true, visible: false }
       }
     }
@@ -278,10 +343,16 @@ function normalizeSubmitPayload(raw: unknown): null | QuickEntrySubmitPayload {
     return null
   }
 
-  return {
-    target: typeof record.target === 'string' && record.target ? record.target : QUICK_TARGET_CURRENT,
-    text
-  }
+  const target = typeof record.target === 'string' && record.target ? record.target : QUICK_TARGET_CURRENT
+
+  // The v2 capture wire carries a mode; anything unrecognized degrades to the
+  // legacy prompt-send shape rather than inventing a routing target.
+  const mode =
+    typeof record.mode === 'string' && (QUICK_CAPTURE_MODES as readonly string[]).includes(record.mode)
+      ? (record.mode as QuickCaptureMode)
+      : undefined
+
+  return mode ? { mode, target, text } : { target, text }
 }
 
 /**

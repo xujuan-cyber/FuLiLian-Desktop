@@ -373,6 +373,21 @@ export const ar = defineLocale({
     openMainWindow: 'فتح النافذة الرئيسية',
     quit: 'إنهاء'
   },
+
+  quickCapture: {
+    title: 'الالتقاط السريع',
+    placeholder: 'دوّن شيئًا…',
+    modeForensics: 'التحقيق الجنائي',
+    modeCtf: 'CTF',
+    modeProject: 'برمجة',
+    modeNote: 'ملاحظة',
+    targetLabel: 'التسجيل في',
+    targetNewDraft: 'مسودة جديدة',
+    targetEmpty: 'لا يوجد حاوية للتسجيل فيها بعد',
+    hintDraft: 'يُحفظ في مسودة الجلسة — عملك الحالي لا ينقطع.',
+    hintNote: 'يُحفظ في صندوق الوارد بلا حاوية.',
+    offlineHint: 'البوابة غير متصلة — يبقى الالتقاط يُحفظ محليًا.'
+  },
   home: {
     greeting: {
       morning: 'صباح الخير',
@@ -932,7 +947,7 @@ export const ar = defineLocale({
     },
     quickEntry: {
       enabledTitle: 'الإدخال السريع',
-      enabledDesc: 'استدعِ محرّرا صغيرا من أي مكان باختصار عام وأرسل طلبا دون فتح Fulilian.',
+      enabledDesc: 'استدعِ نافذة الالتقاط السريع من أي مكان باختصار عام. ما تكتبه يُحفظ كمسودة في جلسة أو في صندوق الملاحظات — لا يُرسل شيء ولا تحتاج إلى فتح Fulilian.',
       shortcutTitle: 'اختصار الإدخال السريع',
       shortcutDesc: 'يحتاج إلى مفتاح تعديل واحد على الأقل، مثل CommandOrControl+Shift+Space.',
       active: 'الاختصار مفعّل.',

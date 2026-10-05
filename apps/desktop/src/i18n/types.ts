@@ -378,6 +378,22 @@ export interface Translations {
     quit: string
   }
 
+  // Quick capture window (step 16 · T7) — the global-hotkey mini surface.
+  quickCapture: {
+    title: string
+    placeholder: string
+    modeForensics: string
+    modeCtf: string
+    modeProject: string
+    modeNote: string
+    targetLabel: string
+    targetNewDraft: string
+    targetEmpty: string
+    hintDraft: string
+    hintNote: string
+    offlineHint: string
+  }
+
   home: {
     greeting: {
       morning: string

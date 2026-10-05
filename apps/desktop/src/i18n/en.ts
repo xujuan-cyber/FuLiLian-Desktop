@@ -427,6 +427,21 @@ export const en: Translations = {
     quit: 'Quit'
   },
 
+  quickCapture: {
+    title: 'Quick capture',
+    placeholder: 'Capture a thought…',
+    modeForensics: 'Forensics',
+    modeCtf: 'CTF',
+    modeProject: 'Code',
+    modeNote: 'Note',
+    targetLabel: 'Record into',
+    targetNewDraft: 'New draft',
+    targetEmpty: 'No container to record into yet',
+    hintDraft: 'Saved to the session draft — your current work is untouched.',
+    hintNote: 'Saved to the no-container inbox.',
+    offlineHint: 'Gateway offline — captures still land locally.'
+  },
+
   home: {
     greeting: {
       morning: 'Good morning',
@@ -949,7 +964,7 @@ export const en: Translations = {
     quickEntry: {
       enabledTitle: 'Quick Entry',
       enabledDesc:
-        'Summon a small composer from anywhere with a global shortcut and fire a prompt without opening Fulilian.',
+        'Summon the quick capture window from anywhere with a global shortcut. What you type lands as a draft in a session or the note inbox — nothing is sent, and Fulilian never has to be in front.',
       shortcutTitle: 'Quick Entry shortcut',
       shortcutDesc: 'Needs at least one modifier, e.g. CommandOrControl+Shift+Space.',
       active: 'Shortcut is active.',

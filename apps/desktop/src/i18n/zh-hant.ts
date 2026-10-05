@@ -301,6 +301,21 @@ export const zhHant = defineLocale({
     quit: '結束'
   },
 
+  quickCapture: {
+    title: '快速擷取',
+    placeholder: '記下一點什麼…',
+    modeForensics: '取證',
+    modeCtf: 'CTF',
+    modeProject: '程式',
+    modeNote: '速記',
+    targetLabel: '記入',
+    targetNewDraft: '新草稿',
+    targetEmpty: '暫無可記入的容器',
+    hintDraft: '寫入會話草稿，不打斷當前工作。',
+    hintNote: '寫入無容器收件匣。',
+    offlineHint: '閘道離線——擷取仍會本機落盤。'
+  },
+
   home: {
     greeting: {
       morning: '早安',
@@ -950,7 +965,7 @@ export const zhHant = defineLocale({
     },
     quickEntry: {
       enabledTitle: '快速輸入',
-      enabledDesc: '用全域快速鍵在任何地方喚出一個小輸入框，無需開啟 Fulilian 即可送出提示。',
+      enabledDesc: '用全域快速鍵在任何地方喚出快速擷取窗，輸入會作為草稿記入會話或速記收件匣——不送出任何提示，也無需開啟 Fulilian。',
       shortcutTitle: '快速輸入快速鍵',
       shortcutDesc: '至少需要一個修飾鍵，例如 CommandOrControl+Shift+Space。',
       active: '快速鍵已生效。',

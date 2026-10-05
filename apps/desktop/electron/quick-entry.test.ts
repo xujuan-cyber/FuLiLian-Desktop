@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createQuickEntryShortcut,
   DEFAULT_QUICK_ENTRY_SHORTCUT,
+  formatQuickCaptureAuditLine,
   type GlobalShortcutLike,
   parseQuickEntryShortcut,
   quickEntryWindowBounds,
@@ -236,5 +237,84 @@ describe('quickEntryWindowBounds', () => {
 
   it('falls back to the origin without a work area', () => {
     expect(quickEntryWindowBounds()).toEqual({ height: 168, width: 640, x: 0, y: 0 })
+  })
+})
+
+// Step 16 · T7: the quick-entry chord and the quick capture surface were merged
+// into ONE global key. These pin the merged chord and prove the pre-existing
+// trigger path (register → OS fires → toggle the window) is untouched by the
+// capture-window upgrade — the shell behavior the chord drives did not change.
+describe('merged capture chord (step 16 · T7)', () => {
+  it('the single global chord is Ctrl+Shift+Space via the CommandOrControl alias', () => {
+    expect(DEFAULT_QUICK_ENTRY_SHORTCUT).toBe('CommandOrControl+Shift+Space')
+    // The persisted-default sanitizer resolves to the same chord, so an
+    // unconfigured install and a user-customized-but-defaulted one agree.
+    expect(sanitizeQuickEntrySettings(undefined).shortcut).toBe('CommandOrControl+Shift+Space')
+  })
+
+  it('the legacy trigger path still fires through the registered chord', () => {
+    const { globalShortcut } = fakeGlobalShortcut()
+    const onTrigger = vi.fn()
+    const controller = createQuickEntryShortcut(globalShortcut, onTrigger)
+
+    const state = controller.apply({ enabled: true, shortcut: DEFAULT_QUICK_ENTRY_SHORTCUT })
+
+    expect(state.registered).toBe(true)
+    expect(globalShortcut.register).toHaveBeenCalledWith('CommandOrControl+Shift+Space', onTrigger)
+
+    // The OS fires the registered callback (main toggles the capture window).
+    const registration = vi.mocked(globalShortcut.register).mock.calls.find(([accelerator]) => accelerator === DEFAULT_QUICK_ENTRY_SHORTCUT)
+    expect(registration).toBeTruthy()
+    registration?.[1]()
+
+    expect(onTrigger).toHaveBeenCalledTimes(1)
+  })
+
+  it('rebinding away from the merged chord releases it and registers the new one', () => {
+    const { globalShortcut, held } = fakeGlobalShortcut()
+    const controller = createQuickEntryShortcut(globalShortcut, vi.fn())
+
+    controller.apply({ enabled: true, shortcut: DEFAULT_QUICK_ENTRY_SHORTCUT })
+    controller.apply({ enabled: true, shortcut: 'Alt+Q' })
+
+    expect(held.has('CommandOrControl+Shift+Space')).toBe(false)
+    expect(held.has('Alt+Q')).toBe(true)
+    expect(controller.current()).toEqual({ error: null, registered: true, shortcut: 'Alt+Q' })
+  })
+})
+
+// Step 16 · T7 forensics audit trail: a forensics-mode capture MUST leave a
+// structured desktop.log line (fixed marker, mode/target/length/outcome — the
+// captured content itself never appears). These pin the exact trail.
+describe('formatQuickCaptureAuditLine (step 16 · T7 forensics audit)', () => {
+  it('a forwarded forensics capture leaves the full structured line without the content', () => {
+    expect(formatQuickCaptureAuditLine({ mode: 'forensics', target: 's1' }, 42, 'forwarded')).toBe(
+      '[quick-capture:audit] mode=forensics target=s1 chars=42 outcome=forwarded'
+    )
+  })
+
+  it('the dropped outcome still records the attempted forensics capture', () => {
+    expect(formatQuickCaptureAuditLine({ mode: 'forensics', target: 'new' }, 7, 'dropped-no-primary-window')).toBe(
+      '[quick-capture:audit] mode=forensics target=new chars=7 outcome=dropped-no-primary-window'
+    )
+  })
+
+  it('non-forensics modes and the legacy (mode-less) shape are not audit-mandatory', () => {
+    expect(formatQuickCaptureAuditLine({ mode: 'note', target: 'note' }, 10, 'forwarded')).toBeNull()
+    expect(formatQuickCaptureAuditLine({ mode: 'ctf', target: 'new' }, 10, 'forwarded')).toBeNull()
+    expect(formatQuickCaptureAuditLine({ mode: 'project', target: 'new' }, 10, 'forwarded')).toBeNull()
+    expect(formatQuickCaptureAuditLine({}, 10, 'forwarded')).toBeNull()
+  })
+
+  it('log-injection-proof: whitespace, control chars, and `=` in the target collapse to underscores', () => {
+    expect(formatQuickCaptureAuditLine({ mode: 'forensics', target: 'bad target\nINJECTED=lines' }, 1, 'forwarded')).toBe(
+      '[quick-capture:audit] mode=forensics target=bad_target_INJECTED_lines chars=1 outcome=forwarded'
+    )
+  })
+
+  it('an absent target falls back to the unknown atom instead of producing an empty pair', () => {
+    expect(formatQuickCaptureAuditLine({ mode: 'forensics' }, 3, 'forwarded')).toBe(
+      '[quick-capture:audit] mode=forensics target=unknown chars=3 outcome=forwarded'
+    )
   })
 })

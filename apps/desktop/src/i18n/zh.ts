@@ -414,6 +414,21 @@ export const zh: Translations = {
     quit: '退出'
   },
 
+  quickCapture: {
+    title: '快速捕获',
+    placeholder: '记下一点什么…',
+    modeForensics: '取证',
+    modeCtf: 'CTF',
+    modeProject: '编程',
+    modeNote: '速记',
+    targetLabel: '记入',
+    targetNewDraft: '新草稿',
+    targetEmpty: '暂无可记入的容器',
+    hintDraft: '写入会话草稿，不打断当前工作。',
+    hintNote: '写入无容器收件箱。',
+    offlineHint: '网关离线——捕获仍会本地落盘。'
+  },
+
   home: {
     greeting: {
       morning: '早上好',
@@ -1131,7 +1146,7 @@ export const zh: Translations = {
     },
     quickEntry: {
       enabledTitle: '快速输入',
-      enabledDesc: '用全局快捷键在任何地方唤出一个小输入框，无需打开 Fulilian 即可发送提示。',
+      enabledDesc: '用全局快捷键在任何地方唤出快速捕获窗，输入会作为草稿记入会话或速记收件箱——不发送任何提示，也无需打开 Fulilian。',
       shortcutTitle: '快速输入快捷键',
       shortcutDesc: '至少需要一个修饰键，例如 CommandOrControl+Shift+Space。',
       active: '快捷键已生效。',
