@@ -1511,6 +1511,24 @@ export interface Translations {
     sessionSearchRemote: string
     sessionChanges: string
     goTo: string
+    /** Step 16 · T8 work-hub zones (方案 §3-T8): the palette's four top-level result sections. */
+    zones: {
+      actions: string
+      sessions: string
+      pages: string
+      containers: string
+    }
+    newForensics: string
+    newCtf: string
+    newCodingTask: string
+    casesOverview: string
+    comingSoon: string
+    paletteFooter: {
+      select: string
+      run: string
+      complete: string
+      jump: string
+    }
     goToSession: string
     branches: string
     projects: string

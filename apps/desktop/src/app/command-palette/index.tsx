@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -16,7 +16,7 @@ import {
 import { codiconIcon } from '@/components/ui/codicon'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { HighlightMatches } from '@/components/ui/highlight-matches'
-import { KbdCombo } from '@/components/ui/kbd'
+import { KbdCombo, KbdGroup } from '@/components/ui/kbd'
 import { searchSessions } from '@/api/sessions'
 import { getFulilianConfigRecord, listAllProfileSessions } from '@/fulilian'
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -27,11 +27,13 @@ import {
   AppWindow,
   Archive,
   BarChart3,
+  Bug,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock,
   Cpu,
+  Clipboard,
   Download,
   Egg,
   FileText,
@@ -55,6 +57,7 @@ import {
   SlidersHorizontal,
   Starmap,
   Sun,
+  Terminal,
   Users,
   Wrench,
   Zap
@@ -71,6 +74,7 @@ import {
   closeCommandPalette,
   setCommandPaletteOpen
 } from '@/store/command-palette'
+import { startNewSessionWithKind, type PaletteSessionKind } from '@/store/command-palette-kind'
 import { $bindings, bindingsFor } from '@/store/keybinds'
 import { $dismissedAutoProjectIds, filterVisibleProjects } from '@/store/layout'
 import { openPetGenerate } from '@/store/pet-generate'
@@ -91,7 +95,7 @@ import { canOpenNewWindow, openNewWindow } from '@/store/windows'
 import { luminance } from '@/themes/color'
 import { type ThemeMode, useTheme } from '@/themes/context'
 import { isUserTheme, resolveTheme } from '@/themes/user-themes'
-import type { SessionSearchResult } from '@/types/fulilian'
+import type { SessionInfo, SessionSearchResult } from '@/types/fulilian'
 
 import { openSession, openSessionIntentFromModifiers } from '../open-session'
 import {
@@ -105,7 +109,8 @@ import {
   PROFILES_ROUTE,
   SETTINGS_ROUTE,
   SKILLS_ROUTE,
-  STARMAP_ROUTE
+  STARMAP_ROUTE,
+  WEBHOOKS_ROUTE
 } from '../routes'
 import { SECTIONS } from '../settings/constants'
 import { type SettingsSearchEntry, settingsSearchTargetQuery } from '../settings/settings-search'
@@ -115,24 +120,37 @@ import { usePaletteContributions } from './contrib'
 import { HighlightWatcher } from './highlight-watcher'
 import { MarketplaceThemePage } from './marketplace-theme-page'
 import { PetInlineToggle, PetPalettePage } from './pet-palette-page'
+import { runSecurityAuditFromPalette } from './security-audit-action'
+import { SessionKindBadge, sessionBadgeKind, sessionLeadNode } from './session-marks'
+import { StatusRow } from './status-row'
 
-interface PaletteItem {
+// Exported for the zone/keyboard fixture tests (hub-groups.test.tsx) — the
+// assertions run against the REAL row/group shapes, not mocks of them.
+export interface PaletteItem {
   /** Keybind action id — its live combo renders as a hotkey hint. */
   action?: string
   /** Renders a trailing check: this row IS the current setting (theme, mode). */
   active?: boolean
+  /** §4.3 mode badge after the label — forensics/CTF kind markers only (the
+   *  T8 会话 zone; `sessionBadgeKind` keeps project rows unmarked). */
+  badge?: 'ctf' | 'forensics'
   /** Static trailing combo hint for a modifier-variant select (e.g. `mod+enter`). */
   comboHint?: string
   /** Short note beside the label — state the row acts on (a version, a count). */
   detail?: string
   /** `state` when the row will change what `detail` says (a toggle's on/off). */
   detailVariant?: keyof typeof HUD_NOTE_VARIANT
+  /** Non-interactive row: arrows skip it and select does nothing. The honest
+   *  "coming soon" affordance (the /cases placeholder until T14 lands). */
+  disabled?: boolean
   icon: IconComponent
   id: string
   /** Keep the palette open after running (live-preview pickers like theme/mode). */
   keepOpen?: boolean
   keywords?: string[]
   label: string
+  /** Row-leading node (the T8 会话 zone's SessionStatusDot); replaces `icon`. */
+  lead?: ReactNode
   /** Label shown while ⌘/⌃ is held — previews the modifier-variant action. */
   modLabel?: string
   /**
@@ -152,7 +170,7 @@ interface PaletteItem {
   to?: string
 }
 
-interface PaletteGroup {
+export interface PaletteGroup {
   /** Optional: a headingless group renders as a bare action row (e.g. the
    *  "Install theme…" entry pinned atop the theme picker). */
   heading?: string
@@ -234,7 +252,7 @@ const scoreItem = (item: PaletteItem, needle: string): number => {
 // Order items within each group by score, order groups by their best item, and
 // drop everything that doesn't match. Ties keep their original order (stable
 // sort), so curated group/item ordering still breaks even scores.
-const rankGroups = (groups: PaletteGroup[], search: string): PaletteGroup[] => {
+export const rankGroups = (groups: PaletteGroup[], search: string): PaletteGroup[] => {
   const needle = normalize(search)
 
   if (!needle) {
@@ -301,9 +319,7 @@ const PaletteGroups = memo(function PaletteGroups({
     <>
       {/* Filtering happens in rankGroups, so cmdk's own CommandEmpty
           (keyed to its internal filter count) would never fire. */}
-      {deferred.length === 0 && !pending && (
-        <div className="py-6 text-center text-sm text-muted-foreground">{noResultsLabel}</div>
-      )}
+      {deferred.length === 0 && !pending && <StatusRow text={noResultsLabel} />}
       {deferred.map((group, index) => (
         <CommandGroup className={HUD_HEADING} heading={group.heading} key={group.heading ?? `palette-group-${index}`}>
           {group.items.map(item => (
@@ -351,12 +367,13 @@ const PaletteRow = memo(function PaletteRow({
   return (
     <CommandItem
       className={cn(HUD_ITEM, HUD_TEXT)}
+      disabled={item.disabled}
       keywords={item.keywords}
       onMouseDown={onSelectMods}
       onSelect={() => onSelectItem(item)}
       value={paletteValue(item)}
     >
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      {item.lead ?? <Icon className="size-3.5 shrink-0 text-muted-foreground" />}
       <span className={cn('truncate', modPreview && 'text-muted-foreground/80')}>
         {modPreview ? (
           item.modLabel
@@ -366,6 +383,7 @@ const PaletteRow = memo(function PaletteRow({
           <HighlightMatches query={search.split(/\s+/)} text={item.label} />
         )}
       </span>
+      {item.badge && <SessionKindBadge kind={item.badge} />}
       {item.detail && (
         <span className={cn(HUD_NOTE, HUD_NOTE_VARIANT[item.detailVariant ?? 'muted'])}>{item.detail}</span>
       )}
@@ -466,6 +484,339 @@ export function buildSessionSearchGroups({
     ...(remoteItems.length > 0 ? [{ heading: t.commandCenter.sessionSearchRemote, items: remoteItems }] : [])
   ]
 }
+
+// ── T8 work-hub zones (方案 §3-T8) ──────────────────────────────────────────
+// Four exported pure builders — 动作 / 会话 / 页面 / 容器 — so the A5 fixture
+// assertions (zone shape, honest placeholders, fuzzy ranking) test the REAL
+// groups the palette renders, not a mock of them. Same contract as
+// buildSessionSearchGroups above.
+
+/** Rows the 会话 zone shows on an empty palette: the recent sessions. */
+const RECENT_ZONE_LIMIT = 8
+/** Deep-search (FTS) hits shown in the ROOT list while typing — the full set
+ *  stays one `to` click away on the search-sessions page. */
+const REMOTE_ROOT_LIMIT = 8
+
+/**
+ * 动作 zone: the work-mode new-session trio (the T6/T7 kind payload口径 —
+ * kind rides as recorded intent, never a fabricated container) plus the
+ * security-audit run. 「切换主题」 lives in the Appearance zone below, where
+ * the theme pickers already rank for theme queries.
+ */
+export function buildActionZoneGroups({
+  onNewSession,
+  onRunSecurityAudit,
+  t
+}: {
+  onNewSession: (kind: PaletteSessionKind) => void
+  onRunSecurityAudit: () => void
+  t: Translations
+}): PaletteGroup[] {
+  const cc = t.commandCenter
+
+  return [
+    {
+      heading: cc.zones.actions,
+      items: [
+        {
+          icon: Search,
+          id: 'action-new-forensics',
+          keywords: ['forensics', 'case', 'new', '取證', '取证'],
+          label: cc.newForensics,
+          run: () => onNewSession('forensics')
+        },
+        {
+          icon: Bug,
+          id: 'action-new-ctf',
+          keywords: ['ctf', 'challenge', 'new'],
+          label: cc.newCtf,
+          run: () => onNewSession('ctf')
+        },
+        {
+          icon: Terminal,
+          id: 'action-new-coding',
+          keywords: ['coding', 'project', 'programming', 'new', 'task'],
+          label: cc.newCodingTask,
+          run: () => onNewSession('project')
+        },
+        {
+          icon: Clipboard,
+          id: 'action-security-audit',
+          keywords: ['audit', 'security', 'export', 'log'],
+          label: cc.maintenance.securityAudit,
+          run: onRunSecurityAudit
+        }
+      ]
+    }
+  ]
+}
+
+/**
+ * 会话 zone on the empty palette: the most recent sessions, each row led by
+ * the ONE SessionStatusDot primitive (same as sidebar rows / pane tiles) and
+ * badged by kind. Honest by construction: the badge comes from
+ * `sessionContainerKind`, which answers 'project' until the kind column
+ * lands — so today NO row paints a 取证/CTF badge, and `sessionBadgeKind`
+ * keeps it that way. No sessions → no zone (no fabricated rows).
+ */
+export function buildRecentSessionGroups({
+  heading,
+  limit = RECENT_ZONE_LIMIT,
+  openSession,
+  sessions
+}: {
+  heading: string
+  limit?: number
+  openSession: (sessionId: string) => (event?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => void
+  sessions: SessionInfo[]
+}): PaletteGroup[] {
+  const recent = sessions.slice(0, limit)
+
+  if (recent.length === 0) {
+    return []
+  }
+
+  return [
+    {
+      heading,
+      items: recent.map(session => ({
+        badge: sessionBadgeKind(session) ?? undefined,
+        detail: session.preview ?? undefined,
+        icon: MessageCircle,
+        id: `zone-session-${session.id}`,
+        keywords: ['chat', 'session', ...(session.git_branch ? [session.git_branch] : [])],
+        label: sessionTitle(session),
+        lead: sessionLeadNode(session.id, session),
+        runWithEvent: openSession(session.id)
+      }))
+    }
+  ]
+}
+
+/**
+ * 页面 zone: the fixed route entries — every APP_ROUTES destination plus the
+ * command-center panel — with the /cases overview as a DISABLED 「即将可用」
+ * placeholder (T14 produces the route; a dead link is not an option, 方案
+ * T8-4). Rows marked `to` open a nested palette page instead of navigating.
+ */
+export function buildPageZoneGroups({
+  canOpenNewWindowFlag,
+  go,
+  t
+}: {
+  canOpenNewWindowFlag: boolean
+  go: (path: string) => () => void
+  t: Translations
+}): PaletteGroup[] {
+  const cc = t.commandCenter
+
+  return [
+    {
+      heading: cc.zones.pages,
+      items: [
+        {
+          action: 'session.new',
+          icon: Plus,
+          id: 'nav-new',
+          keywords: ['chat', 'create'],
+          label: cc.nav.newChat.title,
+          run: go(NEW_CHAT_ROUTE)
+        },
+        ...(canOpenNewWindowFlag
+          ? [
+              {
+                action: 'session.newWindow',
+                icon: AppWindow,
+                id: 'nav-new-window',
+                keywords: ['window', 'instance', 'open', 'new'],
+                label: t.keybinds.actions['session.newWindow'],
+                run: () => void openNewWindow()
+              }
+            ]
+          : []),
+        {
+          action: 'nav.settings',
+          icon: Settings,
+          id: 'nav-settings',
+          label: cc.nav.settings.title,
+          run: go(SETTINGS_ROUTE)
+        },
+        {
+          icon: Search,
+          id: 'nav-search-sessions',
+          keywords: ['sessions', 'search', 'find', 'history', 'chats', 'conversation'],
+          label: cc.searchSessions,
+          to: 'search-sessions'
+        },
+        {
+          action: 'nav.skills',
+          icon: Wrench,
+          id: 'nav-skills',
+          keywords: ['skills', 'tools', 'toolsets', 'mcp', 'capabilities'],
+          label: cc.nav.skills.title,
+          run: go(SKILLS_ROUTE)
+        },
+        {
+          action: 'nav.messaging',
+          icon: MessageCircle,
+          id: 'nav-messaging',
+          label: cc.nav.messaging.title,
+          run: go(MESSAGING_ROUTE)
+        },
+        {
+          action: 'nav.webhooks',
+          icon: Globe,
+          id: 'nav-webhooks',
+          keywords: ['webhook', 'subscription', 'receiver'],
+          label: t.shell.statusbar.openWebhooks,
+          run: go(WEBHOOKS_ROUTE)
+        },
+        {
+          action: 'nav.artifacts',
+          icon: Package,
+          id: 'nav-artifacts',
+          label: cc.nav.artifacts.title,
+          run: go(ARTIFACTS_ROUTE)
+        },
+        {
+          action: 'nav.cron',
+          icon: Clock,
+          id: 'nav-cron',
+          keywords: ['schedule', 'jobs'],
+          label: t.shell.statusbar.cron,
+          run: go(CRON_ROUTE)
+        },
+        { action: 'nav.profiles', icon: Users, id: 'nav-profiles', label: t.profiles.title, run: go(PROFILES_ROUTE) },
+        { action: 'nav.agents', icon: Cpu, id: 'nav-agents', label: t.agents.title, run: go(AGENTS_ROUTE) },
+        {
+          icon: Starmap,
+          id: 'nav-starmap',
+          keywords: ['star map', 'memory', 'memories', 'skills', 'graph', 'learning', 'constellation'],
+          label: t.starmap.title,
+          run: go(STARMAP_ROUTE)
+        },
+        {
+          action: 'nav.commandCenter',
+          icon: Activity,
+          id: 'nav-command-center',
+          keywords: ['command center', 'panel', 'system'],
+          label: cc.commandCenter,
+          run: go(COMMAND_CENTER_ROUTE)
+        },
+        {
+          // T8-4 honest placeholder: /cases is T14's route — the row renders
+          // disabled (arrows skip it, select does nothing), so it can never
+          // navigate into a dead link.
+          detail: cc.comingSoon,
+          disabled: true,
+          icon: FileText,
+          id: 'nav-cases',
+          keywords: ['cases', 'overview', '案件'],
+          label: cc.casesOverview
+        }
+      ]
+    }
+  ]
+}
+
+/**
+ * 容器 zone: the work containers (§4.1). The kind data layer does not exist
+ * yet (T8-4), so the zone lists only REAL container sources — the "open
+ * folder" upsert and the project tree. No 案件/赛题 container is ever
+ * fabricated here; when the kind column lands, forensics/CTF container rows
+ * join through `sessionContainerKind`.
+ */
+export function buildContainerZoneGroups({
+  onOpenFolder,
+  onOpenProject,
+  projects,
+  t
+}: {
+  onOpenFolder: () => void
+  onOpenProject: (projectId: string, newSession: boolean) => void
+  projects: Array<{ icon?: null | string; id: string; isNoProject?: boolean; label: string; path?: null | string }>
+  t: Translations
+}): PaletteGroup[] {
+  const cc = t.commandCenter
+
+  return [
+    {
+      heading: cc.zones.containers,
+      items: [
+        {
+          action: 'workspace.openFolder',
+          icon: codiconIcon('folder-opened'),
+          id: 'project-open-folder',
+          keywords: ['open', 'folder', 'directory', 'project', 'add', 'import', 'workspace'],
+          label: cc.openFolder,
+          run: onOpenFolder
+        },
+        ...projects.map(project => ({
+          comboHint: 'mod+enter',
+          icon: codiconIcon(project.icon || (project.isNoProject ? 'home' : 'folder-library')),
+          id: `project-${project.id}`,
+          keywords: ['project', 'workspace', 'go to', project.label, ...(project.path ? [project.path] : [])],
+          label: project.label,
+          modLabel: cc.newSessionInProject(project.label),
+          runWithEvent: (event?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) =>
+            onOpenProject(project.id, Boolean(event?.metaKey || event?.ctrlKey))
+        }))
+      ]
+    }
+  ]
+}
+
+/**
+ * The palette's status line under the three states (T8-3): which single
+ * message the (empty) result list carries. A pure mapping so the states are
+ * assertable without a mount — 空态 renders zones (never this label, see
+ * `queryPresent`), 加载态 says searching while the FTS query is in flight,
+ * and 无结果态 only after the query settled.
+ */
+export function paletteStatusLabel({
+  fetching,
+  labels,
+  page,
+  queryPresent
+}: {
+  fetching: boolean
+  labels: { noMatchingSessions: string; noResults: string; searching: string }
+  page: null | string
+  queryPresent: boolean
+}): string {
+  if (page === 'search-sessions') {
+    return fetching ? labels.searching : labels.noMatchingSessions
+  }
+
+  return queryPresent && fetching ? labels.searching : labels.noResults
+}
+
+/**
+ * Tab 补全: Tab completes the input to the highlighted row's label. Null when
+ * there is nothing to complete to (no highlight, a disabled placeholder, or
+ * the label already typed) — the key then keeps its default behavior.
+ */
+export const tabCompletionValue = (item: PaletteItem | null | undefined, search: string): string | null =>
+  item && !item.disabled && item.label !== search ? item.label : null
+
+/**
+ * Ctrl 1-9 跳位: jump the selection to the first row of the Nth visible zone.
+ * Scoped to the OPEN palette — the global dispatcher yields these chords
+ * while ⌘K is up (see use-keybinds). Returns whether a row was jumped to.
+ */
+export function jumpToZone(scope: ParentNode, zone: number): boolean {
+  const groups = Array.from(scope.querySelectorAll('[cmdk-group]:not([hidden])'))
+  const target = groups[zone - 1]?.querySelector('[cmdk-item]')
+
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  target.click()
+
+  return true
+}
+
 
 // A typed/pasted folder path: absolute (`/…`) or a Windows drive (`C:\…`).
 // Deliberately NOT `~/…`: the upsert's membership check (projectIdForCwd)
@@ -759,6 +1110,10 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   }, [configQuery.data])
 
   const sessions = useMemo(() => (sessionsQuery.data?.sessions ?? []).map(toSessionEntry), [sessionsQuery.data])
+  // Full rows for the 会话 zone — the dot and the kind badge need more fields
+  // than the SessionEntry projection holds.
+  const rawSessions = useMemo(() => sessionsQuery.data?.sessions ?? [], [sessionsQuery.data])
+  const sessionInfoById = useMemo(() => new Map(rawSessions.map(session => [session.id, session])), [rawSessions])
   const archivedSessions = useMemo(() => (archivedQuery.data?.sessions ?? []).map(toSessionEntry), [archivedQuery.data])
 
   // ── Session deep search (step14 R6) ────────────────────────────────────────
@@ -778,7 +1133,10 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   const trimmedSearchQuery = searchSessionsQuery.trim()
 
   const sessionSearchQuery = useQuery({
-    enabled: page === 'search-sessions' && trimmedSearchQuery.length > 0,
+    // T8 会话区: FTS 直出 on the root list too (the search-sessions page keeps
+    // its deep-reach version). The 250ms debounce above keeps the per-keystroke
+    // load off the backend; react-query dedups the shared query key.
+    enabled: trimmedSearchQuery.length > 0 && (page === null || page === 'search-sessions'),
     queryKey: ['command-palette', 'session-search', trimmedSearchQuery],
     queryFn: () => searchSessions(trimmedSearchQuery),
     staleTime: 15_000
@@ -890,120 +1248,30 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     const settingsTab = (tab: string) => `${SETTINGS_ROUTE}?tab=${tab}`
     const cc = t.commandCenter
 
-    // Projects are the primary way the desktop scopes work, so they're jumpable
-    // from the palette. Plain select is a pure scope switch (sidebar enters the
-    // project — never spends main); ⌘-Enter / ⌘-click also starts a new session
-    // at the project root (stacked as a tab when main holds a chat), previewed
-    // by the label swap while ⌘ is held. Rows carry the project's own codicon,
-    // matching the sidebar. The pinned "Open folder…" row is the ⌘O upsert.
-    const projectGroup: PaletteGroup = {
-      heading: cc.projects,
-      items: [
-        {
-          action: 'workspace.openFolder',
-          icon: codiconIcon('folder-opened'),
-          id: 'project-open-folder',
-          keywords: ['open', 'folder', 'directory', 'project', 'add', 'import', 'workspace'],
-          label: cc.openFolder,
-          run: () => void openFolderAsProject()
-        },
-        ...filterVisibleProjects(projectTree, dismissedAutoProjects).map(project => ({
-          comboHint: 'mod+enter',
-          icon: codiconIcon(project.icon || (project.isNoProject ? 'home' : 'folder-library')),
-          id: `project-${project.id}`,
-          keywords: ['project', 'workspace', 'go to', project.label, ...(project.path ? [project.path] : [])],
-          label: project.label,
-          modLabel: cc.newSessionInProject(project.label),
-          runWithEvent: (event?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) =>
-            goToProject(project.id, { newSession: Boolean(event?.metaKey || event?.ctrlKey) })
-        }))
-      ]
-    }
-
-    // Group order is the tiebreaker rankGroups falls back on (stable sort), and
-    // exact ties are the common case — "yolo" hits both "Toggle yolo" and a
-    // worktree named bb/yolo-* as a whole word. So this order IS the priority:
-    // where you're going, then what you can do, then what you can configure.
+    // T8 work-hub zones (方案 §3-T8). Group order is the tiebreaker rankGroups
+    // falls back on (stable sort), and exact ties are the common case — so
+    // this order IS the priority: what you can DO (动作), where you're going
+    // (页面), the work you were in (会话 recent), the containers that scope it
+    // (容器), then what you can configure (commands / command center /
+    // appearance / settings below).
     return [
-      {
-        heading: cc.goTo,
-        items: [
-          {
-            action: 'session.new',
-            icon: Plus,
-            id: 'nav-new',
-            keywords: ['chat', 'create'],
-            label: cc.nav.newChat.title,
-            run: go(NEW_CHAT_ROUTE)
-          },
-          ...(canOpenNewWindow()
-            ? [
-                {
-                  action: 'session.newWindow',
-                  icon: AppWindow,
-                  id: 'nav-new-window',
-                  keywords: ['window', 'instance', 'open', 'new'],
-                  label: t.keybinds.actions['session.newWindow'],
-                  run: () => void openNewWindow()
-                }
-              ]
-            : []),
-          {
-            action: 'nav.settings',
-            icon: Settings,
-            id: 'nav-settings',
-            label: cc.nav.settings.title,
-            run: go(SETTINGS_ROUTE)
-          },
-          {
-            icon: Search,
-            id: 'nav-search-sessions',
-            keywords: ['sessions', 'search', 'find', 'history', 'chats', 'conversation'],
-            label: cc.searchSessions,
-            to: 'search-sessions'
-          },
-          {
-            action: 'nav.skills',
-            icon: Wrench,
-            id: 'nav-skills',
-            keywords: ['skills', 'tools', 'toolsets', 'mcp', 'capabilities'],
-            label: cc.nav.skills.title,
-            run: go(SKILLS_ROUTE)
-          },
-          {
-            action: 'nav.messaging',
-            icon: MessageCircle,
-            id: 'nav-messaging',
-            label: cc.nav.messaging.title,
-            run: go(MESSAGING_ROUTE)
-          },
-          {
-            action: 'nav.artifacts',
-            icon: Package,
-            id: 'nav-artifacts',
-            label: cc.nav.artifacts.title,
-            run: go(ARTIFACTS_ROUTE)
-          },
-          {
-            action: 'nav.cron',
-            icon: Clock,
-            id: 'nav-cron',
-            keywords: ['schedule', 'jobs'],
-            label: t.shell.statusbar.cron,
-            run: go(CRON_ROUTE)
-          },
-          { action: 'nav.profiles', icon: Users, id: 'nav-profiles', label: t.profiles.title, run: go(PROFILES_ROUTE) },
-          { action: 'nav.agents', icon: Cpu, id: 'nav-agents', label: t.agents.title, run: go(AGENTS_ROUTE) },
-          {
-            icon: Starmap,
-            id: 'nav-starmap',
-            keywords: ['star map', 'memory', 'memories', 'skills', 'graph', 'learning', 'constellation'],
-            label: t.starmap.title,
-            run: go(STARMAP_ROUTE)
-          }
-        ]
-      },
-      projectGroup,
+      ...buildActionZoneGroups({
+        onNewSession: startNewSessionWithKind,
+        onRunSecurityAudit: () => void runSecurityAuditFromPalette(),
+        t
+      }),
+      ...buildPageZoneGroups({ canOpenNewWindowFlag: canOpenNewWindow(), go, t }),
+      ...buildRecentSessionGroups({
+        heading: cc.zones.sessions,
+        openSession: goSession,
+        sessions: rawSessions
+      }),
+      ...buildContainerZoneGroups({
+        onOpenFolder: () => void openFolderAsProject(),
+        onOpenProject: (projectId, newSession) => goToProject(projectId, { newSession }),
+        projects: filterVisibleProjects(projectTree, dismissedAutoProjects),
+        t
+      }),
       // Registry-contributed rows (core features + plugins) — one group,
       // omitted while nothing contributes.
       ...(contributedItems.length > 0
@@ -1161,7 +1429,9 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     contributedItems,
     dismissedAutoProjects,
     go,
+    goSession,
     projectTree,
+    rawSessions,
     selectTick,
     settingsSectionLabel,
     t,
@@ -1318,6 +1588,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       result.push({
         heading: t.commandCenter.sections.sessions,
         items: sessions.map(session => ({
+          badge: sessionBadgeKind(sessionInfoById.get(session.id)) ?? undefined,
           icon: MessageCircle,
           id: `session-${session.id}`,
           keywords: [
@@ -1327,8 +1598,46 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             ...(session.git_branch ? [session.git_branch] : [])
           ],
           label: session.title,
+          lead: sessionLeadNode(session.id, sessionInfoById.get(session.id)),
           runWithEvent: goSession(session.id)
         }))
+      })
+    }
+
+    // T8 会话区 FTS 直出: backend deep-search hits the local recent-200 list
+    // doesn't hold, capped for the root (the search-sessions page keeps the
+    // full set). Same row shape as buildSessionSearchGroups' remote rows —
+    // excerpt label, relative-age detail — led by the same status dot. The
+    // dot resolves the live state from the stored id alone; no SessionInfo
+    // exists for these, so no kind badge (honest, per T8-4).
+    const localIds = new Set(sessions.map(session => session.id))
+    const remoteHits = (sessionSearchQuery.data?.results ?? [])
+      .filter(hit => !localIds.has(hit.session_id))
+      .slice(0, REMOTE_ROOT_LIMIT)
+
+    if (remoteHits.length > 0) {
+      result.push({
+        heading: t.commandCenter.sessionSearchRemote,
+        items: remoteHits.map(hit => {
+          const startedAt = hit.session_started
+          const age = !startedAt
+            ? undefined
+            : (() => {
+                const { unit, value } = coarseElapsed(Date.now() - startedAt * 1000)
+
+                return unit === 'second' ? t.sidebar.row.ageNow : `${value}${t.sidebar.row[SEARCH_AGE_KEY[unit]]}`
+              })()
+
+          return {
+            detail: age,
+            icon: MessageCircle,
+            id: `zone-fts-${hit.session_id}`,
+            keywords: ['chat', 'session', hit.source ?? '', hit.model ?? ''],
+            label: hit.snippet.split('\n')[0]?.trim() || hit.session_id,
+            lead: sessionLeadNode(hit.session_id),
+            runWithEvent: goSession(hit.session_id)
+          }
+        })
       })
     }
 
@@ -1396,6 +1705,8 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     resolvedMode,
     resolveThemeMode,
     search,
+    sessionInfoById,
+    sessionSearchQuery.data,
     sessions,
     setMode,
     setTheme,
@@ -1602,20 +1913,26 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   const visibleGroups = useMemo(() => rankGroups(unrankedGroups, search), [unrankedGroups, search])
   const placeholder = activePage ? activePage.placeholder : t.commandCenter.searchPlaceholder
 
-  // Page-scoped empty state (step14 R6): the sessions search page says "no
-  // matching sessions" instead of the generic palette empty line — and only
-  // once the (debounced) query settled, not while a fetch is in flight.
-  const noResultsLabel =
-    page === 'search-sessions' && sessionSearchQuery.isFetching
-      ? t.commandCenter.searchSessionsSearching
-      : page === 'search-sessions'
-        ? t.commandCenter.noMatchingSessions
-        : t.commandCenter.noResults
+  // The three states' single status line (T8-3), via the pure mapping:
+  // 空态 renders the zones and never reaches this label (no query, no fetch);
+  // 加载态 says searching while the FTS query is in flight; 无结果态 only
+  // after the query settled — a missed match never renders a fabricated row.
+  const noResultsLabel = paletteStatusLabel({
+    fetching: sessionSearchQuery.isFetching,
+    labels: {
+      noMatchingSessions: t.commandCenter.noMatchingSessions,
+      noResults: t.commandCenter.noResults,
+      searching: t.commandCenter.searchSessionsSearching
+    },
+    page,
+    queryPresent: search.trim().length > 0
+  })
 
   // The HighlightWatcher inside <Command> reports the highlighted row (arrows
   // or hover) from the cmdk store. Resolve it back to its PaletteItem so
   // preview-capable rows (the theme pickers) can paint live. Any other
-  // highlight clears the preview.
+  // highlight clears the preview. The resolved item is also what Tab 补全
+  // completes to (T8 keyboard conventions).
   const itemByValue = useMemo(() => {
     const map = new Map<string, PaletteItem>()
 
@@ -1628,9 +1945,13 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     return map
   }, [visibleGroups])
 
+  const highlightedItemRef = useRef<PaletteItem | null>(null)
+
   const handleHighlight = useCallback(
     (value: string) => {
-      const item = itemByValue.get(value)
+      const item = itemByValue.get(value) ?? null
+
+      highlightedItemRef.current = item
 
       if (item?.onHighlight) {
         item.onHighlight()
@@ -1732,6 +2053,34 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
               // swipes the inviting MouseEvent and hands us nothing).
               noteSelectMods(event)
 
+              // T8 键位 Ctrl 1-9 跳位: jump the selection to the first row of
+              // the Nth visible zone while the palette is up. The global
+              // dispatcher yields these chords while the palette is open (see
+              // use-keybinds `paletteOwnsNumberCombo`; the T9 keybind table
+              // keeps Ctrl 1/2/3 for new-three-modes once the palette is
+              // closed, so the two scopes never collide).
+              if ((event.ctrlKey || event.metaKey) && /^[1-9]$/.test(event.key)) {
+                event.preventDefault()
+                event.stopPropagation()
+                jumpToZone(document, Number(event.key))
+
+                return
+              }
+
+              // T8 键位 Tab 补全: complete the input to the highlighted row's
+              // label (no highlight / a disabled placeholder → default Tab).
+              if (event.key === 'Tab' && !event.shiftKey && !event.altKey) {
+                const completed = tabCompletionValue(highlightedItemRef.current, search)
+
+                if (completed !== null) {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  setSearch(completed)
+                }
+
+                return
+              }
+
               if (!activePage) {
                 return
               }
@@ -1777,6 +2126,31 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             )}
           </CommandList>
         </Command>
+        {/* T8 keyboard-convention footer (preview 05): the four gestures the
+            palette answers to, always visible — including the Ctrl 1-9 zone
+            jump that only exists while the palette is up. */}
+        <div
+          className="flex items-center gap-3 border-t border-border px-3 py-1.5 text-[10.5px] text-muted-foreground"
+          data-slot="palette-footer"
+        >
+          <span className="flex items-center gap-1">
+            <KbdGroup keys={['↑', '↓']} size="sm" />
+            {t.commandCenter.paletteFooter.select}
+          </span>
+          <span className="flex items-center gap-1">
+            <KbdGroup keys={['↵']} size="sm" />
+            {t.commandCenter.paletteFooter.run}
+          </span>
+          <span className="flex items-center gap-1">
+            <KbdGroup keys={['Tab']} size="sm" />
+            {t.commandCenter.paletteFooter.complete}
+          </span>
+          <span className="flex items-center gap-1">
+            <KbdGroup keys={['Ctrl', '1-9']} size="sm" />
+            {t.commandCenter.paletteFooter.jump}
+          </span>
+          <span className="ml-auto hidden truncate sm:block">{t.commandCenter.paletteTitle}</span>
+        </div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   )

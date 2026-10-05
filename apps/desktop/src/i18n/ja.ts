@@ -1550,6 +1550,24 @@ export const ja = defineLocale({
     back: '戻る',
     searchPlaceholder: 'セッション、ビュー、アクションを検索',
     goTo: '移動',
+    // Step 16 · T8 ワークハブの4ゾーン（方案 §3-T8）：パレットの最上位グループ見出し。
+    zones: {
+      actions: 'アクション',
+      sessions: 'セッション',
+      pages: 'ページ',
+      containers: 'コンテナ'
+    },
+    newForensics: '取証案件を新規作成',
+    newCtf: 'CTF 問題を新規作成',
+    newCodingTask: 'コーディングタスクを新規作成',
+    casesOverview: '案件一覧',
+    comingSoon: '近日提供',
+    paletteFooter: {
+      select: '選択',
+      run: '実行',
+      complete: '補完',
+      jump: 'ゾーンへ移動'
+    },
     searchSessions: 'セッション検索',
     searchSessionsPlaceholder: 'すべてのセッションを検索…',
     searchSessionsSearching: 'セッションを検索中…',

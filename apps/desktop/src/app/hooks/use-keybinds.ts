@@ -99,6 +99,17 @@ export interface KeybindRuntimeDeps {
   archiveSelectedSession: () => void
 }
 
+/**
+ * True when the OPEN command palette owns this combo (step 16 · T8): Ctrl 1-9
+ * jump to the Nth result zone while ⌘K is up, so the profile/tab-slot chords
+ * below must yield. Scoped to "palette open" only — closed, mod+1..9 stay with
+ * the profile slots. Keymap alignment note (T9 seam): the T9 keybind table
+ * reserves Ctrl 1/2/3 for new-three-modes and Ctrl+Alt+1-9 for session slots;
+ * the palette-local zone jump never fires while the palette is closed, so the
+ * two scopes don't collide.
+ */
+export const paletteOwnsNumberCombo = (combo: string): boolean => /^mod\+[1-9]$/.test(combo)
+
 type HandlerMap = Record<string, () => void>
 
 // Mount once near the top of the app. Owns the single global keydown listener
@@ -405,6 +416,14 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
       // listeners are on `window`, so stopPropagation in the bar can't
       // suppress this one — the dispatcher has to yield explicitly.
       if ($findInPage.get().active && findBarClaimsCombo(combo)) {
+        return
+      }
+
+      // The open palette owns Ctrl 1-9 (zone jump, step 16 · T8): yield WITHOUT
+      // preventDefault so the palette's own input handler — which runs later,
+      // in React — can claim the chord. (Tab/↵/Esc inside the palette are
+      // cmdk/Radix machinery and never reach this dispatcher as actions.)
+      if ($commandPaletteOpen.get() && paletteOwnsNumberCombo(combo)) {
         return
       }
 

@@ -1490,6 +1490,24 @@ export const zhHant = defineLocale({
     back: '返回',
     searchPlaceholder: '搜尋工作階段、檢視和動作',
     goTo: '前往',
+    // Step 16 · T8 工作中樞四區（方案 §3-T8）：面板頂層分組標題。
+    zones: {
+      actions: '動作',
+      sessions: '會話',
+      pages: '頁面',
+      containers: '容器'
+    },
+    newForensics: '新建鑑識案件',
+    newCtf: '新建 CTF 賽題',
+    newCodingTask: '新建程式設計任務',
+    casesOverview: '案件總覽',
+    comingSoon: '即將可用',
+    paletteFooter: {
+      select: '選擇',
+      run: '執行',
+      complete: '補全',
+      jump: '跳位'
+    },
     searchSessions: '會話檢索',
     searchSessionsPlaceholder: '搜尋全部會話…',
     searchSessionsSearching: '正在搜尋會話…',

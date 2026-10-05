@@ -1296,6 +1296,24 @@ export const ar = defineLocale({
     back: 'رجوع',
     searchPlaceholder: 'ابحث عن أمر أو إعداد...',
     goTo: 'انتقال إلى',
+    // Step 16 · T8 مناطق مركز العمل الأربع (方案 §3-T8): عناوين الأقسام العلوية للوحة الأوامر.
+    zones: {
+      actions: 'الإجراءات',
+      sessions: 'الجلسات',
+      pages: 'الصفحات',
+      containers: 'الحاويات'
+    },
+    newForensics: 'حالة أدلة جنائية جديدة',
+    newCtf: 'تحدي CTF جديد',
+    newCodingTask: 'مهمة برمجة جديدة',
+    casesOverview: 'نظرة عامة على القضايا',
+    comingSoon: 'قريبًا',
+    paletteFooter: {
+      select: 'تحديد',
+      run: 'تنفيذ',
+      complete: 'إكمال',
+      jump: 'الانتقال إلى قسم'
+    },
     searchSessions: 'البحث في الجلسات',
     searchSessionsPlaceholder: 'ابحث في جميع الجلسات…',
     searchSessionsSearching: 'جارٍ البحث في الجلسات…',

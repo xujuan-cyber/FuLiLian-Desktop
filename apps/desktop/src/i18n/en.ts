@@ -1723,6 +1723,25 @@ export const en: Translations = {
     back: 'Back',
     searchPlaceholder: 'Search sessions, views, and actions',
     goTo: 'Go to',
+    // Step 16 · T8 work-hub zones (方案 §3-T8): the palette's four top-level
+    // result sections. Headings, not row labels.
+    zones: {
+      actions: 'Actions',
+      sessions: 'Sessions',
+      pages: 'Pages',
+      containers: 'Containers'
+    },
+    newForensics: 'New forensics case',
+    newCtf: 'New CTF challenge',
+    newCodingTask: 'New coding task',
+    casesOverview: 'Cases overview',
+    comingSoon: 'Coming soon',
+    paletteFooter: {
+      select: 'Select',
+      run: 'Run',
+      complete: 'Complete',
+      jump: 'Jump to section'
+    },
     searchSessions: 'Search sessions',
     searchSessionsPlaceholder: 'Search all sessions…',
     searchSessionsSearching: 'Searching sessions…',

@@ -1897,6 +1897,24 @@ export const zh: Translations = {
     sessionSearchRemote: '全库检索结果',
     sessionChanges: '会话改动审查',
     goTo: '前往',
+    // Step 16 · T8 工作中枢四区（方案 §3-T8）：面板顶层分组标题。
+    zones: {
+      actions: '动作',
+      sessions: '会话',
+      pages: '页面',
+      containers: '容器'
+    },
+    newForensics: '新建取证案件',
+    newCtf: '新建 CTF 赛题',
+    newCodingTask: '新建编程任务',
+    casesOverview: '案件总览',
+    comingSoon: '即将可用',
+    paletteFooter: {
+      select: '选择',
+      run: '执行',
+      complete: '补全',
+      jump: '跳位'
+    },
     goToSession: '前往会话',
     branches: '分支',
     projects: '项目',
