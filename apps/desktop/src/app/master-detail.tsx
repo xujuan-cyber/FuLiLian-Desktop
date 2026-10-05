@@ -16,6 +16,7 @@ import { RowButton } from '@/components/ui/row-button'
 import { Switch } from '@/components/ui/switch'
 import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
+import { rafCoalesce } from '@/lib/raf-coalesce'
 import { cn } from '@/lib/utils'
 import {
   $paneHeightOverride,
@@ -93,15 +94,17 @@ export function MasterDetail({
     const max = Math.max(SPLIT_MIN_LEFT_PX, grid.getBoundingClientRect().width - SPLIT_MIN_RIGHT_PX)
     setDragging(true)
 
+    // pointermove outpaces 60fps and each apply rewrites the split track, so
+    // coalesce to one apply per frame (commits the last value on pointerup).
+    const resize = rafCoalesce((width: number) => setPaneWidthOverride(resizeId, width))
+
     const onMove = (move: globalThis.PointerEvent) => {
-      setPaneWidthOverride(
-        resizeId,
-        Math.round(Math.min(max, Math.max(SPLIT_MIN_LEFT_PX, startWidth + (move.clientX - startX))))
-      )
+      resize.push(Math.round(Math.min(max, Math.max(SPLIT_MIN_LEFT_PX, startWidth + (move.clientX - startX)))))
     }
 
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
+      resize.finish()
       setDragging(false)
     }
 
