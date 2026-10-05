@@ -189,3 +189,89 @@ describe('PendingToolApproval', () => {
     })
   })
 })
+
+// Step 16 · T9: the approval strip's three-key row (registry scope
+// 'approval') — Y allow-once / A always-this-session / N deny. The React
+// keydown handler sits ON the strip container, so the keys only fire while
+// focus is inside the strip; events dispatched elsewhere never reach it.
+describe('approval strip keyboard (T9: strip-focused Y/A/N)', () => {
+  it('resolves once / session / deny from Y / A / N while focus is inside the strip', async () => {
+    const request = mockGateway()
+    setRequest('chmod -R 777 /tmp/x')
+    const { container } = render(<PendingToolApproval part={part('terminal')} />)
+    const strip = container.querySelector('[data-slot="tool-approval-inline"]')
+
+    expect(strip).not.toBeNull()
+    ;(strip as HTMLElement).focus()
+
+    fireEvent.keyDown(strip as Element, { key: 'y' })
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith('approval.respond', { choice: 'once', session_id: 'sess-1' })
+    })
+
+    // The strip disappears once the approval resolves; re-arm for A and N.
+    setRequest('chmod -R 777 /tmp/x')
+    const second = await waitFor(() => {
+      const el = document.querySelector('[data-slot="tool-approval-inline"]')
+
+      expect(el).not.toBeNull()
+
+      return el as Element
+    })
+
+    fireEvent.keyDown(second, { key: 'a' })
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith('approval.respond', { choice: 'session', session_id: 'sess-1' })
+    })
+
+    setRequest('chmod -R 777 /tmp/x')
+    const third = await waitFor(() => {
+      const el = document.querySelector('[data-slot="tool-approval-inline"]')
+
+      expect(el).not.toBeNull()
+
+      return el as Element
+    })
+
+    fireEvent.keyDown(third, { key: 'n' })
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith('approval.respond', { choice: 'deny', session_id: 'sess-1' })
+    })
+  })
+
+  it('ignores Y/A/N dispatched outside the strip (composer typing stays inert)', async () => {
+    const request = mockGateway()
+    setRequest('chmod -R 777 /tmp/x')
+    render(<PendingToolApproval part={part('terminal')} />)
+
+    fireEvent.keyDown(document.body, { key: 'y' })
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(request).not.toHaveBeenCalled()
+    expect($approvalRequest.get()).not.toBeNull()
+  })
+
+  it('does not bind A when the gateway event omits the session choice', async () => {
+    const request = mockGateway()
+    setRequest('rm -rf /tmp/x', true, { choices: ['once', 'deny'] })
+    const { container } = render(<PendingToolApproval part={part('terminal')} />)
+    const strip = container.querySelector('[data-slot="tool-approval-inline"]')
+
+    fireEvent.keyDown(strip as Element, { key: 'a' })
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('ignores modifier-stacked chords so shell-style keypresses never mis-resolve', async () => {
+    const request = mockGateway()
+    setRequest('chmod -R 777 /tmp/x')
+    const { container } = render(<PendingToolApproval part={part('terminal')} />)
+    const strip = container.querySelector('[data-slot="tool-approval-inline"]')
+
+    fireEvent.keyDown(strip as Element, { ctrlKey: true, key: 'n' })
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(request).not.toHaveBeenCalled()
+  })
+})

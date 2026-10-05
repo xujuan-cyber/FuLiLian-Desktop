@@ -1,7 +1,7 @@
 'use client'
 
 import { useStore } from '@nanostores/react'
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { type FC, type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
 import { Button } from '@/components/ui/button'
@@ -194,10 +194,37 @@ const ApprovalBar: FC<{ request: ApprovalRequest; surface: 'floating' | 'inline'
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [confirmAlways, respond])
 
+  // Step 16 · T9: the approval strip's own three-key row — Y allow-once /
+  // A always-this-session / N deny (registry scope 'approval'). React keydown
+  // only reaches this handler while focus sits inside the strip (the div is a
+  // tab stop and every child button bubbles into it), so typing y/a/n in the
+  // composer never resolves an approval. Bare keys only; Esc keeps the
+  // window-level deny path above untouched (护栏语义只强不弱).
+  const handleStripKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (busy || event.metaKey || event.ctrlKey || event.altKey) {
+      return
+    }
+
+    const key = event.key.toLowerCase()
+
+    if (key === 'y') {
+      event.preventDefault()
+      void respond('once')
+    } else if (key === 'a' && allowSession) {
+      event.preventDefault()
+      void respond('session')
+    } else if (key === 'n') {
+      event.preventDefault()
+      void respond('deny')
+    }
+  }
+
   return (
     <div
       className={cn(surface === 'inline' ? 'mt-1 ps-5' : 'mt-2')}
       data-slot={surface === 'inline' ? 'tool-approval-inline' : 'tool-approval-actions'}
+      onKeyDown={handleStripKeyDown}
+      tabIndex={0}
     >
       <div className="flex items-center gap-2.5">
         <div className="inline-flex h-6 items-stretch overflow-hidden rounded-md border border-primary/25 bg-primary/10 text-primary">
@@ -209,7 +236,12 @@ const ApprovalBar: FC<{ request: ApprovalRequest; surface: 'floating' | 'inline'
             variant="ghost"
           >
             {submitting === 'once' ? <Loader2 className="size-3 animate-spin" /> : copy.run}
-            {submitting !== 'once' && <span className="text-[0.625rem] text-primary/60">{isMac ? '⌘⏎' : 'Ctrl⏎'}</span>}
+            {submitting !== 'once' && (
+              <>
+                <span className="text-[0.625rem] text-primary/60">{isMac ? '⌘⏎' : 'Ctrl⏎'}</span>
+                <span className="text-[0.625rem] text-primary/60">Y</span>
+              </>
+            )}
           </Button>
           {hasMoreOptions && <span aria-hidden className="w-px self-stretch bg-primary/20" />}
           {hasMoreOptions && (
@@ -257,7 +289,12 @@ const ApprovalBar: FC<{ request: ApprovalRequest; surface: 'floating' | 'inline'
           variant="ghost"
         >
           {submitting === 'deny' ? <Loader2 className="size-3 animate-spin" /> : copy.reject}
-          {submitting !== 'deny' && <span className="text-[0.625rem] opacity-55">Esc</span>}
+          {submitting !== 'deny' && (
+            <>
+              <span className="text-[0.625rem] opacity-55">Esc</span>
+              <span className="text-[0.625rem] opacity-55">N</span>
+            </>
+          )}
         </Button>
 
         {hasCommand && (
