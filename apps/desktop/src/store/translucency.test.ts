@@ -22,7 +22,10 @@ import {
   defaultTranslucencyValues,
   endTranslucencyPeek,
   GLASS_SUPPORTED,
+  installTranslucencyPeekGuards,
   isChatWindow,
+  PEEK_MAX_HOLD_MS,
+  pulseTranslucencyPeek,
   resetTranslucencyPeek,
   setAppearance,
   setTranslucency,
@@ -601,5 +604,170 @@ describe('v1 → v2 migration', () => {
 
     expect(fresh.$translucency.get().mode).toBe('glass')
     expect(fresh.$translucency.get().intensity).toBe(8)
+  })
+})
+
+// The peek counter is the one piece of state whose failure is invisible: a
+// stranded count leaves the peek attribute on <html>, and the next settings
+// overlay ghosts to the desktop at 8% opacity (styles.css:875). Three
+// backstops bound it — a ceiling no hold may outlive, a visibility/blur drop,
+// and a pairing check on release that is never silent.
+describe('translucency peek backstops', () => {
+  const peekOn = () => document.documentElement.hasAttribute('data-fulilian-translucency-peek')
+
+  // jsdom's visibilityState is a read-only getter on Document.prototype; an
+  // own, configurable getter is how a test drives it.
+  const setVisibility = (state: DocumentVisibilityState): void => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state })
+  }
+
+  const clearVisibility = (): void => {
+    delete (document as { visibilityState?: unknown }).visibilityState
+  }
+
+  beforeEach(() => {
+    resetTranslucencyPeek()
+    // The migration suite above re-imports the module with vi.resetModules(),
+    // which leaves the global guard registry bound to that fresh instance's
+    // atom. Re-installing swaps it back onto the instance under test — the
+    // same idempotent swap that keeps HMR from stacking listeners.
+    installTranslucencyPeekGuards()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    // Settle the watchdog while the fake clock is still installed, then drop
+    // the mocks and hand the real clock back.
+    resetTranslucencyPeek()
+    clearVisibility()
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('clears a hold that outlives the ceiling, and records it', () => {
+    beginTranslucencyPeek()
+    expect(peekOn()).toBe(true)
+
+    // A millisecond short of the ceiling the ghost is still up: a long (but
+    // not stranded) hold is never cut short.
+    vi.advanceTimersByTime(PEEK_MAX_HOLD_MS - 1)
+    expect(peekOn()).toBe(true)
+    expect($translucencyPeek.get()).toBe(1)
+    expect(console.warn).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1)
+    expect($translucencyPeek.get()).toBe(0)
+    expect(peekOn()).toBe(false)
+    expect(console.warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('zeroes the counter when the page is hidden, and leaves a visible page alone', () => {
+    beginTranslucencyPeek()
+    beginTranslucencyPeek()
+
+    setVisibility('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect($translucencyPeek.get()).toBe(2)
+    expect(console.warn).not.toHaveBeenCalled()
+
+    setVisibility('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect($translucencyPeek.get()).toBe(0)
+    expect(peekOn()).toBe(false)
+    expect(console.warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('zeroes the counter when the window loses focus', () => {
+    beginTranslucencyPeek()
+    window.dispatchEvent(new Event('blur'))
+
+    expect($translucencyPeek.get()).toBe(0)
+    expect(peekOn()).toBe(false)
+    expect(console.warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('records nothing when visibility or focus changes with no hold open', () => {
+    setVisibility('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('blur'))
+
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('records an over-release, and normalises a counter that left the floor', () => {
+    // A release with no hold: an imbalance, recorded once for the episode.
+    endTranslucencyPeek()
+    endTranslucencyPeek()
+    expect($translucencyPeek.get()).toBe(0)
+    expect(console.warn).toHaveBeenCalledTimes(1)
+
+    // A count below the floor cannot come from a legitimate release, so it is
+    // forced back to 0 rather than left to strand the ghost.
+    $translucencyPeek.set(-3)
+    endTranslucencyPeek()
+    expect($translucencyPeek.get()).toBe(0)
+    expect(peekOn()).toBe(false)
+    expect(console.warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('lets a normal timed pulse run its full length before the ceiling', () => {
+    pulseTranslucencyPeek()
+    expect(peekOn()).toBe(true)
+
+    vi.advanceTimersByTime(899)
+    expect(peekOn()).toBe(true)
+    expect($translucencyPeek.get()).toBe(1)
+
+    vi.advanceTimersByTime(1)
+    expect(peekOn()).toBe(false)
+    expect($translucencyPeek.get()).toBe(0)
+    // The pulse released its own hold; no backstop had to intervene.
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('installs its page and focus guards exactly once across re-installs', () => {
+    installTranslucencyPeekGuards() // the module already installed on import
+
+    const live = new Set<EventListenerOrEventListenerObject>()
+    const realAdd = window.addEventListener.bind(window)
+    const realRemove = window.removeEventListener.bind(window)
+
+    vi.spyOn(window, 'addEventListener').mockImplementation(((
+      type: string,
+      handler: EventListenerOrEventListenerObject,
+      options?: AddEventListenerOptions | boolean
+    ) => {
+      if (type === 'blur') {
+        live.add(handler)
+      }
+
+      realAdd(type, handler, options)
+    }) as unknown as typeof window.addEventListener)
+
+    vi.spyOn(window, 'removeEventListener').mockImplementation(((
+      type: string,
+      handler: EventListenerOrEventListenerObject,
+      options?: EventListenerOptions | boolean
+    ) => {
+      if (type === 'blur') {
+        live.delete(handler)
+      }
+
+      realRemove(type, handler, options)
+    }) as unknown as typeof window.removeEventListener)
+
+    installTranslucencyPeekGuards()
+    installTranslucencyPeekGuards()
+
+    // Swapped, not stacked: each re-install unbinds the handler it replaces.
+    expect(live.size).toBe(1)
+
+    // ...and the proof that matters: one blur drops the hold exactly once.
+    beginTranslucencyPeek()
+    window.dispatchEvent(new Event('blur'))
+    expect($translucencyPeek.get()).toBe(0)
+    expect(console.warn).toHaveBeenCalledTimes(1)
   })
 })

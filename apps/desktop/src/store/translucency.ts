@@ -255,17 +255,176 @@ const stopRailTracking = (): void => {
    the whole overlay layer so the live window IS the preview (see the
    [data-fulilian-translucency-peek] rules in styles.css). A counter rather
    than a boolean: a held slider drag and a timed pulse from a picker click
-   can overlap. */
+   can overlap.
+
+   A counter can also be left stranded: a pointer held on the slider when its
+   overlay unmounts never delivers the pointerup that releases it, and while
+   it sits above zero every LATER settings overlay falls through to the
+   desktop at 8% opacity (the [data-fulilian-translucency-peek] rule). Three
+   backstops bound that: a watchdog no hold may outlive, a visibility/blur
+   drop, and a pairing check on release. Every one of them records. */
 const PEEK_ATTR = 'data-fulilian-translucency-peek'
+
+/**
+ * Ceiling on how long one peek session — the span from the first hold of a
+ * run to the last release — may keep the ghost on. The only BOUNDED legal
+ * peek is the 900ms pulse (`PEEK_PULSE_MS`); a held drag is user-paced, so
+ * this is not a UX limit but the backstop for a hold whose release never
+ * arrives. 60s is ~66x the longest bounded peek and beyond any continuous
+ * drag, so no normal interaction meets it, while a stranded counter heals
+ * itself instead of ghosting every later overlay for the life of the window.
+ * Exported so a test can drive the ceiling with a fake clock.
+ */
+export const PEEK_MAX_HOLD_MS = 60_000
+
+/** The one-shot pulse length for frost / area / mode clicks and key steps. */
+const PEEK_PULSE_MS = 900
 
 export const $translucencyPeek = atom<number>(0)
 
+/** Pulses still in flight; settling them lets a late timer exit quietly. */
+const outstandingPulses = new Set<symbol>()
+
+let peekWatchdog: null | number = null
+
+const warnPeek = (reason: string, detail: Record<string, unknown> = {}): void => {
+  console.warn(`[translucency] peek ${reason}`, detail)
+}
+
+/**
+ * Force the counter to the floor and drop the pulses a stranded hold would
+ * otherwise release a second time. Records when it actually drops a hold —
+ * these backstops exist because the wedge is silent, so they must not be.
+ */
+const dropPeekHolds = (reason: string, detail: Record<string, unknown> = {}): void => {
+  const held = $translucencyPeek.get()
+
+  if (held > 0) {
+    warnPeek(reason, { held, ...detail })
+  }
+
+  outstandingPulses.clear()
+  $translucencyPeek.set(0)
+}
+
+const disarmPeekWatchdog = (): void => {
+  if (peekWatchdog === null) {
+    return
+  }
+
+  if (typeof window !== 'undefined') {
+    window.clearTimeout(peekWatchdog)
+  }
+
+  peekWatchdog = null
+}
+
+/**
+ * Armed once per session — on the first hold — and NOT extended by later
+ * overlapping holds: the failure it guards is a counter that never comes back
+ * down, so a stuck session has no later holds to extend it with.
+ */
+const armPeekWatchdog = (): void => {
+  if (peekWatchdog !== null || typeof window === 'undefined') {
+    return
+  }
+
+  peekWatchdog = window.setTimeout(() => {
+    peekWatchdog = null
+
+    if ($translucencyPeek.get() > 0) {
+      dropPeekHolds('hold exceeded its ceiling — no release arrived', { ceilingMs: PEEK_MAX_HOLD_MS })
+    }
+  }, PEEK_MAX_HOLD_MS)
+}
+
+const PEEK_GUARD = Symbol.for('fulilian.translucency.peek-guards')
+
+interface PeekGuards {
+  onBlur: () => void
+  onVisibility: () => void
+}
+
+const peekGuardHost = globalThis as unknown as { [PEEK_GUARD]?: PeekGuards }
+
+/**
+ * Drop the ghost when the page is hidden or the window loses focus: a hold
+ * whose release can't reach an off-screen element must not survive. Installed
+ * EXACTLY once — a repeat install (HMR, a second import) swaps the handlers
+ * rather than stacking a second pair, and the registry lives on globalThis so
+ * it spans module re-evaluations. Exported so a test can prove that.
+ */
+export function installTranslucencyPeekGuards(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  const previous = peekGuardHost[PEEK_GUARD]
+
+  if (previous) {
+    document.removeEventListener('visibilitychange', previous.onVisibility)
+    window.removeEventListener('blur', previous.onBlur)
+  }
+
+  const onVisibility = (): void => {
+    if (document.visibilityState === 'hidden') {
+      dropPeekHolds('page became hidden')
+    }
+  }
+
+  const onBlur = (): void => dropPeekHolds('window lost focus')
+
+  document.addEventListener('visibilitychange', onVisibility)
+  window.addEventListener('blur', onBlur)
+  peekGuardHost[PEEK_GUARD] = { onBlur, onVisibility }
+}
+
+/**
+ * Rate-limits the imbalance record to one line per episode. The slider fires
+ * three release paths for a single hold — pointerup, then lostpointercapture
+ * and blur — so warning on every redundant release would cry wolf on the
+ * happy path. The latch is cleared by the next acquire (and by a reset), so a
+ * genuinely repeated imbalance still surfaces.
+ */
+let peekImbalanceRecorded = false
+
 export function beginTranslucencyPeek(): void {
+  peekImbalanceRecorded = false
   $translucencyPeek.set($translucencyPeek.get() + 1)
 }
 
+/**
+ * Acquire/release must pair. A release that finds no hold to take has nothing
+ * to decrement, so the bookkeeping has drifted — never silent, because the
+ * wedge this file guards against is silent.
+ */
 export function endTranslucencyPeek(): void {
-  $translucencyPeek.set(Math.max(0, $translucencyPeek.get() - 1))
+  const current = $translucencyPeek.get()
+
+  if (Number.isInteger(current) && current > 0) {
+    $translucencyPeek.set(current - 1)
+
+    return
+  }
+
+  if (current !== 0) {
+    // Corrupt: negative, fractional or NaN. No legitimate release can leave
+    // the counter there, so it is always recorded and forced back to the
+    // floor — a value like that would otherwise strand the ghost on.
+    warnPeek('counter left the floor — normalising', { count: current })
+    $translucencyPeek.set(0)
+
+    return
+  }
+
+  // A release with no hold at all. The zero floor is the app's own designed
+  // no-op, but the imbalance is still real and is recorded once per episode.
+  if (peekImbalanceRecorded) {
+    return
+  }
+
+  peekImbalanceRecorded = true
+  warnPeek('release without a matching hold', { count: current })
 }
 
 /**
@@ -273,20 +432,25 @@ export function endTranslucencyPeek(): void {
  * unmount: a pointer held on the slider when the overlay closes (Escape
  * mid-drag) never delivers its pointerup to the unmounted element, and a
  * counter stuck above zero would leave the peek attribute on <html> —
- * rendering the NEXT settings overlay ghosted at 8% opacity. Outstanding
- * pulse timers still fire endTranslucencyPeek later; the zero floor makes
- * them no-ops.
+ * rendering the NEXT settings overlay ghosted at 8% opacity. Settling the
+ * pulse tokens makes an outstanding pulse timer exit without releasing a hold
+ * that is already gone.
  */
 export function resetTranslucencyPeek(): void {
+  outstandingPulses.clear()
+  peekImbalanceRecorded = false
   $translucencyPeek.set(0)
 }
 
 /**
  * Timed peek for one-shot changes (frost / area / mode clicks, keyboard
  * slider steps): long enough to read the effect, short enough to hand the
- * settings back without feeling stuck.
+ * settings back without feeling stuck. Each pulse carries a token, so a reset
+ * or watchdog that already dropped its hold turns the pulse's later timer
+ * into a no-op — a stale timer can neither resurrect the attribute nor trip
+ * the pairing check.
  */
-export function pulseTranslucencyPeek(ms = 900): void {
+export function pulseTranslucencyPeek(ms = PEEK_PULSE_MS): void {
   beginTranslucencyPeek()
 
   if (typeof window === 'undefined') {
@@ -295,7 +459,16 @@ export function pulseTranslucencyPeek(ms = 900): void {
     return
   }
 
-  window.setTimeout(endTranslucencyPeek, ms)
+  const token = Symbol('translucency-peek-pulse')
+  outstandingPulses.add(token)
+
+  window.setTimeout(() => {
+    if (!outstandingPulses.delete(token)) {
+      return
+    }
+
+    endTranslucencyPeek()
+  }, ms)
 }
 
 const applyGlassSurfaces = ({ intensity, mode, scope }: TranslucencyState): void => {
@@ -407,5 +580,17 @@ if (typeof window !== 'undefined') {
     }
 
     document.documentElement.toggleAttribute(PEEK_ATTR, count > 0)
+
+    // Bound the session: arm the ceiling on the first hold, drop it the moment
+    // the counter returns to the floor.
+    if (count > 0) {
+      armPeekWatchdog()
+    } else {
+      disarmPeekWatchdog()
+    }
   })
+
+  // Hidden page / blurred window: a hold whose release can no longer arrive
+  // must not survive off-screen. Idempotent — see installTranslucencyPeekGuards.
+  installTranslucencyPeekGuards()
 }
