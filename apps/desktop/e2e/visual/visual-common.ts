@@ -81,6 +81,47 @@ export const VISUAL_PAGES: readonly VisualPage[] = [
   { name: 'skills', route: '/skills' },
 ] as const
 
+/**
+ * Per-page mask rules（步骤16 · M1 通道设计修复）。
+ *
+ * 背景（REV-批次一审查 M1）：skills 页的 Skills Hub 窗格是外部嵌入面
+ * （`src/app/skills/embedded-hub-picker.tsx` 内 `<iframe src=…/docs/skills?embed=picker>`，
+ * 载入 github.com 上的实时文档站）。该内容**不受本仓控制**——审查两次亲跑均稳定红
+ * （34% 像素差全部集中在该窗格：基线拍到浅灰错误页，复跑时外部站点已改渲染深色），
+ * 属环境性基线漂移，`df2064d` 后零代码触碰。若把外部嵌入面拍进像素基线，基线一经
+ * 漂移即永久红，侵蚀批次级验收信噪比。
+ *
+ * 处置：比对前把该矩形区域**归一化遮蔽**（Playwright `toHaveScreenshot` 的 `mask`
+ * 选项，actual/expected 双侧同色盖印）——「外部嵌入面内容不受本仓控制，不入像素
+ * 基线」。窗格容器自身的 1px 边框、picker 标题行与提示文案、页面其余全部仍在比对
+ * 范围内（mask 矩形 = iframe 元素 bounding box ≈ 容器 content box，不覆盖边框）。
+ *
+ * ⚠ 盲区边界（诚实声明）：被 mask 的 iframe 矩形对本通道不可见——该区域内的渲染
+ * 回归（以及 iframe 载入失败态本身）不再被捕获；该面属于外部站点，其回归本就不在
+ * 本仓回归责任内。窗格容器（边框/圆角/尺寸/折叠行为）与页面其余部分不受影响。
+ *
+ * 反向验证（留档/step16-devb-t11-patch-*）：非遮蔽区域注入可感知差异 ⇒ 通道红；
+ * 字节还原 ⇒ 通道绿 —— 证明 mask 未钝化既有捕获能力。
+ */
+export interface VisualMaskRule {
+  /** CSS selector, resolved against the live page at shot time. */
+  selector: string
+  /** VISUAL_PAGES names this rule applies to. 按页声明而非全局：mask locator
+   * 必须能在对应页解析到元素，按页过滤避免其它页零匹配报错。 */
+  pages: readonly string[]
+}
+
+export const VISUAL_MASKS: readonly VisualMaskRule[] = [
+  {
+    selector: 'iframe[src*="embed=picker"]',
+    pages: ['skills'],
+  },
+] as const
+
+/** Build the `mask` locator list for one page (empty for pages without rules). */
+export const masksForPage = (page: Page, name: string) =>
+  VISUAL_MASKS.filter(rule => rule.pages.includes(name)).map(rule => page.locator(rule.selector))
+
 /** Inject the ladder CSS if absent. SELF-CONTAINED (Playwright 会把传给
  * evaluate/addInitScript 的函数源码序列化进浏览器上下文，模块作用域引用全部失活
  * —— 故 CSS 文本必须内联在函数体内，不得引用本模块其它绑定）。

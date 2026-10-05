@@ -11,12 +11,18 @@
  * 覆盖层（React 重挂载同类节点同样命中）；不改业务 DOM 结构、不加类，主题为
  * 真实持久化偏好。既有 Linux 快照通道（e2e/visual-snapshot.ts +
  * playwright.config.ts）零改动。
+ *
+ * M1（步骤16 补丁）：skills 页 Skills Hub 外部嵌入窗格（iframe，载入不受本仓
+ * 控制的 github.com 文档站）在比对前按 `VISUAL_MASKS` 遮蔽归一化——外部嵌入面
+ * 不入像素基线；理由与盲区边界声明见 visual-common.ts。基线在修复落地后于
+ * HEAD 重建（重建时点见回执），未以 --update-snapshots 替代设计修复。
  */
 import { expect, test } from '@playwright/test'
 
 import {
   hideOverlayLadder,
   INJECT_OVERLAY_LADDER_CSS,
+  masksForPage,
   seedAppearance,
   VISUAL_BASE_URL,
   VISUAL_MAX_DIFF_PIXEL_RATIO,
@@ -49,6 +55,9 @@ test.describe('windows visual baselines · 8 pages × light/dark', () => {
           maxDiffPixelRatio: VISUAL_MAX_DIFF_PIXEL_RATIO,
           animations: 'disabled',
           caret: 'hide',
+          /* M1 通道设计修复：外部嵌入窗格（mask 规则集中在 visual-common，
+           * 含盲区边界声明）在比对前双侧归一化，不入像素基线。 */
+          mask: masksForPage(pw, page.name),
         })
       })
     }
