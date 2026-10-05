@@ -253,3 +253,53 @@ test('T5/e wsl.exe is spawned directly, never through a shell wrapper', async ()
   assert.equal(args[args.length - 3], 'bash')
   assert.deepEqual(args.slice(0, 4), ['-d', 'Ubuntu-22.04', '--cd', '/mnt/d/Work/x'])
 })
+
+// P8: the wiring itself. `data` is coalesced (a sub-threshold burst crosses IPC
+// only when the window/exit flushes it), while `exit` is sent immediately and
+// strictly after the tail — the two messages must never invert. Fake timers
+// keep the 12 ms window from firing mid-test.
+test('P8/3b buffered PTY output is flushed before `exit`, and `exit` is never buffered', async () => {
+  vi.useFakeTimers()
+
+  try {
+    let onData: null | ((data: string) => void) = null
+    let onExit: null | ((event: { exitCode: number; signal: number }) => void) = null
+
+    spawnSpy.mockImplementation(() => ({
+      ...makePty(),
+      onData: (callback: (data: string) => void) => {
+        onData = callback
+      },
+      onExit: (callback: (event: { exitCode: number; signal: number }) => void) => {
+        onExit = callback
+      }
+    }))
+
+    const sender = makeSender()
+
+    await handlerFor('fulilian:terminal:start')({ sender }, { cwd: process.cwd() })
+
+    assert.ok(onData && onExit, 'the session must subscribe to both PTY streams')
+
+    const emitData = onData as unknown as (data: string) => void
+
+    emitData('hello ')
+    emitData('world')
+
+    vi.advanceTimersByTime(1)
+
+    assert.equal(sender.send.mock.calls.length, 0, 'a sub-threshold burst stays buffered')
+
+    onExit!({ exitCode: 0, signal: 0 })
+
+    const channels = sender.send.mock.calls.map(call => call[0] as string)
+
+    assert.equal(sender.send.mock.calls.length, 2, 'one data message plus the exit message')
+    assert.equal(channels[0].endsWith(':data'), true)
+    assert.equal(sender.send.mock.calls[0][1], 'hello world', 'the tail is delivered whole')
+    assert.equal(channels[1].endsWith(':exit'), true, 'exit is not buffered')
+    assert.deepEqual(sender.send.mock.calls[1][1], { code: 0, signal: null })
+  } finally {
+    vi.useRealTimers()
+  }
+})

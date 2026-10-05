@@ -13,6 +13,11 @@ import nodePty from 'node-pty'
 import { resolveTerminalConnectionForSender } from './connection-apply'
 import { ensureSpawnHelperExecutable } from './spawn-helper-perms'
 import { buildInteractiveSshArgs } from './ssh-connection'
+import {
+  createTerminalOutputBuffer,
+  TERMINAL_OUTPUT_FLUSH_BYTES,
+  TERMINAL_OUTPUT_FLUSH_MS
+} from './terminal-output-buffer'
 import { buildWindowsInteractiveCommand } from './windows-remote-lifecycle'
 import { windowsToWslPosix } from './wsl-cli-paths'
 import { WSL_CLI_NAMES, type WslCliName } from './wsl-cli-probe'
@@ -228,6 +233,13 @@ export function registerTerminalIpc({
 
     terminalSessions.delete(id)
 
+    // Disarm the flush timer and drop the pending tail before the kill, so a
+    // session torn down from the outside (pane close, SSH teardown, shutdown)
+    // can never emit a late `data` message.
+    if (sessionInfo.outputBuffer) {
+      sessionInfo.outputBuffer.dispose()
+    }
+
     try {
       sessionInfo.pty.kill()
     } catch {
@@ -366,15 +378,6 @@ export function registerTerminalIpc({
           )
         : nodePty.spawn(command, args, { cols, cwd, env: terminalShellEnv(), name: 'xterm-256color', rows })
 
-    terminalSessions.set(id, {
-      pty: ptyProcess,
-      webContentsId: event.sender.id,
-      ...(remote ? { sshScope: sshTarget.scope, remoteCwd: String(payload?.cwd || '') } : {}),
-      // Same-shape scope marker as sshScope, so a future scoped teardown can
-      // close every pane riding one distro.
-      ...(wslTarget ? { wslTarget: { cli: wslTarget.cli, distro: wslTarget.distro } } : {})
-    })
-
     const send = (suffix, payload) => {
       if (event.sender.isDestroyed()) {
         return
@@ -383,12 +386,40 @@ export function registerTerminalIpc({
       event.sender.send(terminalChannel(id, suffix), payload)
     }
 
-    ptyProcess.onData(data => send('data', data))
+    // Coalesce PTY output: a burst of small reads crosses IPC as one `data`
+    // message (per window, or per 64 KiB), so a high-output command stops
+    // costing one hop per read. Only `data` is buffered; the control message
+    // below stays immediate.
+    const outputBuffer = createTerminalOutputBuffer({
+      flush: data => send('data', data),
+      thresholdBytes: TERMINAL_OUTPUT_FLUSH_BYTES,
+      windowMs: TERMINAL_OUTPUT_FLUSH_MS
+    })
+
+    terminalSessions.set(id, {
+      outputBuffer,
+      pty: ptyProcess,
+      webContentsId: event.sender.id,
+      ...(remote ? { sshScope: sshTarget.scope, remoteCwd: String(payload?.cwd || '') } : {}),
+      // Same-shape scope marker as sshScope, so a future scoped teardown can
+      // close every pane riding one distro.
+      ...(wslTarget ? { wslTarget: { cli: wslTarget.cli, distro: wslTarget.distro } } : {})
+    })
+
+    ptyProcess.onData(data => outputBuffer.push(data))
     ptyProcess.onExit(({ exitCode, signal }) => {
       terminalSessions.delete(id)
+      // Flush the tail before `exit` so the renderer's final frame is complete
+      // and `data` can never overtake the closing control message.
+      outputBuffer.flush()
       send('exit', { code: exitCode, signal: signal || null })
     })
-    event.sender.once('destroyed', () => disposeTerminalSession(id))
+    event.sender.once('destroyed', () => {
+      // The renderer is gone: drop buffered bytes and disarm the timer so
+      // nothing is sent to a destroyed sender and no timer is left dangling.
+      outputBuffer.dispose()
+      disposeTerminalSession(id)
+    })
 
     // A WSL session reports `shell = <cli 名>` and `cwd = null`, matching the
     // SSH target: the POSIX cwd cannot be handed back as a local path
