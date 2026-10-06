@@ -23,6 +23,7 @@ import {
   togglePanesFlipped,
   toggleSidebarOpen
 } from '@/store/layout'
+import { NotificationCenterBell } from '@/components/notification-center'
 import { $unreadSessionCount } from '@/store/session-dot-state'
 
 import { appViewForPath, isOverlayView } from '../routes'
@@ -254,7 +255,9 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         triggerHaptic('open')
         onOpenSettings()
       }
-    }
+    },
+    // Notification center (step 16 · T15): the titlebar bell + dropdown panel.
+    { icon: <NotificationCenterBell />, id: 'notification-center', label: '' }
   ]
 
   // While a full-screen overlay (settings, command center, …) is open it should

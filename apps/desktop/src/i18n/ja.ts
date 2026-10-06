@@ -470,6 +470,18 @@ export const ja = defineLocale({
     offlineHint: 'ゲートウェイはオフラインです——キャプチャはローカルに記録されます。'
   },
 
+  notificationCenter: {
+    label: '通知センター',
+    approvalHeading: '承認待ち',
+    automationHeading: '自動化の結果',
+    systemHeading: 'システム',
+    markAllRead: 'すべて既読にする',
+    empty: '新しい通知はありません。',
+    approvalRowHint: '応答を待っています',
+    cronRowHint: '実行が完了しました',
+    noteRowHint: 'クイックメモ'
+  },
+
   caseTimeline: {
     title: 'タイムライン',
     back: '戻る',

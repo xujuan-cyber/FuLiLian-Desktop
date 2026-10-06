@@ -453,6 +453,18 @@ export const ar = defineLocale({
     offlineHint: 'البوابة غير متصلة — يبقى الالتقاط يُحفظ محليًا.'
   },
 
+  notificationCenter: {
+    label: 'مركز الإشعارات',
+    approvalHeading: 'بانتظار الموافقة',
+    automationHeading: 'نتائج الأتمتة',
+    systemHeading: 'النظام',
+    markAllRead: 'وضع علامة مقروء على الكل',
+    empty: 'لا توجد إشعارات جديدة.',
+    approvalRowHint: 'بانتظار ردّك',
+    cronRowHint: 'انتهى التنفيذ',
+    noteRowHint: 'ملاحظة سريعة'
+  },
+
   caseTimeline: {
     title: 'الخط الزمني',
     back: 'رجوع',

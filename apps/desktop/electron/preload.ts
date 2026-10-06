@@ -238,6 +238,16 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
   },
   api: request => ipcRenderer.invoke('fulilian:api', request),
   notify: payload => ipcRenderer.invoke('fulilian:notify', payload),
+  // Notification center (step 16 · T15): main double-writes every accepted
+  // OS notification into the titlebar bell's persistent feed. Subscribe-only.
+  notificationCenter: {
+    onEntry: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('fulilian:notification-center', listener)
+
+      return () => ipcRenderer.removeListener('fulilian:notification-center', listener)
+    }
+  },
   requestMicrophoneAccess: () => ipcRenderer.invoke('fulilian:requestMicrophoneAccess'),
   readWindowBelow: () => ipcRenderer.invoke('fulilian:window:readBelow'),
   readFileDataUrl: filePath => ipcRenderer.invoke('fulilian:readFileDataUrl', filePath),

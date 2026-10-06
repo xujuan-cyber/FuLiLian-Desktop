@@ -246,6 +246,20 @@ declare global {
       }
       api: <T>(request: FulilianApiRequest) => Promise<T>
       notify: (payload: FulilianNotification) => Promise<boolean>
+      /** Notification center (step 16 · T15): main double-writes every accepted
+       *  OS notification into the titlebar bell's persistent feed. */
+      notificationCenter?: {
+        onEntry: (
+          callback: (entry: {
+            id: string
+            group: 'approval' | 'automation' | 'system'
+            title: string
+            body: string
+            at: number
+            sessionId?: string
+          }) => void
+        ) => () => void
+      }
       requestMicrophoneAccess: () => Promise<boolean>
       /** read_window_below tool: metadata for the OS window directly underneath this one (never pixels). */
       readWindowBelow?: () => Promise<{

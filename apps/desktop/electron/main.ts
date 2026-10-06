@@ -269,6 +269,7 @@ import {
 } from './native-oauth'
 import { runNativeLogin } from './native-oauth-login'
 import { loadNativeTokenSet, type NativeTokenStoreIo, persistNativeTokenSet } from './native-token-store'
+import { createNotificationCenterSink } from './notification-center'
 import { createNotifyHandler } from './notifications'
 import { serializeJsonBody, setJsonRequestHeaders } from './oauth-net-request'
 import { LEGACY_OAUTH_PARTITION, resolveOauthPartition } from './oauth-partition'
@@ -16052,7 +16053,20 @@ const notify = createNotifyHandler({
   focusWindow,
   NotificationCtor: Notification
 })
-ipcMain.handle('fulilian:notify', (_event, payload) => notify(payload))
+// Notification center double-write (step 16 · T15): AFTER the notify handler
+// accepted a payload (its gate + dedupe returned), mirror the same payload
+// into the titlebar bell's persistent feed. Strictly additive — the existing
+// OS-notification flow above is untouched.
+const recordNotificationCenterEntry = createNotificationCenterSink()
+ipcMain.handle('fulilian:notify', (_event, payload) => {
+  const shown = notify(payload)
+
+  if (shown) {
+    recordNotificationCenterEntry(payload)
+  }
+
+  return shown
+})
 
 // Data-URL file load cap (composer attach + local previews). Main owns the
 // persisted MB value so every IPC read honours Settings → Chat without the

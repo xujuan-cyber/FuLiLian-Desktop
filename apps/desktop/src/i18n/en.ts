@@ -472,6 +472,18 @@ export const en: Translations = {
     offlineHint: 'Gateway offline — captures still land locally.'
   },
 
+  notificationCenter: {
+    label: 'Notifications',
+    approvalHeading: 'Needs approval',
+    automationHeading: 'Automation results',
+    systemHeading: 'System',
+    markAllRead: 'Mark all as read',
+    empty: 'Nothing new — you are all caught up.',
+    approvalRowHint: 'Waiting for your response',
+    cronRowHint: 'Run finished',
+    noteRowHint: 'Quick capture note'
+  },
+
   caseTimeline: {
     title: 'Timeline',
     back: 'Back',

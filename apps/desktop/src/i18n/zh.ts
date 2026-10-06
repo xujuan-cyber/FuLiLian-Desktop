@@ -464,6 +464,18 @@ export const zh: Translations = {
     offlineHint: '网关离线——捕获仍会本地落盘。'
   },
 
+  notificationCenter: {
+    label: '通知中心',
+    approvalHeading: '需审批',
+    automationHeading: '自动化结果',
+    systemHeading: '系统',
+    markAllRead: '全部标为已读',
+    empty: '暂无新通知。',
+    approvalRowHint: '等待你的处理',
+    cronRowHint: '运行已结束',
+    noteRowHint: '速记'
+  },
+
   caseTimeline: {
     title: '时间线',
     back: '返回',

@@ -461,6 +461,18 @@ export const zhHant = defineLocale({
     offlineHint: '閘道離線——擷取仍會本機落盤。'
   },
 
+  notificationCenter: {
+    label: '通知中心',
+    approvalHeading: '需審批',
+    automationHeading: '自動化結果',
+    systemHeading: '系統',
+    markAllRead: '全部標為已讀',
+    empty: '暫無新通知。',
+    approvalRowHint: '等待你的處理',
+    cronRowHint: '執行已結束',
+    noteRowHint: '速記'
+  },
+
   caseTimeline: {
     title: '時間線',
     back: '返回',

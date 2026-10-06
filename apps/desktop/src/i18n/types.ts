@@ -412,6 +412,25 @@ export interface Translations {
     offlineHint: string
   }
 
+  // Notification center (step 16 · T15, 方案 §5-T15) — the titlebar bell panel.
+  notificationCenter: {
+    /** Bell tooltip / aria-label. */
+    label: string
+    /** Panel headings, one per 方案 §5-T15 group. */
+    approvalHeading: string
+    automationHeading: string
+    systemHeading: string
+    /** Footer affordance + states. */
+    markAllRead: string
+    empty: string
+    /** Derived-row annotations. */
+    approvalRowHint: string
+    cronRowHint: string
+    /** Quick-capture 速记 inbox rows (T7 seam) — notes render their own text;
+     *  this titles the system group's source. */
+    noteRowHint: string
+  }
+
   // Case timeline page (step 16 · T13, 方案 §5-T13) — 预览 07 的取证时间线分析.
   caseTimeline: {
     /** Page-head title (the「· 时间线」suffix). */
