@@ -129,6 +129,12 @@ constant:
 stream stay on flat hairlines (principle 1) — do not reach for it to "lift" a
 row.
 
+**Dormant (REV-15 P1-2).** `shadow-signature` currently has **zero consumers**:
+the four floating surfaces above (home input card, overlays, dialogs, settings
+right-hand card) still use the existing elevation rungs. Wiring it up is tracked
+as **BL-12** in `协同编程/backlog-台账.md`; until that lands, do not add a
+one-off `shadow-[…]` at any call site — the token stays defined but unconsumed.
+
 ### Orange whitelist
 
 `accentBright` is a signal, not a decoration. It may appear in exactly **four**

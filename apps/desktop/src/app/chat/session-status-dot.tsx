@@ -1,6 +1,5 @@
 import { useStore } from '@nanostores/react'
 
-import { STATUS_DOT_STATE_CLASS } from '@/components/status-dot'
 import { type Translations, useI18n } from '@/i18n'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
@@ -32,7 +31,7 @@ const DOT_VARIANTS: Record<SessionDotState, DotVariant> = {
   // and the only state the user is required to do something about.
   'needs-input': {
     ariaLabel: r => r.needsInput,
-    className: `${DOT_BASE} bg-amber-500`,
+    className: `${DOT_BASE} bg-warning`,
     role: 'status',
     title: r => r.waitingForAnswer
   },

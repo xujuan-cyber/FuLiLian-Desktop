@@ -803,7 +803,7 @@ function ProfileDropdown({
             <DropdownMenuLabel className={cn(dropdownMenuSectionLabel, 'flex items-center gap-1.5')}>
               <ConnectionGlyph connection={group} />
               <span className="truncate">{group.label}</span>
-              {!group.reachable && <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />}
+              {!group.reachable && <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-warning" />}
             </DropdownMenuLabel>
             {[group.defaultAgent, ...group.named].map(agent => (
               <DropdownMenuItem
@@ -932,7 +932,7 @@ function FleetDivider({
     >
       {!first && <span className="h-3 w-px bg-(--ui-stroke-tertiary)" />}
       <ConnectionGlyph connection={connection} />
-      {!reachable && <span className="size-1.5 rounded-full bg-amber-500" data-slot="profile-rail-unreachable" />}
+      {!reachable && <span className="size-1.5 rounded-full bg-warning" data-slot="profile-rail-unreachable" />}
     </span>
   )
 
