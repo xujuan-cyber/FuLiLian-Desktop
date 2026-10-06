@@ -92,7 +92,12 @@ export default [
     // Icon single-source fence (step 16 · T17, 清单 B3): business icons come from
     // @/lib/icons (Tabler). Third-party icon sets may not be newly imported —
     // 渐进收敛，存量用到哪换到哪，不专项清零 (see overrides below).
+    // ⚠ 必须 ignores src/plugins/**：本块与上方 plugin-fence 块同名规则
+    // no-restricted-imports，扁平配置下后者覆盖前者，若本块命中插件文件会把
+    // plugins fence（禁 @/* / ../* / @fulilian/shared）静默关闭。插件走 plugin-sdk，
+    // 不适用业务图标规则，故排除之。
     files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/plugins/**'],
     rules: {
       'no-restricted-imports': [
         'error',
