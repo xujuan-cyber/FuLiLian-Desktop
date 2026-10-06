@@ -14,7 +14,7 @@
 
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
@@ -78,7 +78,12 @@ const SOURCE_CHIP_CLASS: Record<SourceId, string> = {
   registry: 'bg-(--ui-info-soft,var(--ui-bg-quaternary)) text-(--dt-info,var(--ui-text-secondary))'
 }
 
-export function CaseTimelineView({ caseId }: { caseId: string }) {
+export function CaseTimelineView({ caseId: caseIdProp }: { caseId?: string } = {}) {
+  // The workspace mount row (<Route element={page(<CaseTimelineView />)}
+  // path="cases/:caseId/timeline">) renders the element WITHOUT params, so the
+  // id comes from the router match; the prop exists for direct-mount tests.
+  const params = useParams()
+  const caseId = caseIdProp ?? params.caseId ?? ''
   const { t } = useI18n()
   const a = t.caseTimeline
   const navigate = useNavigate()
