@@ -175,6 +175,16 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
     pushState: payload => ipcRenderer.send('fulilian:tray:state', payload),
     setCloseToTray: on => ipcRenderer.send('fulilian:tray:close-to-tray', Boolean(on))
   },
+  // Case timeline bridge (step 16 · T13): CTFd-adapted challenge import and
+  // forensics timeline extraction. P2 pipeline pending — main currently
+  // serves the deterministic mock dataset (provenance flag `mockGenerated`).
+  // `timeline` doubles as the star-audit variant: invoked with a second
+  // argument it logs the structured desktop.log line (atoms only) and
+  // resolves null — no third channel.
+  caseTimeline: {
+    importEvent: payload => ipcRenderer.invoke('ctf:importEvent', payload),
+    timeline: (caseId, starAudit) => ipcRenderer.invoke('forensics:timeline', caseId, starAudit)
+  },
   getBootProgress: () => ipcRenderer.invoke('fulilian:boot-progress:get'),
   getConnectionConfig: profile => ipcRenderer.invoke('fulilian:connection-config:get', profile),
   saveConnectionConfig: payload => ipcRenderer.invoke('fulilian:connection-config:save', payload),

@@ -203,6 +203,7 @@ import { probeGatewayWebSocket } from './gateway-ws-probe'
 import { registerGitIpc } from './git-ipc'
 import { clearStaleGitLocks } from './gitlock'
 import { readAndConsumeHandoffResult } from './handoff-result'
+import { registerCaseTimelineIpc } from './case-timeline'
 import {
   ATTACHMENT_UPLOAD_DEFAULT_MAX_BYTES,
   clampDataUrlReadMaxMb,
@@ -16798,6 +16799,10 @@ const terminalIpc = registerTerminalIpc({
 
 // WSL CLI probe / opt-in (fulilian:wsl-cli:*) — see wsl-cli-ipc.ts.
 registerWslCliIpc({ rememberLog })
+
+// 取证时间线桥接（step 16 · T13）：ctf:importEvent / forensics:timeline。
+// P2 管线未就绪 ⇒ mock 数据集（显式标注 mockGenerated，见 case-timeline.ts）。
+registerCaseTimelineIpc({ log: rememberLog })
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession
 

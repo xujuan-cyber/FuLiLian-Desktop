@@ -145,6 +145,39 @@ declare global {
         // its draft and re-focus the input on every open.
         onShown: (callback: () => void) => () => void
       }
+      // Case timeline bridge (step 16 · T13). Main serves the deterministic
+      // mock dataset until the P2 forensics pipeline lands; payloads carry a
+      // `mockGenerated` provenance flag the UI must surface honestly.
+      // `timeline` doubles as the star-audit variant: invoked with a second
+      // argument main logs the structured `[case-timeline:audit]` desktop.log
+      // line (atoms only, never event text) and resolves null — two-channel
+      // budget kept.
+      caseTimeline?: {
+        // CTFd-adapted challenge import: seeds timeline rows for { caseId,
+        // challenge, url? }. Requires both strings; rejects otherwise.
+        importEvent: (payload: { caseId: string; challenge: string; url?: string }) => Promise<
+          Array<{ at: number; source: string; event: string; confidence: number; tags: string[] }>
+        >
+        // Timeline extraction for a case: { caseId, events[], mockGenerated,
+        // mockReason? } where each event is { at, source, event, confidence,
+        // tags[] }. Rejects on an empty case id. With `starAudit` present it
+        // instead records the star toggle into desktop.log and resolves null.
+        timeline: (
+          caseId: string,
+          starAudit?: { at: number; on: boolean; source?: string; tags?: readonly string[] }
+        ) => Promise<{
+          caseId: string
+          events: Array<{
+            at: number
+            source: 'file' | 'log' | 'pcap' | 'registry'
+            event: string
+            confidence: number
+            tags: string[]
+          }>
+          mockGenerated: boolean
+          mockReason?: string
+        } | null>
+      }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>
       saveConnectionConfig: (payload: DesktopConnectionConfigInput) => Promise<DesktopConnectionConfig>

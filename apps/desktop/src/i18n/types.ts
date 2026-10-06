@@ -412,6 +412,56 @@ export interface Translations {
     offlineHint: string
   }
 
+  // Case timeline page (step 16 · T13, 方案 §5-T13) — 预览 07 的取证时间线分析.
+  caseTimeline: {
+    /** Page-head title (the「· 时间线」suffix). */
+    title: string
+    back: string
+    statEvents: (count: number) => string
+    /** Mock-provenance banner: the dataset is NOT real extraction. */
+    mockBanner: string
+    saveAsFinding: string
+    exportCsv: string
+    addToReport: string
+    savedAsFinding: string
+    addedToReport: string
+    exportCsvFailed: string
+    /** Left rail headings. */
+    sourcesHeading: string
+    rangeHeading: string
+    confidenceHeading: string
+    tagsHeading: string
+    starredOnlyChip: string
+    confidenceFloor: (min: number) => string
+    /** Histogram. */
+    histogramTitle: string
+    histogramAggregate: string
+    histogramDrag: (from: string, to: string) => string
+    histogramEmpty: string
+    /** Event table. */
+    columnTime: string
+    columnSource: string
+    columnEvent: string
+    columnConfidence: string
+    columnTags: string
+    sourceRegistry: string
+    sourceLog: string
+    sourcePcap: string
+    sourceFile: string
+    /** Table footer (counts + the T16 seam note). */
+    footerTotal: (total: number) => string
+    footerFiltered: (filtered: number) => string
+    footerStarred: (starred: number) => string
+    footerStarSeam: string
+    /** States. */
+    loading: string
+    loadFailed: string
+    empty: string
+    emptyFiltered: string
+    /** Rows per source count in the rail. */
+    sourceCount: (count: number) => string
+  }
+
   home: {
     greeting: {
       morning: string
