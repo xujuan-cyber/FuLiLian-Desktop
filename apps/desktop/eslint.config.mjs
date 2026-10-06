@@ -87,5 +87,47 @@ export default [
         }
       ]
     }
+  },
+  {
+    // Icon single-source fence (step 16 · T17, 清单 B3): business icons come from
+    // @/lib/icons (Tabler). Third-party icon sets may not be newly imported —
+    // 渐进收敛，存量用到哪换到哪，不专项清零 (see overrides below).
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vscode/codicons',
+              message: '业务图标走 @/lib/icons（Tabler 出口）。titlebar Codicon 用 class 名，不 import 此包。'
+            },
+            {
+              name: '@icons-pack/react-simple-icons',
+              message: '业务图标走 @/lib/icons（Tabler 出口）；品牌 logo 场景需先申报豁免（见 eslint overrides 存量清单）。'
+            },
+            {
+              name: '@nous-research/ui',
+              message: '自研 ui/ 已覆盖；不新建引用（清单 B3 渐进收敛）。'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    // 存量豁免 (step 16 · T17, 清单 B3): 唯一 JS/TS 存量 = @icons-pack/react-simple-icons
+    // 的 3 个品牌 logo 文件（品牌 logo 无 Tabler 等价物，不进本轮渐进范围）。
+    // 迁移到哪一天清哪个文件，就从本清单删一行。
+    // @vscode/codicons 与 @nous-research/ui 的存量只在 src/styles.css 的 CSS @import/url()
+    // （ESLint 不解析 CSS）⇒ 组件层零存量，无需豁免。
+    files: [
+      'src/app/messaging/platform-icon.tsx',
+      'src/lib/brand-icon.ts',
+      'src/lib/mcp-brands.tsx'
+    ],
+    rules: {
+      'no-restricted-imports': 'off'
+    }
   }
 ]
