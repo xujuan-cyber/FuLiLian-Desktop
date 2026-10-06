@@ -523,6 +523,38 @@ export const ja = defineLocale({
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // レポートとエクスポートパイプライン（step 16 · T16、方案 §5-T16）。
+  reportCenter: {
+    title: 'レポートセンター',
+    back: '戻る',
+    open: 'レポートセンター',
+    caseLabel: 'ケース',
+    draftHeading: 'レポート草案',
+    draftHint:
+      '草案は実際のスター付き発見から組み立てられます——章テンプレートは fulilian_ctf/writeup.py に準拠し、パイプライン接続後の完全な writeup は Python sidecar が生成します。',
+    sectionsHeading: '章',
+    sectionSummary: '概要',
+    sectionTimeline: 'タイムライン',
+    sectionFindings: '主要な発見',
+    sectionArtifacts: '添付資料',
+    sectionFlags: 'Flag 結論',
+    sectionEmpty: 'この章にはまだデータがありません',
+    starredCount: count => `スター付き発見 ${count.toLocaleString()} 件`,
+    exportPdf: 'PDF をエクスポート',
+    exportCsv: 'CSV をエクスポート',
+    exportAuditJsonl: '監査 JSONL をエクスポート',
+    exportBusy: 'エクスポート中…',
+    exportPdfFailed: 'PDF のエクスポートに失敗しました',
+    exportCsvFailed: 'CSV のエクスポートに失敗しました',
+    exportAuditFailed: '監査 JSONL のエクスポートに失敗しました',
+    pdfSaved: 'レポート PDF を保存しました',
+    auditSaved: '監査 JSONL を保存しました',
+    addedToReport: 'レポート草案に追加しました',
+    generateSections: '草案を組み立てる',
+    sectionsGenerated: 'レポート草案を組み立てました',
+    emptyDraft: 'レポートデータがまだありません——タイムラインイベントにスターを付けて主要な発見の章に入力してください'
+  },
+
   // ケース一覧ページ（step 16 · T14、方案 §5-T14）。
   casesOverview: {
     title: 'ケース',

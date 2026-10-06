@@ -215,6 +215,19 @@ describe('CaseTimelineView (mounted)', () => {
 
     await waitFor(() => expect(screen.getByTestId('case-timeline-empty')).toBeTruthy())
   })
+
+  it('opens the report center from the page-head report button (T16 统一入口可达)', async () => {
+    stubBridge({ caseId: 'CASE-1', events: fixture(), mockGenerated: true })
+
+    mountTimeline('CASE-1')
+
+    await waitFor(() => expect(screen.getByTestId('case-timeline-table')).toBeTruthy())
+
+    fireEvent.click(screen.getByRole('button', { name: en.caseTimeline.addToReport }))
+
+    await waitFor(() => expect(screen.getByTestId('report-center-dialog')).toBeTruthy())
+    expect(screen.getByTestId('report-center-starred-count')).toBeTruthy()
+  })
 })
 
 // Dataset installed without the bridge stays queryable (store-level sanity).

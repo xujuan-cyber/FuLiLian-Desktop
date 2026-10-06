@@ -506,6 +506,38 @@ export const ar = defineLocale({
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // مسار التقارير والتصدير (step 16 · T16، الخطة §5-T16).
+  reportCenter: {
+    title: 'مركز التقارير',
+    back: 'رجوع',
+    open: 'مركز التقارير',
+    caseLabel: 'القضية',
+    draftHeading: 'مسودة التقرير',
+    draftHint:
+      'تُجمَّع المسودة من النتائج المميزة بنجمة الفعلية — قالب الأقسام يطابق fulilian_ctf/writeup.py، ويولّد الـ writeup الكامل عبر Python sidecar عند جهوزية المسار.',
+    sectionsHeading: 'الأقسام',
+    sectionSummary: 'الملخص',
+    sectionTimeline: 'الخط الزمني',
+    sectionFindings: 'النتائج الرئيسية',
+    sectionArtifacts: 'المرفقات',
+    sectionFlags: 'نتائج الـ Flag',
+    sectionEmpty: 'لا توجد بيانات في هذا القسم بعد',
+    starredCount: count => `${count.toLocaleString()} نتيجة مميزة بنجمة`,
+    exportPdf: 'تصدير PDF',
+    exportCsv: 'تصدير CSV',
+    exportAuditJsonl: 'تصدير تدقيق JSONL',
+    exportBusy: 'جارٍ التصدير…',
+    exportPdfFailed: 'فشل تصدير PDF',
+    exportCsvFailed: 'فشل تصدير CSV',
+    exportAuditFailed: 'فشل تصدير تدقيق JSONL',
+    pdfSaved: 'تم حفظ تقرير PDF',
+    auditSaved: 'تم حفظ تدقيق JSONL',
+    addedToReport: 'أُضيف إلى مسودة التقرير',
+    generateSections: 'تجميع المسودة',
+    sectionsGenerated: 'جُمعت مسودة التقرير',
+    emptyDraft: 'لا توجد بيانات تقرير بعد — میّز الأحداث بنجمة لتغذية قسم النتائج الرئيسية'
+  },
+
   // صفحة نظرة عامة على القضايا (step 16 · T14، الخطة §5-T14).
   casesOverview: {
     title: 'القضايا',

@@ -204,6 +204,8 @@ import { registerGitIpc } from './git-ipc'
 import { clearStaleGitLocks } from './gitlock'
 import { readAndConsumeHandoffResult } from './handoff-result'
 import { registerCaseTimelineIpc } from './case-timeline'
+// 报告与导出管线（step 16 · T16）— fulilian:report-export 单通道。
+import { registerReportExportIpc } from './report-export'
 import {
   ATTACHMENT_UPLOAD_DEFAULT_MAX_BYTES,
   clampDataUrlReadMaxMb,
@@ -16817,6 +16819,10 @@ registerWslCliIpc({ rememberLog })
 // 取证时间线桥接（step 16 · T13）：ctf:importEvent / forensics:timeline。
 // P2 管线未就绪 ⇒ mock 数据集（显式标注 mockGenerated，见 case-timeline.ts）。
 registerCaseTimelineIpc({ log: rememberLog })
+
+// 报告与导出管线（step 16 · T16）：fulilian:report-export 单通道——MD→PDF
+// （printToPDF 原生能力）/ 审计标记行 / 审计行聚合导出，见 report-export.ts。
+registerReportExportIpc({ auditLogPath: DESKTOP_LOG_PATH, downloadsPath: app.getPath('downloads'), log: rememberLog })
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession
 

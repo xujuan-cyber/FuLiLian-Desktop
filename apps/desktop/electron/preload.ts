@@ -185,6 +185,18 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
     importEvent: payload => ipcRenderer.invoke('ctf:importEvent', payload),
     timeline: (caseId, starAudit) => ipcRenderer.invoke('forensics:timeline', caseId, starAudit)
   },
+  // Report & export pipeline (step 16 · T16): ONE invoke channel — the
+  // renderer assembles the report markdown (section template aligned with
+  // fulilian_ctf/writeup.py) and asks main to print it to PDF via the native
+  // webContents.printToPDF; `audit` logs the structured desktop.log marker
+  // line (atoms + char count only, never the export content); `auditLines`
+  // returns the bounded audit-marker tail of desktop.log for the JSONL
+  // export. See electron/report-export.ts.
+  reportExport: {
+    pdf: payload => ipcRenderer.invoke('fulilian:report-export', { ...payload, kind: 'pdf' }),
+    audit: payload => ipcRenderer.invoke('fulilian:report-export', { ...payload, kind: 'audit' }),
+    auditLines: () => ipcRenderer.invoke('fulilian:report-export', { kind: 'audit-lines' })
+  },
   getBootProgress: () => ipcRenderer.invoke('fulilian:boot-progress:get'),
   getConnectionConfig: profile => ipcRenderer.invoke('fulilian:connection-config:get', profile),
   saveConnectionConfig: payload => ipcRenderer.invoke('fulilian:connection-config:save', payload),

@@ -13,9 +13,10 @@
 // + store starredEvents() 数据接缝）。
 
 import { useStore } from '@nanostores/react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
+import { ReportCenterDialog } from '@/app/report-center'
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -151,6 +152,8 @@ export function CaseTimelineView({ caseId: caseIdProp }: { caseId?: string } = {
     }
   }, [caseId])
 
+  const [reportOpen, setReportOpen] = useState(false)
+
   const exportCsv = useCallback(() => {
     runTimelineCsvExport(caseId, filtered, a).catch(error => notifyError(error, a.exportCsvFailed))
   }, [a, caseId, filtered])
@@ -205,17 +208,14 @@ export function CaseTimelineView({ caseId: caseIdProp }: { caseId?: string } = {
             <Download />
             {a.exportCsv}
           </Button>
-          <Button
-            onClick={() => {
-              notify({ kind: 'success', title: a.addedToReport, message: a.footerStarSeam })
-            }}
-            size="sm"
-          >
+          <Button onClick={() => setReportOpen(true)} size="sm">
             <FileText />
             {a.addToReport}
           </Button>
         </div>
       </header>
+
+      <ReportCenterDialog onOpenChange={setReportOpen} open={reportOpen} />
 
       {mockGenerated && (
         <div

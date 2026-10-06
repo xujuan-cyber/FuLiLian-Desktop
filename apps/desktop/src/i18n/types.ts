@@ -481,6 +481,40 @@ export interface Translations {
     sourceCount: (count: number) => string
   }
 
+  // Report & export pipeline (step 16 · T16, 方案 §5-T16) — the unified
+  // export entry (MD→PDF / CSV / audit JSONL) + section template UI.
+  reportCenter: {
+    title: string
+    back: string
+    open: string
+    caseLabel: string
+    draftHeading: string
+    /** Honest provenance note: real starred findings only; the complete
+     *  writeup stays with the Python sidecar (writeup.py seam). */
+    draftHint: string
+    sectionsHeading: string
+    sectionSummary: string
+    sectionTimeline: string
+    sectionFindings: string
+    sectionArtifacts: string
+    sectionFlags: string
+    sectionEmpty: string
+    starredCount: (count: number) => string
+    exportPdf: string
+    exportCsv: string
+    exportAuditJsonl: string
+    exportBusy: string
+    exportPdfFailed: string
+    exportCsvFailed: string
+    exportAuditFailed: string
+    pdfSaved: string
+    auditSaved: string
+    addedToReport: string
+    generateSections: string
+    sectionsGenerated: string
+    emptyDraft: string
+  }
+
   // Cases overview page (step 16 · T14, 方案 §5-T14) — the /cases card grid.
   casesOverview: {
     /** Page-head title + subtitle. */

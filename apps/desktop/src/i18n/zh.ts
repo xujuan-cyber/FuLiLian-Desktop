@@ -517,6 +517,38 @@ export const zh: Translations = {
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // 报告与导出管线（step 16 · T16，方案 §5-T16）。
+  reportCenter: {
+    title: '报告中心',
+    back: '返回',
+    open: '报告中心',
+    caseLabel: '案件',
+    draftHeading: '报告草稿',
+    draftHint:
+      '草稿由真实星标发现汇成——章节模板对齐 fulilian_ctf/writeup.py，管线就绪后完整 writeup 由 Python sidecar 生成。',
+    sectionsHeading: '章节',
+    sectionSummary: '概述',
+    sectionTimeline: '时间线',
+    sectionFindings: '关键发现',
+    sectionArtifacts: '附件物证',
+    sectionFlags: 'Flag 结论',
+    sectionEmpty: '本节暂无数据',
+    starredCount: count => `${count.toLocaleString()} 条星标发现`,
+    exportPdf: '导出 PDF',
+    exportCsv: '导出 CSV',
+    exportAuditJsonl: '导出审计 JSONL',
+    exportBusy: '导出中…',
+    exportPdfFailed: 'PDF 导出失败',
+    exportCsvFailed: 'CSV 导出失败',
+    exportAuditFailed: '审计 JSONL 导出失败',
+    pdfSaved: '报告 PDF 已保存',
+    auditSaved: '审计 JSONL 已保存',
+    addedToReport: '已加入报告草稿',
+    generateSections: '汇成草稿',
+    sectionsGenerated: '报告草稿已汇成',
+    emptyDraft: '暂无报告数据——星标时间线事件以填充关键发现章节'
+  },
+
   // 案件总览页（step 16 · T14，方案 §5-T14）。
   casesOverview: {
     title: '案件',

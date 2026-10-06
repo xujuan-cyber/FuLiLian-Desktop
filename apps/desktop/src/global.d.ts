@@ -178,6 +178,22 @@ declare global {
           mockReason?: string
         } | null>
       }
+      // Report & export pipeline (step 16 · T16). One channel, three verbs:
+      // `pdf` prints the renderer-assembled report markdown through the
+      // native webContents.printToPDF (save dialog defaults to Downloads);
+      // `audit` records ONE structured `[report-export:audit]` desktop.log
+      // line per export/section action (atoms + char count only — never the
+      // export content); `auditLines` returns the bounded audit-marker tail
+      // of desktop.log for the JSONL audit export.
+      reportExport?: {
+        pdf: (payload: { caseId: string; markdown: string; title?: string }) => Promise<{
+          canceled?: boolean
+          ok?: boolean
+          path?: string
+        }>
+        audit: (payload: { action: string; caseId: string; chars?: number; outcome: string }) => Promise<null>
+        auditLines: () => Promise<{ lines: string[] }>
+      }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>
       saveConnectionConfig: (payload: DesktopConnectionConfigInput) => Promise<DesktopConnectionConfig>

@@ -514,6 +514,38 @@ export const zhHant = defineLocale({
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // 報告與匯出管線（step 16 · T16，方案 §5-T16）。
+  reportCenter: {
+    title: '報告中心',
+    back: '返回',
+    open: '報告中心',
+    caseLabel: '案件',
+    draftHeading: '報告草稿',
+    draftHint:
+      '草稿由真實星標發現彙成——章節模板對齊 fulilian_ctf/writeup.py，管線就緒後完整 writeup 由 Python sidecar 生成。',
+    sectionsHeading: '章節',
+    sectionSummary: '概述',
+    sectionTimeline: '時間線',
+    sectionFindings: '關鍵發現',
+    sectionArtifacts: '附件物證',
+    sectionFlags: 'Flag 結論',
+    sectionEmpty: '本節暫無資料',
+    starredCount: count => `${count.toLocaleString()} 條星標發現`,
+    exportPdf: '匯出 PDF',
+    exportCsv: '匯出 CSV',
+    exportAuditJsonl: '匯出稽核 JSONL',
+    exportBusy: '匯出中…',
+    exportPdfFailed: 'PDF 匯出失敗',
+    exportCsvFailed: 'CSV 匯出失敗',
+    exportAuditFailed: '稽核 JSONL 匯出失敗',
+    pdfSaved: '報告 PDF 已儲存',
+    auditSaved: '稽核 JSONL 已儲存',
+    addedToReport: '已加入報告草稿',
+    generateSections: '彙成草稿',
+    sectionsGenerated: '報告草稿已彙成',
+    emptyDraft: '暫無報告資料——星標時間線事件以填補關鍵發現章節'
+  },
+
   // 案件總覽頁（step 16 · T14，方案 §5-T14）。
   casesOverview: {
     title: '案件',
