@@ -505,6 +505,25 @@ export const zh: Translations = {
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // 案件总览页（step 16 · T14，方案 §5-T14）。
+  casesOverview: {
+    title: '案件',
+    subtitle: '按真实会话聚合的工作容器',
+    filterActive: '进行中',
+    filterArchived: '已归档',
+    cardSessions: '个会话',
+    cardEvidence: '证据数',
+    cardAudit: '留痕数',
+    cardReport: '报告状态',
+    cardLastActive: '最近活动',
+    noContainer: '无容器',
+    untitledCase: '未命名工作',
+    empty: '还没有案件',
+    emptyDesc: '出现真实会话工作后，容器会显示在这里。',
+    emptyArchived: '没有已归档案件',
+    emptyArchivedDesc: '该组暂无匹配——已归档容器会落在这里。'
+  },
+
   home: {
     greeting: {
       morning: '早上好',

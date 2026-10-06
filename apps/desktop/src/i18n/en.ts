@@ -513,6 +513,25 @@ export const en: Translations = {
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // Cases overview page (step 16 · T14, 方案 §5-T14).
+  casesOverview: {
+    title: 'Cases',
+    subtitle: 'Work containers aggregated from real sessions',
+    filterActive: 'Active',
+    filterArchived: 'Archived',
+    cardSessions: 'sessions',
+    cardEvidence: 'Evidence',
+    cardAudit: 'Audit trail',
+    cardReport: 'Report',
+    cardLastActive: 'Last activity',
+    noContainer: 'No container',
+    untitledCase: 'Untitled work',
+    empty: 'No cases yet',
+    emptyDesc: 'Containers appear here as soon as real session work exists.',
+    emptyArchived: 'No archived cases',
+    emptyArchivedDesc: 'Nothing in this group matches — archived containers land here.'
+  },
+
   home: {
     greeting: {
       morning: 'Good morning',

@@ -18,12 +18,20 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
+// Cases overview (step 16 · T14, 方案 §5-T14): the `/cases` two-segment
+// reservation T13's classifier left open is now claimed. A full workspace
+// page (like skills/messaging), NOT an overlay. The three-segment
+// `/cases/<caseId>/timeline` shape below stays the timeline page's — the
+// overview's exact-path entry in APP_ROUTES can never shadow it, because
+// APP_VIEW_BY_PATH matches full paths only and a session literally named
+// `cases` can't collide with a reserved path.
+export const CASES_ROUTE = '/cases'
 // Case timeline (step 16 · T13, 方案 §5-T13): the canonical plan's second new
 // route. Shape `/cases/<caseId>/timeline`; the caseId segment is real data —
 // the id of the case the page is opened for. A full workspace page (like
-// skills/messaging), NOT an overlay. Single-segment `/cases` and other
-// `/cases/...` shapes stay OUT of this classifier: they are not this page
-// (`/cases` 总览是 T14 的路由，本轮不注册、不抢占).
+// skills/messaging), NOT an overlay. Other `/cases/...` shapes (one segment,
+// wrong suffix, extra segments) stay OUT of both classifiers: they are not
+// either page.
 export const CASE_TIMELINE_PREFIX = '/cases/'
 export const CASE_TIMELINE_SUFFIX = '/timeline'
 
@@ -32,6 +40,8 @@ export type AppView =
   | 'artifacts'
   // Case timeline page (T13) — a workspace page, not an overlay and not chat.
   | 'case-timeline'
+  // Cases overview page (T14) — same shape: a workspace page.
+  | 'cases'
   | 'chat'
   | 'command-center'
   | 'cron'
@@ -50,6 +60,7 @@ export type AppView =
 export type AppRouteId =
   | 'agents'
   | 'artifacts'
+  | 'cases'
   | 'command-center'
   | 'cron'
   | 'messaging'
@@ -72,6 +83,7 @@ export const APP_ROUTES = [
   { id: 'command-center', path: COMMAND_CENTER_ROUTE, view: 'command-center' },
   { id: 'skills', path: SKILLS_ROUTE, view: 'skills' },
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
+  { id: 'cases', path: CASES_ROUTE, view: 'cases' },
   { id: 'webhooks', path: WEBHOOKS_ROUTE, view: 'webhooks' },
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
@@ -184,7 +196,8 @@ export function caseTimelineRoute(caseId: string): string {
 /** Extract the case id when `pathname` IS a case-timeline route, else null.
  *  Strictly shaped: exactly three segments, the last one `timeline`, and a
  *  non-empty decoded id — so `/cases`, `/cases/x`, and
- *  `/cases/x/other/timeline` never classify as this page (T14 keeps `/cases`). */
+ *  `/cases/x/other/timeline` never classify as this page (`/cases` itself is
+ *  the T14 overview's reserved APP_ROUTES path). */
 export function caseTimelineCaseId(pathname: string): null | string {
   const path = routePathname(pathname)
 

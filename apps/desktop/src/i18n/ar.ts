@@ -494,6 +494,25 @@ export const ar = defineLocale({
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // صفحة نظرة عامة على القضايا (step 16 · T14، الخطة §5-T14).
+  casesOverview: {
+    title: 'القضايا',
+    subtitle: 'حاويات عمل مجمّعة من جلسات حقيقية',
+    filterActive: 'قيد التنفيذ',
+    filterArchived: 'مؤرشفة',
+    cardSessions: 'جلسات',
+    cardEvidence: 'الأدلة',
+    cardAudit: 'سجل التدقيق',
+    cardReport: 'حالة التقرير',
+    cardLastActive: 'آخر نشاط',
+    noContainer: 'بلا حاوية',
+    untitledCase: 'عمل بدون عنوان',
+    empty: 'لا توجد قضايا بعد',
+    emptyDesc: 'تظهر الحاويات هنا فور وجود عمل جلسات حقيقي.',
+    emptyArchived: 'لا قضايا مؤرشفة',
+    emptyArchivedDesc: 'لا شيء يطابق هذه المجموعة — الحاويات المؤرشفة تظهر هنا.'
+  },
+
   home: {
     greeting: {
       morning: 'صباح الخير',

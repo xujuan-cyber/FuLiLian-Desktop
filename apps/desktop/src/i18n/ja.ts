@@ -511,6 +511,25 @@ export const ja = defineLocale({
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // ケース一覧ページ（step 16 · T14、方案 §5-T14）。
+  casesOverview: {
+    title: 'ケース',
+    subtitle: '実セッションから集約した作業コンテナ',
+    filterActive: '進行中',
+    filterArchived: 'アーカイブ済み',
+    cardSessions: 'セッション',
+    cardEvidence: '証拠数',
+    cardAudit: '記録数',
+    cardReport: 'レポート状態',
+    cardLastActive: '最終アクティビティ',
+    noContainer: 'コンテナなし',
+    untitledCase: '無題の作業',
+    empty: 'ケースはまだありません',
+    emptyDesc: '実セッションの作業ができ次第、コンテナがここに表示されます。',
+    emptyArchived: 'アーカイブ済みのケースはありません',
+    emptyArchivedDesc: 'このグループに一致するものはありません——アーカイブ済みコンテナはここに表示されます。'
+  },
+
   home: {
     greeting: {
       morning: 'おはようございます',

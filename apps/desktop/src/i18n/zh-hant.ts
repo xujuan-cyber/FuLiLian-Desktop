@@ -502,6 +502,25 @@ export const zhHant = defineLocale({
     sourceCount: count => `${count.toLocaleString()}`
   },
 
+  // 案件總覽頁（step 16 · T14，方案 §5-T14）。
+  casesOverview: {
+    title: '案件',
+    subtitle: '按真實會話聚合的工作容器',
+    filterActive: '進行中',
+    filterArchived: '已歸檔',
+    cardSessions: '個會話',
+    cardEvidence: '證據數',
+    cardAudit: '留痕數',
+    cardReport: '報告狀態',
+    cardLastActive: '最近活動',
+    noContainer: '無容器',
+    untitledCase: '未命名工作',
+    empty: '還沒有案件',
+    emptyDesc: '出現真實會話工作後，容器會顯示在這裡。',
+    emptyArchived: '沒有已歸檔案件',
+    emptyArchivedDesc: '該組暫無符合——已歸檔容器會落在這裡。'
+  },
+
   home: {
     greeting: {
       morning: '早安',

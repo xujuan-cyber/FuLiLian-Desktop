@@ -39,6 +39,8 @@ const MessagingView = lazy(async () => ({ default: (await import('../messaging')
 const SkillsView = lazy(async () => ({ default: (await import('../skills')).SkillsView }))
 // Case timeline (step 16 · T13, 方案 §5-T13) — /cases/:caseId/timeline.
 const CaseTimelineView = lazy(async () => ({ default: (await import('../case-timeline')).CaseTimelineView }))
+// Cases overview (step 16 · T14) — /cases.
+const CasesOverviewView = lazy(async () => ({ default: (await import('../cases')).CasesOverviewView }))
 
 export function LegacySessionRedirect() {
   const { sessionId } = useParams()
@@ -168,6 +170,7 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
       <Route element={page(<CaseTimelineView />)} path="cases/:caseId/timeline" />
+      <Route element={page(<CasesOverviewView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="cases" />
       <Route element={null} path="agents" />
       <Route element={null} path="command-center" />
       <Route element={null} path="cron" />

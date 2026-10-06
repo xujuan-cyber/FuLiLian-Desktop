@@ -136,12 +136,18 @@ describe('buildPageZoneGroups (T8 页面区)', () => {
     expect(ids).toContain('nav-command-center')
   })
 
-  it('lands the /cases overview as a DISABLED 「即将可用」 placeholder — never a dead link (T8-4)', () => {
+  it('lands the /cases overview as a REAL link since T14 — navigates to the registered route', () => {
     const cases = group!.items.find(item => item.id === 'nav-cases')!
 
-    expect(cases.disabled).toBe(true)
-    expect(cases.detail).toBe(cc.comingSoon)
-    expect(cases.run).toBeUndefined()
+    // T14 promoted the T8-4 disabled placeholder: the row now carries the
+    // registered /cases route as its run action — never a dead link, in
+    // either direction (disabled placeholder OR unregistered route).
+    expect(cases.disabled).toBeUndefined()
+    expect(cases.detail).toBeUndefined()
+    expect(cases.run).toBeTypeOf('function')
+    cases.run!()
+
+    expect(go).toHaveBeenCalledWith('/cases')
     expect(cases.to).toBeUndefined()
   })
 

@@ -101,6 +101,7 @@ import { openSession, openSessionIntentFromModifiers } from '../open-session'
 import {
   AGENTS_ROUTE,
   ARTIFACTS_ROUTE,
+  CASES_ROUTE,
   COMMAND_CENTER_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
@@ -141,7 +142,8 @@ export interface PaletteItem {
   /** `state` when the row will change what `detail` says (a toggle's on/off). */
   detailVariant?: keyof typeof HUD_NOTE_VARIANT
   /** Non-interactive row: arrows skip it and select does nothing. The honest
-   *  "coming soon" affordance (the /cases placeholder until T14 lands). */
+   *  "coming soon" affordance (no current user — the /cases placeholder it
+   *  once hosted is a real link since T14). */
   disabled?: boolean
   icon: IconComponent
   id: string
@@ -595,9 +597,10 @@ export function buildRecentSessionGroups({
 
 /**
  * 页面 zone: the fixed route entries — every APP_ROUTES destination plus the
- * command-center panel — with the /cases overview as a DISABLED 「即将可用」
- * placeholder (T14 produces the route; a dead link is not an option, 方案
- * T8-4). Rows marked `to` open a nested palette page instead of navigating.
+ * command-center panel — with the /cases overview as a real navigation row
+ * since T14 (before that it rendered as a DISABLED 「即将可用」 placeholder,
+ * 方案 T8-4). Rows marked `to` open a nested palette page instead of
+ * navigating.
  */
 export function buildPageZoneGroups({
   canOpenNewWindowFlag,
@@ -704,15 +707,15 @@ export function buildPageZoneGroups({
           run: go(COMMAND_CENTER_ROUTE)
         },
         {
-          // T8-4 honest placeholder: /cases is T14's route — the row renders
-          // disabled (arrows skip it, select does nothing), so it can never
-          // navigate into a dead link.
-          detail: cc.comingSoon,
-          disabled: true,
+          // T14: /cases is a real workspace page now — the T8-4 honest
+          // placeholder becomes a plain navigation row (a dead link is still
+          // not an option; the route is registered in APP_ROUTES).
+          action: 'nav.cases',
           icon: FileText,
           id: 'nav-cases',
           keywords: ['cases', 'overview', '案件'],
-          label: cc.casesOverview
+          label: cc.casesOverview,
+          run: go(CASES_ROUTE)
         }
       ]
     }

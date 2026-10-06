@@ -462,6 +462,30 @@ export interface Translations {
     sourceCount: (count: number) => string
   }
 
+  // Cases overview page (step 16 · T14, 方案 §5-T14) — the /cases card grid.
+  casesOverview: {
+    /** Page-head title + subtitle. */
+    title: string
+    subtitle: string
+    /** The two-group status filter (进行中/已归档). */
+    filterActive: string
+    filterArchived: string
+    /** Card lines. Counts without a data layer render 「—」 (honest empty). */
+    cardSessions: string
+    cardEvidence: string
+    cardAudit: string
+    cardReport: string
+    cardLastActive: string
+    /** Fallbacks for unnamed containers. */
+    noContainer: string
+    untitledCase: string
+    /** States: no cases at all / the group matches nothing. */
+    empty: string
+    emptyDesc: string
+    emptyArchived: string
+    emptyArchivedDesc: string
+  }
+
   home: {
     greeting: {
       morning: string
