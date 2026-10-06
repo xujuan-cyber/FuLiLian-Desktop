@@ -303,6 +303,24 @@ export const ja = defineLocale({
     }
   },
 
+  modeOnboarding: {
+    forensicsTitle: 'フォレンジックモード——認可とガードレール',
+    forensicsIntro: 'フォレンジック案件を開く前に、証拠の扱い方を確認してください。この案内は一度だけ表示されます。',
+    scopeHeading: '認可範囲',
+    scopeStatement: '私は本案の証拠を検査する権限を有しており、付与された範囲内でのみ作業することを確認します。',
+    guardHeading: '読み取り専用ガードレール',
+    guardReadonly: '証拠ディレクトリは読み取り専用でマウントされます。書き込みには承認・再検証・監査記録が必要です。',
+    guardWrite: '高リスクコマンド（rm -rf、dd、mkfs、shred など）は常に二段階確認を要します。',
+    guardHash: '証拠は取り込み時にハッシュ（SHA256）を計算し、引用前に再検証します。',
+    ctfTitle: 'CTF モード——flag 保管庫と監査',
+    ctfIntro: 'CTF コンテナでの flag の保存と追跡方法を確認してください。この案内は一度だけ表示されます。',
+    vaultHeading: 'flag 保管庫',
+    vaultMask: 'flag は既定でマスクされ、必要に応じて表示できます。',
+    vaultAudit: '表示・非表示のたびに、提出のたびに監査ログへ記録されます。',
+    confirm: '確認して続行',
+    confirmHint: '続行するには認可声明にチェックを入れてください。'
+  },
+
   // ステップ 16 · T9: 4グループレイアウト（方案 §3-T9）— 設定ページと
   // ? チートシートが store/keybinds-registry.ts 経由で共通参照する。
   keybinds: {
@@ -2801,6 +2819,24 @@ export const ja = defineLocale({
       failedLoad: 'ブレーンプリントの読み込みに失敗しました',
       emptyTitle: '利用できるブレーンプリントはありません',
       emptyDesc: 'このバックエンドで利用できる自動化ブレーンプリントはありません。'
+    },
+    templateSlots: {
+      heading: 'クイックテンプレート',
+      forensicsTitle: 'フォレンジック案件テンプレート',
+      ctfTitle: 'CTF イベント取り込みテンプレート'
+    },
+    ctfImport: {
+      title: 'CTF イベント取り込み（テンプレート枠）',
+      desc: 'CTF イベント取り込みブリッジへのフロントエンドのショートカットです。P2 同期パイプラインは未整備のため、ここで返るのはサンプル（mock）イベントです——実際の CTFd 同期ではなく、バックエンドには何も登録しません。',
+      caseIdLabel: '案件 ID',
+      challengeLabel: '問題名',
+      urlLabel: '問題 URL（任意）',
+      submit: 'サンプルイベントを生成',
+      submitting: '生成中…',
+      requires: '案件 ID と問題名は必須です。',
+      resultMock: (count: number) => `サンプル（mock）イベントを ${count} 件生成しました——P2 パイプラインは未整備です。`,
+      failed: '取り込みに失敗しました。',
+      unavailable: 'このウィンドウではデスクトップブリッジを利用できません。'
     }
   },
 

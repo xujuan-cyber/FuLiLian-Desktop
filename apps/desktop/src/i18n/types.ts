@@ -384,6 +384,26 @@ export interface Translations {
     }
   }
 
+  // Three-mode first-use guide (step 16 · T18-1, 方案 §5-T18 /
+  // DESIGN_PROPOSAL §4.4). `project` never guides; forensics / ctf show once.
+  modeOnboarding: {
+    forensicsTitle: string
+    forensicsIntro: string
+    scopeHeading: string
+    scopeStatement: string
+    guardHeading: string
+    guardReadonly: string
+    guardWrite: string
+    guardHash: string
+    ctfTitle: string
+    ctfIntro: string
+    vaultHeading: string
+    vaultMask: string
+    vaultAudit: string
+    confirm: string
+    confirmHint: string
+  }
+
   // System tray (step 16 · T6). The renderer resolves these and pushes them
   // with each snapshot — the main process has no i18n runtime of its own.
   tray: {
@@ -2189,6 +2209,29 @@ export interface Translations {
       failedLoad: string
       emptyTitle: string
       emptyDesc: string
+    }
+    // Step 16 · T18-2: front-end-only "quick template slots" shown in the
+    // blueprints gallery. NOT backend automation blueprints — deliberately never
+    // routed through instantiateAutomationBlueprint.
+    templateSlots: {
+      heading: string
+      forensicsTitle: string
+      ctfTitle: string
+    }
+    // Step 16 · T18-2: the CTF template slot's import dialog (honest mock
+    // labelling — the P2 CTFd pipeline is not ready).
+    ctfImport: {
+      title: string
+      desc: string
+      caseIdLabel: string
+      challengeLabel: string
+      urlLabel: string
+      submit: string
+      submitting: string
+      requires: string
+      resultMock: (count: number) => string
+      failed: string
+      unavailable: string
     }
   }
 

@@ -439,6 +439,24 @@ export const zh: Translations = {
     }
   },
 
+  modeOnboarding: {
+    forensicsTitle: '取证模式——授权与护栏',
+    forensicsIntro: '在开立取证案件前，请了解证据的处理方式。本引导仅展示一次。',
+    scopeHeading: '授权范围',
+    scopeStatement: '我确认已获得对该案证据的实施授权，并将仅在我获授权范围内开展操作。',
+    guardHeading: '只读护栏',
+    guardReadonly: '证据目录以只读方式挂载；任何写入均需审批、复验与留痕。',
+    guardWrite: '高风险命令（rm -rf、dd、mkfs、shred 等）始终需要二次确认。',
+    guardHash: '证据在导入即计算哈希（SHA256），并在引用前复验。',
+    ctfTitle: 'CTF 模式——flag 保管库与审计',
+    ctfIntro: '了解 CTF 容器中 flag 的存储与追踪方式。本引导仅展示一次。',
+    vaultHeading: 'flag 保管库',
+    vaultMask: 'flag 默认打码，可按需显隐。',
+    vaultAudit: '每次显隐与每次提交都会记入审计日志。',
+    confirm: '确认并继续',
+    confirmHint: '请先勾选授权声明再继续。'
+  },
+
   tray: {
     newForensics: '新建取证案件',
     newCtf: '新建 CTF 赛题',
@@ -2724,6 +2742,24 @@ export const zh: Translations = {
       failedLoad: '加载蓝图失败',
       emptyTitle: '没有可用的蓝图',
       emptyDesc: '此后端上没有可用的自动化蓝图。'
+    },
+    templateSlots: {
+      heading: '快捷模板位',
+      forensicsTitle: '取证案件模板位',
+      ctfTitle: 'CTF 赛事导入模板位'
+    },
+    ctfImport: {
+      title: 'CTF 赛事导入（模板位）',
+      desc: '对接 CTF 赛事导入桥接的前端快捷入口。P2 同步管线尚未就绪，这里返回的是示例（mock）事件——并非真实 CTFd 同步，也不会在后端注册任何内容。',
+      caseIdLabel: '案号',
+      challengeLabel: '赛题名',
+      urlLabel: '赛题 URL（可选）',
+      submit: '生成示例事件',
+      submitting: '生成中…',
+      requires: '案号与赛题名为必填。',
+      resultMock: (count: number) => `已生成 ${count} 条示例（mock）事件——P2 管线尚未就绪。`,
+      failed: '导入失败。',
+      unavailable: '当前窗口不可用桌面桥接。'
     }
   },
 

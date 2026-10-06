@@ -3,6 +3,7 @@ import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import type * as React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
@@ -71,6 +72,7 @@ import {
   type PanelPillTone,
   PanelSectionLabel
 } from '../overlays/panel'
+import { CASES_ROUTE, navigateToWorkspacePage } from '../routes'
 import type { SetStatusbarItemGroup } from '../shell/statusbar-controls'
 
 import { BlueprintSlotControl, blueprintSlotHelp, cleanBlueprintFieldError, initialBlueprintValues } from './blueprints'
@@ -344,6 +346,12 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
 
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' })
   const [pendingDelete, setPendingDelete] = useState<CronJob | null>(null)
+  // T18-2: the CTF template slot opens this front-end import dialog (see
+  // CtfTemplateImportDialog) — deliberately NOT the blueprint instantiation path.
+  const [ctfImportOpen, setCtfImportOpen] = useState(false)
+  // T18-2: the forensics template slot jumps to the cases overview (T14). The
+  // cron overlay is route-hosted, so navigating away closes it.
+  const navigate = useNavigate()
 
   // Jobs live per-profile on disk and the list endpoint aggregates 'all' by
   // default — scope the fetch to the sidebar's profile scope so this overlay
@@ -694,6 +702,24 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
                 ))}
               </>
             )}
+            {/* T18-2 诚实落地：取证/CTF 模板位是前端本地定义的「快捷模板位」，
+                不是后端 automation blueprint——绝不落入 instantiateAutomationBlueprint
+                （后端无对应 key ⇒ 会死链/假成功）。标题亦明示「模板位」语义。 */}
+            <PanelSectionLabel className="mt-3 px-2">{c.templateSlots.heading}</PanelSectionLabel>
+            <PanelListRow
+              active={false}
+              icon="folder"
+              onSelect={() => navigateToWorkspacePage(navigate, CASES_ROUTE)}
+              rowKey="template-slot-forensics"
+              title={c.templateSlots.forensicsTitle}
+            />
+            <PanelListRow
+              active={false}
+              icon="bug"
+              onSelect={() => setCtfImportOpen(true)}
+              rowKey="template-slot-ctf"
+              title={c.templateSlots.ctfTitle}
+            />
           </PanelList>
 
           {selectedJob ? (
@@ -745,7 +771,125 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
         open={pendingDelete !== null}
         title={c.deleteTitle}
       />
+
+      <CtfTemplateImportDialog onClose={() => setCtfImportOpen(false)} open={ctfImportOpen} />
     </Panel>
+  )
+}
+
+// T18-2 诚实落地：CTF 模板位对接 T13 桥接 `caseTimeline.importEvent` 的赛事导入。
+// P2 管线未就绪时该桥接返回 mock 事件——文案如实标注「示例（mock）」，不冒充真实
+// 导入，也绝不落入后端 blueprint 实例化（那是另一条会真实创建 cron job 的链路）。
+function CtfTemplateImportDialog({ onClose, open }: { onClose: () => void; open: boolean }) {
+  const { t } = useI18n()
+  const c = t.cron.ctfImport
+  const [caseId, setCaseId] = useState('')
+  const [challenge, setChallenge] = useState('')
+  const [url, setUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<null | string>(null)
+  const [result, setResult] = useState<null | number>(null)
+
+  // Reset each open so a prior attempt's inputs / inline state never leak in.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    setCaseId('')
+    setChallenge('')
+    setUrl('')
+    setBusy(false)
+    setError(null)
+    setResult(null)
+  }, [open])
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+
+    const trimmedCase = caseId.trim()
+    const trimmedChallenge = challenge.trim()
+
+    if (!trimmedCase || !trimmedChallenge) {
+      setError(c.requires)
+
+      return
+    }
+
+    const bridge = window.fulilianDesktop?.caseTimeline
+
+    if (!bridge?.importEvent) {
+      setError(c.unavailable)
+
+      return
+    }
+
+    setBusy(true)
+    setError(null)
+
+    try {
+      const trimmedUrl = url.trim()
+
+      const events = await bridge.importEvent({
+        caseId: trimmedCase,
+        challenge: trimmedChallenge,
+        ...(trimmedUrl ? { url: trimmedUrl } : {})
+      })
+
+      setResult(events.length)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : c.failed)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={value => !value && !busy && onClose()} open={open}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{c.title}</DialogTitle>
+          <DialogDescription>{c.desc}</DialogDescription>
+        </DialogHeader>
+
+        <form className="grid gap-4" onSubmit={handleSubmit}>
+          <Field htmlFor="ctf-template-case" label={c.caseIdLabel}>
+            <Input id="ctf-template-case" onChange={event => setCaseId(event.target.value)} value={caseId} />
+          </Field>
+
+          <Field htmlFor="ctf-template-challenge" label={c.challengeLabel}>
+            <Input id="ctf-template-challenge" onChange={event => setChallenge(event.target.value)} value={challenge} />
+          </Field>
+
+          <Field htmlFor="ctf-template-url" label={c.urlLabel}>
+            <Input id="ctf-template-url" onChange={event => setUrl(event.target.value)} value={url} />
+          </Field>
+
+          {result !== null && (
+            <div className="flex items-start gap-2 rounded-md bg-info/10 px-3 py-2 text-xs text-info">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{c.resultMock(result)}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button disabled={busy} onClick={onClose} type="button" variant="outline">
+              {t.common.cancel}
+            </Button>
+            <Button disabled={busy} type="submit">
+              {busy ? c.submitting : c.submit}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 

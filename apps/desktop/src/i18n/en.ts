@@ -447,6 +447,26 @@ export const en: Translations = {
     }
   },
 
+  modeOnboarding: {
+    forensicsTitle: 'Forensics mode — authorization & guardrails',
+    forensicsIntro: 'Before you open a forensics case, review how evidence is handled. This briefing shows once.',
+    scopeHeading: 'Authorization scope',
+    scopeStatement:
+      'I confirm I am authorized to examine the evidence in this case, and that I will work only within the scope I have been granted.',
+    guardHeading: 'Read-only guardrails',
+    guardReadonly:
+      'Evidence directories are mounted read-only; any write needs approval, re-verification and an audit record.',
+    guardWrite: 'High-risk commands (rm -rf, dd, mkfs, shred, …) always require a second confirmation.',
+    guardHash: 'Evidence is hashed (SHA256) on import and re-verified before it is cited.',
+    ctfTitle: 'CTF mode — flag vault & audit',
+    ctfIntro: 'How flags are stored and tracked in CTF containers. This briefing shows once.',
+    vaultHeading: 'Flag vault',
+    vaultMask: 'Flags are masked by default and can be revealed on demand.',
+    vaultAudit: 'Every reveal and every submission is written to the audit log.',
+    confirm: 'Confirm and continue',
+    confirmHint: 'Tick the authorization statement to continue.'
+  },
+
   tray: {
     newForensics: 'New forensics case',
     newCtf: 'New CTF challenge',
@@ -2559,6 +2579,25 @@ export const en: Translations = {
       failedLoad: 'Failed to load blueprints',
       emptyTitle: 'No blueprints available',
       emptyDesc: 'No automation blueprints are available on this backend.'
+    },
+    // T18-2: front-end quick entries, NOT backend automation blueprints.
+    templateSlots: {
+      heading: 'Quick templates',
+      forensicsTitle: 'Forensics case template',
+      ctfTitle: 'CTF event import template'
+    },
+    ctfImport: {
+      title: 'CTF event import (template slot)',
+      desc: 'A front-end shortcut onto the CTF event import bridge. The P2 sync pipeline is not ready, so this returns example (mock) events — it is NOT a real CTFd sync and registers nothing on the backend.',
+      caseIdLabel: 'Case id',
+      challengeLabel: 'Challenge title',
+      urlLabel: 'Challenge URL (optional)',
+      submit: 'Generate example events',
+      submitting: 'Generating…',
+      requires: 'Case id and challenge title are required.',
+      resultMock: (count: number) => `Generated ${count} example (mock) events — the P2 pipeline is not ready yet.`,
+      failed: 'Import failed.',
+      unavailable: 'The desktop bridge is unavailable in this window.'
     }
   },
 

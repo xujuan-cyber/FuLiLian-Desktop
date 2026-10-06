@@ -295,6 +295,24 @@ export const zhHant = defineLocale({
     }
   },
 
+  modeOnboarding: {
+    forensicsTitle: '取證模式——授權與護欄',
+    forensicsIntro: '在開立取證案件前，請了解證據的處理方式。本引導僅顯示一次。',
+    scopeHeading: '授權範圍',
+    scopeStatement: '我確認已取得對本案證據的實施授權，並將僅在我獲授權範圍內進行操作。',
+    guardHeading: '唯讀護欄',
+    guardReadonly: '證據目錄以唯讀方式掛載；任何寫入均需審批、複驗與留痕。',
+    guardWrite: '高風險命令（rm -rf、dd、mkfs、shred 等）一律需要二次確認。',
+    guardHash: '證據在匯入時即計算雜湊（SHA256），並於引用前複驗。',
+    ctfTitle: 'CTF 模式——flag 保管庫與審計',
+    ctfIntro: '了解 CTF 容器中 flag 的儲存與追蹤方式。本引導僅顯示一次。',
+    vaultHeading: 'flag 保管庫',
+    vaultMask: 'flag 預設打碼，可依需求顯示或隱藏。',
+    vaultAudit: '每次顯示／隱藏與每次提交都會記入審計日誌。',
+    confirm: '確認並繼續',
+    confirmHint: '請先勾選授權聲明再繼續。'
+  },
+
   // 步驟 16 · T9：四組佈局（方案 §3-T9）— 設定頁與 ？ 速查頁經
   // store/keybinds-registry.ts 同源共享。
   keybinds: {
@@ -2718,6 +2736,24 @@ export const zhHant = defineLocale({
       failedLoad: '載入藍圖失敗',
       emptyTitle: '沒有可用的藍圖',
       emptyDesc: '此後端上沒有可用的自動化藍圖。'
+    },
+    templateSlots: {
+      heading: '快捷模板位',
+      forensicsTitle: '鑑識案件模板位',
+      ctfTitle: 'CTF 賽事匯入模板位'
+    },
+    ctfImport: {
+      title: 'CTF 賽事匯入（模板位）',
+      desc: '對接 CTF 賽事匯入橋接的前端快捷入口。P2 同步管線尚未就緒，這裡回傳的是範例（mock）事件——並非真實 CTFd 同步，也不會在後端註冊任何內容。',
+      caseIdLabel: '案號',
+      challengeLabel: '賽題名稱',
+      urlLabel: '賽題 URL（選填）',
+      submit: '產生範例事件',
+      submitting: '產生中…',
+      requires: '案號與賽題名稱為必填。',
+      resultMock: (count: number) => `已產生 ${count} 筆範例（mock）事件——P2 管線尚未就緒。`,
+      failed: '匯入失敗。',
+      unavailable: '目前視窗無法使用桌面橋接。'
     }
   },
 

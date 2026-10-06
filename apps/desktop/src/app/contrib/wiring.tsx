@@ -21,6 +21,7 @@ import { DesktopInstallOverlay } from '@/components/desktop-install-overlay'
 import { FindBar } from '@/components/find-bar'
 import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overlay'
 import { KeybindsSheet } from '@/components/keybinds-sheet'
+import { ModeOnboardingOverlay } from '@/components/mode-onboarding'
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shell/tree/store'
@@ -1172,6 +1173,10 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       {/* Step 16 · T9: the ? keybind cheat sheet (store-driven; ?/Esc dispatch
           lives in use-keybinds). Mounted beside the other global overlays. */}
       <KeybindsSheet />
+      {/* Step 16 · T18: three-mode first-use guardrail briefing (forensics /
+          CTF; project never guides). Store-driven — the new-session trigger
+          listener lives inside the component. */}
+      {!isAuxiliaryWindow() && <ModeOnboardingOverlay />}
       <PluginInstallModal />
       <PetGenerateOverlay />
       <SessionSwitcher />
