@@ -1245,6 +1245,10 @@ export const en: Translations = {
       modeTitle: 'Connection mode',
       localTitle: 'Local gateway',
       localDesc: 'Start a private Fulilian backend on localhost. This is the default and works offline.',
+      localLoopbackNote: {
+        before: 'The local gateway listens on ',
+        after: ' only — it is never exposed to your network.'
+      },
       remoteTitle: 'Remote gateway',
       remoteDesc: 'Connect this desktop shell to a remote Fulilian backend.',
       remoteAuthHint: 'Hosted gateways use OAuth or a username and password; self-hosted ones may use a session token.',

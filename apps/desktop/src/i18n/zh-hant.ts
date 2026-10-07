@@ -1429,6 +1429,10 @@ export const zhHant = defineLocale({
       modeTitle: '連線模式',
       localTitle: '本機閘道',
       localDesc: '在 localhost 啟動私有 Fulilian 後端。這是預設方式，可離線使用。',
+      localLoopbackNote: {
+        before: '本機閘道僅監聽 ',
+        after: '，不會暴露到你的網路。'
+      },
       remoteTitle: '遠端閘道',
       remoteDesc:
         '將此桌面殼層連線至遠端 Fulilian 後端。託管閘道使用 OAuth 或帳號密碼；自託管閘道也可使用工作階段 Token。',

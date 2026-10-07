@@ -1469,6 +1469,10 @@ export const ja = defineLocale({
       localTitle: 'ローカルゲートウェイ',
       localDesc:
         'ローカルホストでプライベートな Fulilian バックエンドを起動します。これがデフォルトで、オフラインでも動作します。',
+      localLoopbackNote: {
+        before: 'ローカルゲートウェイは ',
+        after: ' のみでリッスンし、ネットワークには公開されません。'
+      },
       remoteTitle: 'リモートゲートウェイ',
       remoteDesc:
         'このデスクトップシェルをリモートの Fulilian バックエンドに接続します。ホスト型ゲートウェイは OAuth またはユーザー名とパスワードを使用します。自己ホスト型はセッショントークンを使用する場合があります。',

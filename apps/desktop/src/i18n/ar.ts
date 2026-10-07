@@ -1345,6 +1345,10 @@ export const ar = defineLocale({
       modeTitle: 'وضع الاتصال',
       localTitle: 'بوابة محلية',
       localDesc: 'تشغيل خلفية Fulilian خاصة على localhost. هذا هو الافتراضي ويعمل دون اتصال.',
+      localLoopbackNote: {
+        before: 'تستمع البوابة المحلية على ',
+        after: ' فقط، ولا تُتاح على الشبكة أبدًا.'
+      },
       remoteTitle: 'بوابة بعيدة',
       remoteDesc:
         'صل واجهة سطح المكتب هذه بخلفية Fulilian بعيدة. البوابات المستضافة تستخدم OAuth أو اسم مستخدم وكلمة مرور، والبوابات الذاتية قد تستخدم رمز جلسة.',

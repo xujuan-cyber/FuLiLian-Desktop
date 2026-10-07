@@ -1098,6 +1098,7 @@ export interface Translations {
       modeTitle: string
       localTitle: string
       localDesc: string
+      localLoopbackNote: { before: string; after: string }
       remoteTitle: string
       remoteDesc: string
       remoteAuthHint: string

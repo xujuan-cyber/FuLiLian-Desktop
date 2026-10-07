@@ -1428,6 +1428,10 @@ export const zh: Translations = {
       modeTitle: '连接模式',
       localTitle: '本地网关',
       localDesc: '在 localhost 启动私有 Fulilian 后端。这是默认方式，并且可离线工作。',
+      localLoopbackNote: {
+        before: '本地网关仅监听 ',
+        after: '，不会暴露到你的网络。'
+      },
       remoteTitle: '远程网关',
       remoteDesc: '将此桌面外壳连接到远程 Fulilian 后端。',
       remoteAuthHint: '托管网关使用 OAuth 或用户名密码；自托管网关也可能使用会话 token。',

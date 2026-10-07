@@ -1142,6 +1142,29 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
         </div>
       </div>
 
+      {/* Read-only security note (REV-15 P1-3 / BL-13). The desktop app spawns
+          its own backend with an explicit `--host 127.0.0.1` (backend-command.ts;
+          main.ts) and the Python side binds that host verbatim (web_server.py),
+          so the local gateway is loopback-only — never reachable from the
+          network. Gated to Local mode because the other modes target a
+          remote/self-hosted gateway this machine does not bind, and suppressed
+          under an env override where the backend URL is externally supplied.
+          Purely informational: no control, no toggle, no state. */}
+      {state.mode === 'local' && !state.envOverride ? (
+        <div
+          className="mb-5 flex items-start gap-2 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)"
+          data-testid="gateway-loopback-note"
+          role="note"
+        >
+          <Monitor className="mt-0.5 size-4 shrink-0" />
+          <span>
+            {g.localLoopbackNote.before}
+            <code className="font-mono">127.0.0.1</code>
+            {g.localLoopbackNote.after}
+          </span>
+        </div>
+      ) : null}
+
       {/* Fulilian Cloud panel: one portal sign-in, then a discovered-agent picker
           whose selection drives the silent per-agent cascade + a cloud
           connection. Replaces the URL/token form while in cloud mode. */}
