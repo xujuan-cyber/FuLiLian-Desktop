@@ -913,6 +913,7 @@ export const en: Translations = {
     },
     appearance: {
       title: 'Appearance',
+      themeSearchPlaceholder: 'Search your themes or the VS Code Marketplace…',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
       colorMode: 'Color Mode',
       colorModeDesc: 'Pick a fixed mode or let Fulilian follow your system setting.',

@@ -906,6 +906,7 @@ export const ar = defineLocale({
       }
     },
     appearance: {
+      themeSearchPlaceholder: 'ابحث في سماتك أو سوق VS Code…',
       title: 'المظهر',
       intro: 'خصص مظهر Fulilian Desktop.',
       colorMode: 'نمط الألوان',

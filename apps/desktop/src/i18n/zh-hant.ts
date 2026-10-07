@@ -890,6 +890,7 @@ export const zhHant = defineLocale({
     },
     appearance: {
       title: '外觀',
+      themeSearchPlaceholder: '搜尋主題或 VS Code 市集…',
       intro: '這些是僅限桌面端的顯示偏好。模式控制亮度；主題控制強調色與聊天介面樣式。',
       colorMode: '色彩模式',
       colorModeDesc: '選擇固定模式，或讓 Fulilian 跟隨系統設定。',

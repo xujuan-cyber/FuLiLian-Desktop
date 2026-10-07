@@ -884,6 +884,7 @@ export const zh: Translations = {
     },
     appearance: {
       title: '外观',
+      themeSearchPlaceholder: '搜索主题或 VS Code 市场…',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
       colorMode: '颜色模式',
       colorModeDesc: '选择固定模式，或让 Fulilian 跟随系统设置。',
