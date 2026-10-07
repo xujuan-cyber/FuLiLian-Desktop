@@ -3,7 +3,7 @@ import { type FC } from 'react'
 
 import { messageContentText } from '@/components/assistant-ui/thread/content'
 import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
-import { SCAFFOLD_LABEL_CLASS } from '@/components/chat/scaffold-row'
+import { SCAFFOLD_LABEL_CLASS } from '@/components/assistant-ui/scaffold-row'
 import { Codicon } from '@/components/ui/codicon'
 import { ToolIcon } from '@/components/ui/tool-icon'
 import { LinkifiedText } from '@/lib/external-link'

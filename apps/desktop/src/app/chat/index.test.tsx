@@ -41,7 +41,7 @@ vi.mock('@/components/Backdrop', async () => {
 })
 
 vi.mock('@/components/prompt-overlays', () => ({ PromptOverlays: () => null }))
-vi.mock('@/components/chat/vibe-hearts', () => ({ COMPOSER_HEART_CONFIG: {}, HeartField: () => null }))
+vi.mock('@/components/assistant-ui/vibe-hearts', () => ({ COMPOSER_HEART_CONFIG: {}, HeartField: () => null }))
 vi.mock('@/lib/model-options', () => ({
   modelOptionsQueryKey: (...parts: unknown[]) => ['model-options', ...parts],
   requestModelOptions: vi.fn(async () => ({ models: [] }))

@@ -1,5 +1,5 @@
-import { SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
-import { WIDGET_SHELL_CLASS } from '@/components/chat/widget-shell'
+import { SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/assistant-ui/scaffold-row'
+import { WIDGET_SHELL_CLASS } from '@/components/assistant-ui/widget-shell'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ConnectorLogo, type ConnectorLogoSubject } from '@/components/ui/connector-logo'

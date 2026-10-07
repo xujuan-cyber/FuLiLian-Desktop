@@ -6,7 +6,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import { useSessionView } from '@/app/chat/session-view'
 import { ToolFallback } from '@/components/assistant-ui/tool/fallback'
-import { WIDGET_SHELL_CLASS } from '@/components/chat/widget-shell'
+import { WIDGET_SHELL_CLASS } from '@/components/assistant-ui/widget-shell'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'

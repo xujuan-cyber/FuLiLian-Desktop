@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import type { ComponentProps } from 'react'
 
-import { TreeSkeleton } from '@/components/chat/skeletons'
+import { TreeSkeleton } from '@/components/assistant-ui/skeletons'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'

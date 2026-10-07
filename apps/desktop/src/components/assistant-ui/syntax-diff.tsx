@@ -10,8 +10,8 @@ import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { useShikiHighlighter } from 'react-shiki'
 
-import { DiffBody, type DiffLine, diffLineTransformer } from '@/components/chat/diff-lines'
-import { SHIKI_THEME } from '@/components/chat/shiki-highlighter'
+import { DiffBody, type DiffLine, diffLineTransformer } from '@/components/assistant-ui/diff-lines'
+import { SHIKI_THEME } from '@/components/assistant-ui/shiki-highlighter'
 
 export default function SyntaxDiff({ language, lines }: { language: string; lines: DiffLine[] }) {
   const code = useMemo(() => lines.map(line => line.text).join('\n'), [lines])

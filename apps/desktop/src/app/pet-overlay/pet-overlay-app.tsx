@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { PetHeartField, playVibeHearts } from '@/components/chat/vibe-hearts'
+import { PetHeartField, playVibeHearts } from '@/components/assistant-ui/vibe-hearts'
 import { PetBubble } from '@/components/pet/pet-bubble'
 import { PetSprite } from '@/components/pet/pet-sprite'
 import { type PetZoomAnchor, usePetZoomGesture } from '@/components/pet/use-pet-zoom-gesture'

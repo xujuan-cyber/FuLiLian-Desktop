@@ -1,7 +1,7 @@
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-import { composerFloatingPill } from '@/components/chat/composer-dock'
+import { composerFloatingPill } from '@/app/chat/composer/composer-dock'
 
 import type { ContainerKind } from '../sidebar/container-kind'
 

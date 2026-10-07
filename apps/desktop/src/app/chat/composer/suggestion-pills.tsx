@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { composerFloatingPill } from '@/components/chat/composer-dock'
+import { composerFloatingPill } from '@/app/chat/composer/composer-dock'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
 import { triggerHaptic } from '@/lib/haptics'

@@ -23,7 +23,7 @@ afterEach(cleanup)
 
 // CodeEditor is CodeMirror; the detail pane's SOUL editor doesn't matter to
 // these behaviors, so stub it out of the jsdom render.
-vi.mock('@/components/chat/code-editor', () => ({
+vi.mock('@/components/assistant-ui/code-editor', () => ({
   CodeEditor: () => null
 }))
 

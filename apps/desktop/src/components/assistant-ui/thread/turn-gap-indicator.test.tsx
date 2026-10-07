@@ -6,7 +6,7 @@ import { type ThreadMessage } from '@assistant-ui/react'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetElapsedTimerRegistryForTests } from '@/components/chat/activity-timer'
+import { __resetElapsedTimerRegistryForTests } from '@/components/assistant-ui/activity-timer'
 import { $activeSessionId, $busy, $messages, $turnStartedAt } from '@/store/session'
 
 import { stubThreadEnvironment, ThreadRuntime, userMessage } from '../test-utils'

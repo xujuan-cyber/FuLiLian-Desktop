@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { chunkByLines, exceedsHighlightBudget } from '@/components/chat/shiki-highlighter'
+import { chunkByLines, exceedsHighlightBudget } from '@/components/assistant-ui/shiki-highlighter'
 
 describe('exceedsHighlightBudget', () => {
   it('highlights normal-sized blocks', () => {

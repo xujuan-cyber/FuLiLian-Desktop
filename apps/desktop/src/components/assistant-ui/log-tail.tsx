@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { CodeCardBody } from '@/components/chat/code-card'
+import { CodeCardBody } from '@/components/assistant-ui/code-card'
 import { CopyButton } from '@/components/ui/copy-button'
 import { cn } from '@/lib/utils'
 

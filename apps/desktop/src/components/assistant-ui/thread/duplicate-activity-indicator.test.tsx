@@ -7,7 +7,7 @@ import { AssistantRuntimeProvider, type ThreadMessage, useExternalStoreRuntime }
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetElapsedTimerRegistryForTests } from '@/components/chat/activity-timer'
+import { __resetElapsedTimerRegistryForTests } from '@/components/assistant-ui/activity-timer'
 import { setSessionCompacting } from '@/store/compaction'
 import { $activeSessionId, $turnStartedAt } from '@/store/session'
 

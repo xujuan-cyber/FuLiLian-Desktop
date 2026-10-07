@@ -2,7 +2,7 @@ import { useStore } from '@nanostores/react'
 import { memo, useEffect } from 'react'
 
 import { PrTag } from '@/app/chat/pr-tag'
-import { StatusRow } from '@/components/chat/status-row'
+import { StatusRow } from '@/components/assistant-ui/status-row'
 import {
   type ActionItemSpec,
   ActionsContextMenu,

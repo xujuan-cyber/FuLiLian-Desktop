@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { requestComposerSubmit } from '@/app/chat/composer/focus'
 import { useSessionView } from '@/app/chat/session-view'
 import { useIsDark } from '@/components/assistant-ui/embeds/use-is-dark'
-import { PreviewAttachment } from '@/components/chat/preview-attachment'
+import { PreviewAttachment } from '@/components/assistant-ui/preview-attachment'
 import { localPreviewTarget } from '@/lib/local-preview'
 import { isRemoteGateway } from '@/lib/media'
 

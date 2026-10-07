@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { FileDiffPanel } from '@/components/chat/diff-lines'
+import { FileDiffPanel } from '@/components/assistant-ui/diff-lines'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { EmptyState } from '@/components/ui/empty-state'

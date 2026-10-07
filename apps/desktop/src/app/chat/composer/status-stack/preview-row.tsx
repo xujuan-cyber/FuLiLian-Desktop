@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { memo, useState } from 'react'
 
-import { StatusRow } from '@/components/chat/status-row'
+import { StatusRow } from '@/components/assistant-ui/status-row'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'

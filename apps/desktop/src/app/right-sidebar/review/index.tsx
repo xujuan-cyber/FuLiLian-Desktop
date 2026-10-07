@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 
-import { FileDiffPanel } from '@/components/chat/diff-lines'
-import { DiffSkeleton, TreeSkeleton } from '@/components/chat/skeletons'
+import { FileDiffPanel } from '@/components/assistant-ui/diff-lines'
+import { DiffSkeleton, TreeSkeleton } from '@/components/assistant-ui/skeletons'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'

@@ -23,7 +23,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { ProfileScope } from '@/api/client'
-import { CodeEditor } from '@/components/chat/code-editor'
+import { CodeEditor } from '@/components/assistant-ui/code-editor'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ColorSwatches } from '@/components/ui/color-swatches'

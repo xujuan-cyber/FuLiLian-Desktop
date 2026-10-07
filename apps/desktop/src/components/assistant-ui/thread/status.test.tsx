@@ -1,7 +1,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetElapsedTimerRegistryForTests } from '@/components/chat/activity-timer'
+import { __resetElapsedTimerRegistryForTests } from '@/components/assistant-ui/activity-timer'
 import { I18nProvider } from '@/i18n'
 import { $providerWaitSessions, setSessionProviderWait } from '@/store/provider-wait'
 import { $activeSessionId, $turnStartedAt } from '@/store/session'

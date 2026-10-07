@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { StableText } from '@/components/chat/stable-text'
+import { StableText } from '@/components/assistant-ui/stable-text'
 import { useViewedInterval } from '@/hooks/use-viewed-interval'
 import { compactNumber } from '@/lib/format'
 import type { UsageStats } from '@/types/fulilian'

@@ -1,6 +1,6 @@
 import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { LogTail } from '@/components/chat/log-tail'
+import { LogTail } from '@/components/assistant-ui/log-tail'
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { SearchField } from '@/components/ui/search-field'

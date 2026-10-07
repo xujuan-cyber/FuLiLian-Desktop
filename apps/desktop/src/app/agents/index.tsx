@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 
-import { useElapsedSeconds } from '@/components/chat/activity-timer'
-import { ActivityTimerText } from '@/components/chat/activity-timer-text'
+import { useElapsedSeconds } from '@/components/assistant-ui/activity-timer'
+import { ActivityTimerText } from '@/components/assistant-ui/activity-timer-text'
 import { usePaneVisible } from '@/components/pane-shell/pane-visibility'
 import { Codicon } from '@/components/ui/codicon'
 import { FadeText } from '@/components/ui/fade-text'

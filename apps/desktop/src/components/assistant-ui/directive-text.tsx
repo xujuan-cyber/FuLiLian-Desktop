@@ -5,7 +5,7 @@ import type { TextMessagePartComponent, TextMessagePartProps } from '@assistant-
 import type { FC } from 'react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
-import { ZoomableImage } from '@/components/chat/zoomable-image'
+import { ZoomableImage } from '@/components/assistant-ui/zoomable-image'
 import type { I18nContextValue } from '@/i18n'
 import { extractEmbeddedImages } from '@/lib/embedded-images'
 import { openLink } from '@/lib/external-link'

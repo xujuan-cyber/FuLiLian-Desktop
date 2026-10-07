@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { DisclosureRow } from '@/components/chat/disclosure-row'
+import { DisclosureRow } from '@/components/assistant-ui/disclosure-row'
 
 /**
  * Transcript scaffolding: the quiet lines around the reply that say what the

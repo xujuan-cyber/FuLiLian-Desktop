@@ -1,6 +1,6 @@
 import type { BillingBlock } from '@fulilian/shared'
 
-import { burstVibeHearts } from '@/components/chat/vibe-hearts'
+import { burstVibeHearts } from '@/components/assistant-ui/vibe-hearts'
 import { translateNow } from '@/i18n'
 import { coerceGatewayText, coerceThinkingText } from '@/lib/chat-runtime'
 import { playCompletionSound } from '@/lib/completion-sound'

@@ -1,5 +1,5 @@
-import { StatusRow } from '@/components/chat/status-row'
-import { StatusSection } from '@/components/chat/status-section'
+import { StatusRow } from '@/components/assistant-ui/status-row'
+import { StatusSection } from '@/components/assistant-ui/status-section'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'

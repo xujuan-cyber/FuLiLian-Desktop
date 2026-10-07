@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { composerPanelCard } from '@/components/chat/composer-dock'
+import { composerPanelCard } from '@/app/chat/composer/composer-dock'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'

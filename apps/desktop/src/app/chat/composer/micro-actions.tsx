@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 
-import { composerFloatingPill } from '@/components/chat/composer-dock'
+import { composerFloatingPill } from '@/app/chat/composer/composer-dock'
 import { Codicon } from '@/components/ui/codicon'
 import { useSessionSlice } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'

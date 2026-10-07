@@ -22,7 +22,7 @@ vi.mock('@/store/pet-overlay', () => ({
   forwardPetReaction
 }))
 
-import { burstVibeHearts } from '@/components/chat/vibe-hearts'
+import { burstVibeHearts } from '@/components/assistant-ui/vibe-hearts'
 import { setVibeHeartsEnabled } from '@/store/vibe-hearts-enabled'
 
 describe('burstVibeHearts', () => {

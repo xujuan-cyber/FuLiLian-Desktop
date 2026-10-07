@@ -16,7 +16,7 @@ import {
 import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { useSessionView } from '@/app/chat/session-view'
 import { ToolFallback } from '@/components/assistant-ui/tool/fallback'
-import { WIDGET_SHELL_CLASS } from '@/components/chat/widget-shell'
+import { WIDGET_SHELL_CLASS } from '@/components/assistant-ui/widget-shell'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Textarea } from '@/components/ui/textarea'

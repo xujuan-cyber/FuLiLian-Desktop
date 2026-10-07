@@ -3093,7 +3093,7 @@ button[data-slot='aui_msg-reactions'] svg {
    directly on the band, so they must stay WHITE like ordinary prose. Matching
    them by slot made their labels dark-on-game, which is the exact bug this rule
    exists to prevent, one level down. Match the fill, never the feature.
-   Widgets on the shared shell (components/chat/widget-shell.ts →
+   Widgets on the shared shell (components/assistant-ui/widget-shell.ts →
    `--ui-widget-surface-background`) and any chat-surface card are matched on
    their class, so new ones inherit this without touching the list. */
 [data-hud-shell] [data-slot='composer-bounds']

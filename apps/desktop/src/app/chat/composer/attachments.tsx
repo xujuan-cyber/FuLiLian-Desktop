@@ -2,7 +2,7 @@ import { useStore } from '@nanostores/react'
 import { useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
-import { ImageLightbox } from '@/components/chat/zoomable-image'
+import { ImageLightbox } from '@/components/assistant-ui/zoomable-image'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
 import { useImageDownload } from '@/hooks/use-image-download'

@@ -3,8 +3,8 @@
 import * as React from 'react'
 import type { BundledLanguage, ShikiTransformer, ThemedToken } from 'shiki'
 
-import { chunkLines, type LineChunk, useFixedRowWindow } from '@/components/chat/fixed-row-window'
-import { exceedsHighlightBudget, SHIKI_THEME } from '@/components/chat/shiki-highlighter'
+import { chunkLines, type LineChunk, useFixedRowWindow } from '@/components/assistant-ui/fixed-row-window'
+import { exceedsHighlightBudget, SHIKI_THEME } from '@/components/assistant-ui/shiki-highlighter'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { shikiLanguageForFilename } from '@/lib/markdown-code'
 import { cn } from '@/lib/utils'
