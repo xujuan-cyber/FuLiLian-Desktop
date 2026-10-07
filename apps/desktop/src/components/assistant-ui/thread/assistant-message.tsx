@@ -12,6 +12,8 @@ import { useInRouterContext, useNavigate } from 'react-router'
 
 import { useSessionView } from '@/app/chat/session-view'
 import { SETTINGS_ROUTE } from '@/app/routes'
+import { formatElapsed } from '@/components/assistant-ui/activity-timer'
+import { PreviewAttachment } from '@/components/assistant-ui/preview-attachment'
 import { ChangedFilesCard } from '@/components/assistant-ui/thread/changed-files-card'
 import {
   contentHasVisibleText,
@@ -25,8 +27,6 @@ import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timel
 import { useMessageReactions, useTapbackDoubleClick } from '@/components/assistant-ui/thread/use-message-reactions'
 import { AGENT_MESSAGE_RE } from '@/components/assistant-ui/thread/user-message'
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
-import { formatElapsed } from '@/components/assistant-ui/activity-timer'
-import { PreviewAttachment } from '@/components/assistant-ui/preview-attachment'
 import { Codicon } from '@/components/ui/codicon'
 import { CopyButton } from '@/components/ui/copy-button'
 import { useI18n } from '@/i18n'

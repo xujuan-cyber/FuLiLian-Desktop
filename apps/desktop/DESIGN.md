@@ -306,7 +306,7 @@ Sizes: `default`, `xs`, `overlay` (titlebar glyph counts).
   approval renderer for one feature.
 - **Inline widgets** — a tool result that renders as a panel the user reads or
   acts on (clarify, artifact card) wears `WIDGET_SHELL_CLASS`
-  (`src/components/chat/widget-shell.ts`): shared radius, the
+  (`src/components/assistant-ui/widget-shell.ts`): shared radius, the
   `--ui-widget-surface-background` fill, no border. Its actions sit *outside*
   the panel, below it. Don't give one widget its own radius or fill.
 - Bordered surfaces in the transcript (tables, fences, callouts, attachments)
@@ -341,7 +341,7 @@ Sizes: `default`, `xs`, `overlay` (titlebar glyph counts).
   `nous-girl` mark on a white tile, softly rounded, identical in light/dark.
   It replaced scattered Sparkles glyphs in updates / onboarding / about. Use it
   for hero/brand moments; don't reintroduce decorative star/sparkle icons.
-- **Wordmark** (`src/components/chat/intro.tsx`, `WORDMARK = 'FULILIAN AGENT'`)
+- **Wordmark** (`src/components/assistant-ui/intro.tsx`, `WORDMARK = 'FULILIAN AGENT'`)
   is set in **Fraunces**, a display serif bundled as a fixed-axis static subset
   (`src/fonts/Fraunces-Bold.woff2`, 11,272 B; `@font-face 'Fraunces'` in
   `styles.css`). Its contract:

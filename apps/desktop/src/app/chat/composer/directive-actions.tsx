@@ -13,8 +13,8 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { DIRECTIVE_ACTIONS, type DirectiveAction } from '@/components/assistant-ui/directive-text'
 import { composerFloatingPill } from '@/app/chat/composer/composer-dock'
+import { DIRECTIVE_ACTIONS, type DirectiveAction } from '@/components/assistant-ui/directive-text'
 import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'

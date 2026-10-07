@@ -1,9 +1,9 @@
 import { MessagePrimitive, useAuiState } from '@assistant-ui/react'
 import { type FC } from 'react'
 
+import { SCAFFOLD_LABEL_CLASS } from '@/components/assistant-ui/scaffold-row'
 import { messageContentText } from '@/components/assistant-ui/thread/content'
 import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
-import { SCAFFOLD_LABEL_CLASS } from '@/components/assistant-ui/scaffold-row'
 import { Codicon } from '@/components/ui/codicon'
 import { ToolIcon } from '@/components/ui/tool-icon'
 import { LinkifiedText } from '@/lib/external-link'
