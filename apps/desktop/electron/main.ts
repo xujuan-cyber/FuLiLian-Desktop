@@ -4161,13 +4161,6 @@ function runningAppBundle() {
   return dir.endsWith('.app') ? dir : null
 }
 
-// ── Pre-flight state.db integrity guard (#68474) ─────────────────────
-// Take an emergency snapshot of state.db and verify the live copy is
-// intact before any update process mutates the install.  Runs in the
-// desktop Electron process itself, before the backend is killed and
-// before the updater is spawned — a separate safety net from the
-// Python-level pre-update snapshot inside `fulilian update`.
-
 // macOS/Linux update hand-off: spawn the repo-owned posix orchestrator
 // (scripts/desktop-update/posix.sh) detached and QUIT. The script waits us
 // out, runs `fulilian update`, swaps/relaunches the app bundle, and writes
