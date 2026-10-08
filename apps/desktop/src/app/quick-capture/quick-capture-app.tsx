@@ -14,6 +14,19 @@ import {
 
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 
+/*
+ * Token fallbacks are deliberate (step 16 REV-批次一 S2 / backlog BL-15).
+ *
+ * The inline styles below spell colours as `var(--token, #hex)`. That hex is not
+ * a stray literal: this window is a transient floating card that can paint
+ * before `ThemeProvider` has injected `--dt-*`, and `styles.css`'s
+ * `--foreground: var(--dt-foreground)` chain then resolves to nothing. Without
+ * the fallback the card would render uncoloured at exactly the moment
+ * index.html's boot script works hardest to avoid a flash. All eight fallbacks
+ * are registered as an exemption in DESIGN_PROPOSAL §2 — do not strip them back
+ * to bare `var(--token)`.
+ */
+
 /** Chip vocabulary, one entry per work mode (DESIGN_PROPOSAL §4.1). */
 const MODE_META: Record<
   QuickCaptureMode,
