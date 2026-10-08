@@ -17,7 +17,7 @@
 import { useStore } from '@nanostores/react'
 import { useQueryClient } from '@tanstack/react-query'
 import { atom, computed } from 'nanostores'
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { useModelControls } from '@/app/session/hooks/use-model-controls'
@@ -72,7 +72,13 @@ import { type SessionView, SessionViewProvider } from './session-view'
 import { SessionContextMenu } from './sidebar/session-actions-menu'
 import { lastVisibleMessageIsUser } from './thread-loading'
 
-import { ChatView } from '.'
+// Step 17 · P9b: the tile's chat view is the *second* static pin on the chat
+// subtree. `controller.tsx` imports this module eagerly (`watchSessionTiles`),
+// so a top-level `import { ChatView } from '.'` pulled `chat/index` — and with
+// it the whole markdown/math pipeline (katex, vendor-md) — into the entry chunk.
+// The tile only mounts on demand, so the view can be deferred; the entry edge
+// stays (the watchers above are cheap), the heavy subtree does not.
+const ChatView = lazy(async () => ({ default: (await import('./index')).ChatView }))
 
 const NO_MESSAGES: ChatMessage[] = []
 
@@ -243,32 +249,36 @@ function TileChat({
   return (
     <SessionViewProvider value={view}>
       <ComposerScopeProvider value={scope}>
-        <ChatView
-          gateway={gateway}
-          modelMenuContent={modelMenuContent}
-          onAddContextRef={addContextRefAttachment}
-          onAddUrl={onAddUrl}
-          onAttachDroppedItems={composer.attachDroppedItems}
-          onAttachImageBlob={composer.attachImageBlob}
-          onAttachPrCommentUrl={composer.attachPrCommentUrl}
-          onCancel={actions.cancelRun}
-          onDeleteSelectedSession={noop}
-          onDismissError={actions.dismissError}
-          onEdit={actions.editMessage}
-          onPasteClipboardImage={onPasteClipboardImage}
-          onPickFiles={onPickFiles}
-          onPickFolders={onPickFolders}
-          onPickImages={onPickImages}
-          onReload={actions.reloadFromMessage}
-          onRemoveAttachment={onRemoveAttachment}
-          onRestoreToMessage={actions.restoreToMessage}
-          onRetryResume={onRetryResume}
-          onSteer={actions.steerPrompt}
-          onSubmit={actions.submitText}
-          onThreadMessagesChange={actions.handleThreadMessagesChange}
-          onToggleSelectedPin={noop}
-          onTranscribeAudio={tileTranscribeAudio}
-        />
+        {/* P9b: ChatView resolves its own lazy chunk inside the tile, so the
+            suspension stays in the pane rather than bubbling to the shell. */}
+        <Suspense fallback={null}>
+          <ChatView
+            gateway={gateway}
+            modelMenuContent={modelMenuContent}
+            onAddContextRef={addContextRefAttachment}
+            onAddUrl={onAddUrl}
+            onAttachDroppedItems={composer.attachDroppedItems}
+            onAttachImageBlob={composer.attachImageBlob}
+            onAttachPrCommentUrl={composer.attachPrCommentUrl}
+            onCancel={actions.cancelRun}
+            onDeleteSelectedSession={noop}
+            onDismissError={actions.dismissError}
+            onEdit={actions.editMessage}
+            onPasteClipboardImage={onPasteClipboardImage}
+            onPickFiles={onPickFiles}
+            onPickFolders={onPickFolders}
+            onPickImages={onPickImages}
+            onReload={actions.reloadFromMessage}
+            onRemoveAttachment={onRemoveAttachment}
+            onRestoreToMessage={actions.restoreToMessage}
+            onRetryResume={onRetryResume}
+            onSteer={actions.steerPrompt}
+            onSubmit={actions.submitText}
+            onThreadMessagesChange={actions.handleThreadMessagesChange}
+            onToggleSelectedPin={noop}
+            onTranscribeAudio={tileTranscribeAudio}
+          />
+        </Suspense>
       </ComposerScopeProvider>
     </SessionViewProvider>
   )

@@ -18,7 +18,6 @@ import { $gateway } from '@/store/gateway'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $freshDraftReady, $gatewayState } from '@/store/session'
 
-import { ChatView } from '../chat'
 import { ChatSidebar } from '../chat/sidebar'
 import { TerminalPaneChrome } from '../right-sidebar/terminal/chrome'
 import { contributedRoutes, NEW_CHAT_ROUTE, ROUTES_AREA, sessionRoute } from '../routes'
@@ -34,6 +33,13 @@ import type { SidebarActions, WiringActions } from './types'
 // Same lazy-view split as DesktopController — pages load on demand. The
 // full-page views the workspace route table mounts live here; overlay views
 // (agents/settings/…) are the controller's and stay in wiring.tsx.
+//
+// Step 17 · P9b: chat joins them. It was a *static* import, and it is the
+// default route, so the conversation subtree — the streamdown pipeline
+// (`vendor-md`), katex, the preview pane — rode into the entry chunk. The cut
+// only works together with `chat/session-tile.tsx`'s own `ChatView` pin: either
+// edge left standing keeps `chat/index` (and its heavy leaves) eager.
+const ChatView = lazy(async () => ({ default: (await import('../chat')).ChatView }))
 const ArtifactsView = lazy(async () => ({ default: (await import('../artifacts')).ArtifactsView }))
 const MessagingView = lazy(async () => ({ default: (await import('../messaging')).MessagingView }))
 const SkillsView = lazy(async () => ({ default: (await import('../skills')).SkillsView }))
@@ -164,8 +170,10 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
 
   return (
     <Routes>
-      <Route element={chatView} index />
-      <Route element={chatView} path=":sessionId" />
+      {/* Chat is lazy (P9b): both routes ride the same Suspense wrapper as the
+          other pages, so its deferred chunk resolves inside the pane. */}
+      <Route element={page(chatView)} index />
+      <Route element={page(chatView)} path=":sessionId" />
       <Route element={page(<SkillsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="skills" />
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />

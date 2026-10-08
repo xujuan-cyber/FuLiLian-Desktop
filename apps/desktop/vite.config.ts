@@ -251,21 +251,6 @@ export default defineConfig(({ command }) => ({
               test: /node_modules[\\/]/,
               tags: ['$initial'],
               maxModuleSize: 24576
-            },
-            // P9b (step 17 DEV-B): the APP-level twin of `vendor-shared`. Once
-            // the entry's chat edges went lazy, the small SHARED app modules
-            // (hooks, stores, tiny components) that the entry and the new lazy
-            // chunks both reach were hoisted into one chunk each — ~40 extra
-            // `modulepreload` links for a few hundred KB. Same eligibility rule
-            // (`$initial` = already on the first-frame graph, `maxModuleSize` =
-            // small only): fold them into a single `app-shared` chunk so the
-            // declared preload list stays a handful of files. Nothing that was
-            // lazy-only becomes eager — `$initial` excludes it.
-            {
-              name: 'app-shared',
-              test: /[\\/]src[\\/]/,
-              tags: ['$initial'],
-              maxModuleSize: 24576
             }
           ]
         }

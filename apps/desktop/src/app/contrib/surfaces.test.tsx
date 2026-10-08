@@ -1,4 +1,7 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { atom } from 'nanostores'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -45,7 +48,7 @@ afterEach(() => {
 })
 
 describe('ChatRoutesSurface', () => {
-  it('passes the live gateway after an open-to-open profile switch', () => {
+  it('passes the live gateway after an open-to-open profile switch', async () => {
     const gatewayA = { id: 'a' } as unknown as FulilianGateway
     const gatewayB = { id: 'b' } as unknown as FulilianGateway
 
@@ -58,13 +61,31 @@ describe('ChatRoutesSurface', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByTestId('gateway').textContent).toBe('a')
+    // P9b: the chat route is lazy now, so the first paint is the Suspense
+    // fallback — the view resolves a tick later (see the source-text test below
+    // for the wiring half, which the runtime half cannot see).
+    expect((await screen.findByTestId('gateway')).textContent).toBe('a')
 
     act(() => {
       $gateway.set(gatewayB)
       $activeGatewayProfile.set('other')
     })
 
-    expect(screen.getByTestId('gateway').textContent).toBe('b')
+    await waitFor(() => {
+      expect(screen.getByTestId('gateway').textContent).toBe('b')
+    })
+  })
+
+  it('defers the chat view through lazy() instead of importing it eagerly', () => {
+    // Read the module's text: a `lazy()` boundary does not suspend observably
+    // under happy-dom + the synchronous `../chat` mock above, so only the
+    // wiring can tell an eager import from a deferred one.
+    const src = readFileSync(join(process.cwd(), 'src/app/contrib/surfaces.tsx'), 'utf8')
+
+    expect(src).toContain("lazy(async () => ({ default: (await import('../chat')).ChatView }))")
+    // The old eager form must be gone — this is the P9b pin.
+    expect(src).not.toMatch(/^import \{ ChatView \} from '\.\.\/chat'$/m)
+    // And the deferred element is wrapped so the swap stays in the pane.
+    expect(src).toMatch(/<Route element=\{page\(chatView\)\} index \/>/)
   })
 })
