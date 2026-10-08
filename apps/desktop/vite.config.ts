@@ -147,9 +147,37 @@ const fontPreload = (): Plugin => ({
   }
 })
 
+// P5 (step 17): single-source the first-launch pre-paint colors. The two
+// fallback hexes and the theme-color meta in index.html used to be hand-written
+// copies of what chromeBackground() paints at runtime — they drifted silently
+// and made the very first launch flash the previous skin. The plugin below
+// imports the SAME pure module context.tsx paints with (themes/chrome-
+// background.ts ← themes/presets.ts, whose DEFAULT_SKIN_NAME is the only
+// hand-edited source left) and replaces the `__FULILIAN_PREPAINT_*__` tokens in
+// index.html with the generated candidates. Tokens left unreplaced are invalid
+// CSS colors, so a file served without this transform falls back to the UA
+// default instead of a stale skin. Runs in dev and build alike.
+import { DEFAULT_PREPAINT_BACKGROUND } from './src/themes/chrome-background'
+
+const prepaintColors = (): Plugin => ({
+  name: 'fulilian:prepaint-colors',
+  transformIndexHtml(html: string) {
+    const { light, dark } = DEFAULT_PREPAINT_BACKGROUND
+
+    // split/join (not String.replace) so both occurrences of the dark token —
+    // the meta and the inline script — are replaced, and so a `$`-bearing
+    // replacement could never be read as a replace pattern.
+    return html
+      .split('__FULILIAN_PREPAINT_DARK__')
+      .join(dark)
+      .split('__FULILIAN_PREPAINT_LIGHT__')
+      .join(light)
+  }
+})
+
 export default defineConfig(({ command }) => ({
   base: './',
-  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets(), fontPreload()],
+  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets(), fontPreload(), prepaintColors()],
   css: {
     // Pin an explicit (empty) PostCSS config. Tailwind is handled entirely by
     // `@tailwindcss/vite`, so the renderer needs no PostCSS plugins — and

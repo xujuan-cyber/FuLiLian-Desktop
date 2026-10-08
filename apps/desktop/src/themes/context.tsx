@@ -20,6 +20,10 @@ import { setAppearance } from '@/store/translucency'
 
 import { $accentOverride } from './accent-override'
 import { $backendThemes, $pendingSkinApply } from './backend-sync'
+// The chrome-background math (native titlebar / pre-paint color) lives in
+// ./chrome-background — the module vite.config.ts also imports to generate
+// index.html's pre-paint values, so runtime and build share one implementation.
+import { chromeBackground } from './chrome-background'
 import { ensureContrast, harmonize, hexToRgb, mix, readableOn } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme } from './presets'
 import { retintTheme } from './retint'
@@ -234,23 +238,10 @@ function renderedModeFor(colors: DesktopThemeColors, mode: 'light' | 'dark'): 'l
 // Per-mode mix knobs. Light/dark fallbacks live in styles.css `:root` /
 // `:root.dark`; setting them inline keeps active-skin overrides surviving
 // the boot-time paint.
-// styles.css --theme-neutral-chrome — keep in sync. Retuned to the
-// `fulilian-workbench` default skin (step 15 · T1): the light endpoint is now
-// pure white so the ZCode canvas lands on #FFFFFF, and the dark endpoint is
-// Graphite's panel so the frame stays cool instead of apricot's warm #221D18.
-// This value lands on the *native* title bar via chromeBackground() and
-// setTitleBarTheme(), so any drift from styles.css shows up as a differently
-// tinted frame around the page. Must match the styles.css --theme-neutral-*
-// family.
-const NEUTRAL_CHROME = { light: '#FFFFFF', dark: '#10151C' } as const
-
 // The one foreground --dt-primary-solid is built to carry. Fixed rather than
 // measured: the surface is derived to suit IT, not the other way round.
 // styles.css --dt-primary-solid-foreground fallback — keep in sync.
 const PRIMARY_SOLID_FOREGROUND = '#fcfcfc'
-
-const chromeBackground = (background: string, isDark: boolean) =>
-  mix(background, NEUTRAL_CHROME[isDark ? 'dark' : 'light'], isDark ? 0.26 : 0.08)
 
 const mixesFor = (isDark: boolean): Record<string, string> => ({
   '--theme-mix-chrome': isDark ? '74%' : '92%',

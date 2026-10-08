@@ -6,7 +6,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <!-- GENERATED:prepaint — the content below is injected at build time from
+         themes/presets.ts (DEFAULT_SKIN_NAME → chromeBackground, dark
+         candidate) via the vite.config.ts transformIndexHtml plugin. An
+         unreplaced token is not a valid color, so a file served without the
+         build transform honestly falls back to the UA default. Do not
+         hand-edit a hex here — edit presets.ts. -->
+    <meta name="theme-color" content="__FULILIAN_PREPAINT_DARK__" />
     <link rel="icon" type="image/png" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="shortcut icon" href="/apple-touch-icon.png" />
@@ -21,14 +27,17 @@
         let bg = localStorage.getItem('fulilian-boot-background')
         let scheme = localStorage.getItem('fulilian-boot-color-scheme')
         if (!bg) {
-          // Default-skin chrome, matching chromeBackground() in
-          // themes/context.tsx for `fulilian-workbench` (step 15 · T1): light is
-          // pure white, dark is #0D1117 mixed 26% toward Graphite's #10151C.
-          // Only reached before the first applyTheme() has stored the keys, so
-          // it must agree with DEFAULT_SKIN_NAME or the very first launch
-          // flashes the previous skin.
+          // GENERATED:prepaint — the two fallback hexes below are injected at
+          // build time from themes/presets.ts (DEFAULT_SKIN_NAME →
+          // chromeBackground in themes/chrome-background.ts) via the
+          // vite.config.ts transformIndexHtml plugin; the runtime keys come
+          // from applyTheme() in themes/context.tsx, which shares that module.
+          // Edit presets.ts, never this file: hand-written hexes here drifted
+          // silently and made the very first launch flash the previous skin.
+          // Unreplaced tokens are invalid CSS colors, so a file served without
+          // the build transform paints the UA default instead of a stale skin.
           const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
-          bg = dark ? '#0E1218' : '#FFFFFF'
+          bg = dark ? '__FULILIAN_PREPAINT_DARK__' : '__FULILIAN_PREPAINT_LIGHT__'
           scheme = dark ? 'dark' : 'light'
         }
         document.documentElement.style.backgroundColor = bg

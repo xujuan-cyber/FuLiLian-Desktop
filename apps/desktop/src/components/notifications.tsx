@@ -117,9 +117,19 @@ function TopCenterStack({
   return createPortal(
     <div
       aria-label={copy.region}
+      // Pill spacing rule (P5): the overlay chrome's centered edge pill — the
+      // settings search pill, `edgeBadge` in app/overlays/overlay-view.tsx —
+      // straddles the card's top edge: its center sits titlebar + 0.875rem
+      // down and it is half a --titlebar-control-height tall, so its bottom
+      // edge lands at titlebar + 0.875rem + 12px. The old slot (titlebar +
+      // 0.75rem) opened exactly on top of that band, so a toast fired while
+      // settings was open covered the pill. This stack offsets BELOW the
+      // worst-case pill bottom (any pill height, any window width — the pill
+      // is content-sized, so no horizontal rule can clear it deterministically)
+      // with a 0.5rem breathing gap.
       className={cn(
         REGION_BASE,
-        'left-1/2 top-[calc(var(--titlebar-height,34px)+0.75rem)] w-[min(40rem,calc(100%-2rem))] -translate-x-1/2 flex-col'
+        'left-1/2 top-[calc(var(--titlebar-height,34px)_+_0.875rem_+_var(--titlebar-control-height,24px)/2_+_0.5rem)] w-[min(40rem,calc(100%-2rem))] -translate-x-1/2 flex-col'
       )}
       role="region"
     >
