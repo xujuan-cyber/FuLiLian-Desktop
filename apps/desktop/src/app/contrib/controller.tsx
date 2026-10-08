@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { atom, computed } from 'nanostores'
-import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
+import { type CSSProperties, lazy, type ReactElement, type PointerEvent as ReactPointerEvent, Suspense } from 'react'
 
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
@@ -75,11 +75,9 @@ import { watchUnreadWriteGuard } from '@/store/session-unread-remote'
 import { $statusbarVisible } from '@/store/statusbar-prefs'
 import { isBrowserWindow, isHudWindow } from '@/store/windows'
 
-import { BrowserPopoutShell } from '../chat/browser-popout-shell'
 import type { SessionDragPayload } from '../chat/composer/inline-refs'
 import { watchPreviewTiles } from '../chat/preview-tile'
 import { watchRouteTiles } from '../chat/route-tile'
-import { SessionChangesPanel } from '../chat/right-rail/session-changes'
 import { startSessionDrag } from '../chat/session-drag'
 import {
   SessionTileCloseConfirm,
@@ -103,6 +101,14 @@ import { ContribWiring, WiredPane } from './wiring'
  * contributions (payload = StatusbarItem). Core registers its items through
  * the same calls a plugin would use.
  */
+
+// First-frame hygiene (step17 P9b): these mount only behind a user action — the
+// `?win=browser` pop-out window, and the ⌘K-opened session-changes pane — never
+// on the default chat frame. Their bodies load on demand instead of riding the
+// entry module graph; each renders behind the Suspense boundary at its mount
+// site below.
+const BrowserPopoutShell = lazy(async () => ({ default: (await import('../chat/browser-popout-shell')).BrowserPopoutShell }))
+const SessionChangesPanel = lazy(async () => ({ default: (await import('../chat/right-rail/session-changes')).SessionChangesPanel }))
 
 // ---------------------------------------------------------------------------
 // Pane contributions. `data.placement` = semantic role for grid presets;
@@ -260,7 +266,11 @@ registry.registerMany([
       minWidth: FILE_BROWSER_MIN_WIDTH,
       maxWidth: FILE_BROWSER_MAX_WIDTH
     },
-    render: () => idle(<SessionChangesPanel />)
+    render: () => idle(
+      <Suspense fallback={null}>
+        <SessionChangesPanel />
+      </Suspense>
+    )
   }
 ])
 
@@ -856,7 +866,9 @@ export function ContribController() {
   if (isBrowserWindow()) {
     return (
       <ContribWiring>
-        <BrowserPopoutShell />
+        <Suspense fallback={null}>
+          <BrowserPopoutShell />
+        </Suspense>
       </ContribWiring>
     )
   }

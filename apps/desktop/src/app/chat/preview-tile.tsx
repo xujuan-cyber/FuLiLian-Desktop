@@ -11,6 +11,7 @@
  */
 
 import { useStore } from '@nanostores/react'
+import { lazy, Suspense } from 'react'
 
 import { findGroup } from '@/components/pane-shell/tree/model'
 import { $activeTreeGroup, $layoutTree, revealTreePane, treePanesWithPrefix } from '@/components/pane-shell/tree/store'
@@ -36,8 +37,16 @@ import {
 import { canOpenBrowserWindow } from '@/store/windows'
 
 import { paneMirror } from './pane-mirror'
-import { PreviewTilePane } from './right-rail/preview'
 import { forgetPreviewConsole } from './right-rail/preview-console-store'
+
+// The preview BODY is its own lazy chunk (step17 P9b): `right-rail/preview` →
+// `preview-pane` → `preview-file` statically pull the markdown + katex pipeline
+// onto whatever module graph reaches them, and this file rides the entry (the
+// controller calls `watchPreviewTiles` at boot). Deferring the import keeps that
+// pipeline off the first frame — the pane only mounts once a preview tab
+// exists. `fallback={null}` preserves the previous synchronous-empty behaviour
+// (the pane itself already returns null for a tab that has gone).
+const PreviewTilePane = lazy(async () => ({ default: (await import('./right-rail/preview')).PreviewTilePane }))
 
 /** The target behind a tile id, or null once its tab is gone. */
 function targetFor(tabId: string): PreviewTarget | null {
@@ -266,7 +275,11 @@ const watchPreviewTileMirror = paneMirror<{ id: string }>({
   // a kind and leaves the strip's "+" to whatever else the zone holds.
   newTab: tabId => (targetFor(tabId)?.kind === 'url' ? newBrowserTab : undefined),
   tabMenuPrefix: browserTabMenuPrefix,
-  render: tabId => <PreviewTilePane tabId={tabId} />,
+  render: tabId => (
+    <Suspense fallback={null}>
+      <PreviewTilePane tabId={tabId} />
+    </Suspense>
+  ),
   close: tabId => {
     forgetBrowserPage(tabId)
     forgetPreviewConsole(tabId)
