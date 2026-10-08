@@ -44,6 +44,15 @@ const PROFILE_SWITCH_ACTIONS: KeybindActionMeta[] = Array.from({ length: PROFILE
 }))
 
 // Positional jumps — ^1…^9, mirroring profiles' ⌘1…⌘9.
+//
+// KNOWN, DELIBERATE platform collision (step 16 REV-批次一 S3 / backlog BL-14):
+// off macOS `mod` collapses to `ctrl`, so `session.slot.N` (ctrl+N) lands on the
+// same physical key as `profile.switch.N` (mod+N ⇒ ctrl+N). The keybinds panel
+// surfaces it through `conflictsFor` rather than hiding it, and we ship it that
+// way on purpose: the two families only overlap off macOS, both sides are freely
+// rebindable, and renumbering one to dodge the overlap would break the ⌘N / ^N
+// mnemonic documented above. Recorded as 「登记无行动」 — do NOT "fix" this by
+// changing the defaults.
 export const SESSION_SLOT_COUNT = 9
 
 const SESSION_SLOT_ACTIONS: KeybindActionMeta[] = Array.from({ length: SESSION_SLOT_COUNT }, (_, i) => ({
