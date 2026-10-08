@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { Fragment, useCallback, useEffect, useMemo, useRef } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { codiconIcon } from '@/components/ui/codicon'
@@ -21,11 +21,11 @@ import {
   FileText,
   FolderOpen,
   Globe,
+  type IconComponent,
   Info,
   Keyboard,
   KeyRound,
   Layers3,
-  type IconComponent,
   Package,
   PawPrint,
   RefreshCw,
@@ -49,30 +49,65 @@ import { OverlayMain, OverlayNavItem, OverlaySidebar, OverlaySplitLayout } from 
 import { OverlayView } from '../overlays/overlay-view'
 import { SKILLS_ROUTE } from '../routes'
 
-import { AboutSettings } from './about-settings'
-import { ApprovalsPermissionsSettings } from './approvals-permissions-settings'
-import { AppearanceSettings } from './appearance-settings'
-import { AuditSettings } from './audit-settings'
-import { BillingSettings } from './billing'
-import { ConfigSettings } from './config-settings'
-import { CtfSettings } from './ctf-settings'
 import { SECTIONS, SETTINGS_GROUPS } from './constants'
-import { EvidenceProtectionSettings } from './evidence-protection-settings'
-import { ForensicsSettings } from './forensics-settings'
-import { GatewaySettings } from './gateway-settings'
-import { KeybindSettings } from './keybind-settings'
-import { KEYS_VIEWS, KeysSettings, type KeysView } from './keys-settings'
-import { NotificationsSettings } from './notifications-settings'
-import { PetSettings } from './pet-settings'
-import { PluginsSettings } from './plugins-settings'
-import { PresetsSettings } from './presets-settings'
-import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
-import { QuickEntrySettings } from './quick-entry-settings'
-import { SensitiveInfoSettings } from './sensitive-info-settings'
-import { SessionsSettings } from './sessions-settings'
-import { SettingsContent } from './primitives'
-import { TraySettings } from './tray-settings'
+import { KEYS_VIEWS, type KeysView } from './keys-settings'
+import { SettingsContent, SettingsSkeleton } from './primitives'
+import { PROVIDER_VIEWS, type ProviderView } from './providers-settings'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
+
+// Step 17 · P3b: the twelve-plus child views are lazy so opening Settings only
+// downloads the default tab's chunk. Before this they were static imports, so
+// every open pulled one ~250KB `settings-*.js` monolith down + parsed it
+// (low-end disk / AV scanner: hundreds of ms to seconds) even for a tab the
+// user never visited. The nav *structure* below stays static on purpose —
+// SECTIONS / SETTINGS_GROUPS (rail + deep-link enum), KEYS_VIEWS /
+// PROVIDER_VIEWS (sub-nav enum params) and SettingsContent (a trivial wrapper)
+// must be resolvable on the very first frame, before any child chunk lands.
+//
+// `./keys-settings` and `./providers-settings` each mix a static enum with the
+// component, so they split: the enum imports above stay eager, the component
+// is pulled by the lazy pair below.
+const AboutSettings = lazy(async () => ({ default: (await import('./about-settings')).AboutSettings }))
+
+const ApprovalsPermissionsSettings = lazy(async () => ({
+  default: (await import('./approvals-permissions-settings')).ApprovalsPermissionsSettings
+}))
+
+const AppearanceSettings = lazy(async () => ({ default: (await import('./appearance-settings')).AppearanceSettings }))
+const AuditSettings = lazy(async () => ({ default: (await import('./audit-settings')).AuditSettings }))
+const BillingSettings = lazy(async () => ({ default: (await import('./billing')).BillingSettings }))
+const ConfigSettings = lazy(async () => ({ default: (await import('./config-settings')).ConfigSettings }))
+const CtfSettings = lazy(async () => ({ default: (await import('./ctf-settings')).CtfSettings }))
+
+const EvidenceProtectionSettings = lazy(async () => ({
+  default: (await import('./evidence-protection-settings')).EvidenceProtectionSettings
+}))
+
+const ForensicsSettings = lazy(async () => ({ default: (await import('./forensics-settings')).ForensicsSettings }))
+const GatewaySettings = lazy(async () => ({ default: (await import('./gateway-settings')).GatewaySettings }))
+const KeybindSettings = lazy(async () => ({ default: (await import('./keybind-settings')).KeybindSettings }))
+const KeysSettings = lazy(async () => ({ default: (await import('./keys-settings')).KeysSettings }))
+
+const NotificationsSettings = lazy(async () => ({
+  default: (await import('./notifications-settings')).NotificationsSettings
+}))
+
+const PetSettings = lazy(async () => ({ default: (await import('./pet-settings')).PetSettings }))
+const PluginsSettings = lazy(async () => ({ default: (await import('./plugins-settings')).PluginsSettings }))
+const PresetsSettings = lazy(async () => ({ default: (await import('./presets-settings')).PresetsSettings }))
+
+const ProvidersSettings = lazy(async () => ({
+  default: (await import('./providers-settings')).ProvidersSettings
+}))
+
+const QuickEntrySettings = lazy(async () => ({ default: (await import('./quick-entry-settings')).QuickEntrySettings }))
+
+const SensitiveInfoSettings = lazy(async () => ({
+  default: (await import('./sensitive-info-settings')).SensitiveInfoSettings
+}))
+
+const SessionsSettings = lazy(async () => ({ default: (await import('./sessions-settings')).SessionsSettings }))
+const TraySettings = lazy(async () => ({ default: (await import('./tray-settings')).TraySettings }))
 
 // Nav views derive from the Workbench group table (DESIGN_PROPOSAL §5.5) so
 // the rail, the dropdown and the deep-link enum can never drift apart. The
@@ -549,7 +584,28 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
           </div>
         </div>
 
-        <OverlayMain className="px-0 pb-0">{activeSettingsContent}</OverlayMain>
+        {/* Inner Suspense (step 17 · P3b): the child views above are lazy, so
+            the *first* visit to a tab suspends while its chunk downloads. This
+            boundary keeps that swap inside the main pane — the rail, the
+            search pill and the titlebar strip stay mounted, and wiring.tsx's
+            outer `<Suspense fallback={<SettingsSkeleton />}>` (which owns the
+            one-time "Settings module itself is loading" case) never re-fires
+            on a tab switch. Without this, a tab switch would bubble up to that
+            outer boundary and blank the whole window back to the full-frame
+            skeleton. The fallback is a textless bar run: same page gutters and
+            section rhythm as `SettingsSkeleton` from ./primitives, so the
+            content area holds its shape and no i18n key is needed. */}
+        <OverlayMain className="px-0 pb-0">
+          <Suspense
+            fallback={
+              <SettingsContent>
+                <SettingsSkeleton sections={[{ rows: 4 }]} />
+              </SettingsContent>
+            }
+          >
+            {activeSettingsContent}
+          </Suspense>
+        </OverlayMain>
       </OverlaySplitLayout>
     </OverlayView>
   )
