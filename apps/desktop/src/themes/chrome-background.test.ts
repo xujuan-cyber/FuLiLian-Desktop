@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_PREPAINT_BACKGROUND, chromeBackground } from './chrome-background'
+import { chromeBackground, DEFAULT_PREPAINT_BACKGROUND } from './chrome-background'
 // The RUNTIME derivation — deliberately imported here so the generated values
 // are checked against what context.tsx actually paints, not against a second
 // copy of the same formula. This is the anti-drift mechanism: presets.ts stays

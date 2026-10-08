@@ -24,6 +24,7 @@ const GAP_PX = 8 // 0.5rem breathing gap below the pill's bottom edge
 // The class as written in notifications.tsx (Tailwind underscores = spaces).
 const TOP_CENTER_OFFSET_CLASS =
   'top-[calc(var(--titlebar-height,34px)_+_0.875rem_+_var(--titlebar-control-height,24px)/2_+_0.5rem)]'
+
 // The retired slot: opened at titlebar + 0.75rem = 46px, directly on the pill
 // band (36–60px) — the "toast covers the top-center pill" overlap.
 const RETIRED_COLLIDING_CLASS = 'top-[calc(var(--titlebar-height,34px)+0.75rem)]'
