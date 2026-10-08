@@ -98,6 +98,7 @@ import { useHudHandoff } from '../hud/handoff'
 import { ModelPickerOverlay } from '../model-picker-overlay'
 import { ModelVisibilityOverlay } from '../model-visibility-overlay'
 import { mainChatOccupied, openSession } from '../open-session'
+import { SettingsSkeleton } from '../overlays/settings-skeleton'
 import { PetGenerateOverlay } from '../pet-generate/pet-generate-overlay'
 import { FileActionDialogs } from '../right-sidebar/file-actions'
 import { RemoteFolderPicker } from '../right-sidebar/files/remote-picker'
@@ -1186,7 +1187,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <FindBar />
 
       {settingsOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<SettingsSkeleton />}>
           <SettingsView
             gateway={gateway}
             onClose={closeOverlayToPreviousRoute}
