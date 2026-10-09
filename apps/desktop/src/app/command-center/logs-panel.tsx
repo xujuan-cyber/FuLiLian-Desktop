@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { PageLoader } from '@/components/page-loader'
+import { LogView } from '@/components/ui/log-view'
 import { SearchField } from '@/components/ui/search-field'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
-import { LogView } from '@/components/ui/log-view'
 import { getLogs } from '@/fulilian'
 import { useI18n } from '@/i18n'
 import { AlertCircle } from '@/lib/icons'

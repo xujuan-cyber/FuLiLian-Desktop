@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
 import type { ReactElement } from 'react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { FulilianConfigRecord } from '@/types/fulilian'
-
 import { stubResizeObserver } from '@/test/jsdom'
+import type { FulilianConfigRecord } from '@/types/fulilian'
 
 stubResizeObserver()
 
@@ -136,6 +135,7 @@ describe('ApprovalsPermissionsSettings (full-access badge)', () => {
     await renderPage(<ApprovalsPermissionsSettings />)
 
     expect(await screen.findByText('FULL ACCESS')).toBeTruthy()
+
     for (const label of ['Per-step', 'Semi-auto', 'Full access']) {
       expect(screen.getByRole('button', { name: label })).toBeTruthy()
     }

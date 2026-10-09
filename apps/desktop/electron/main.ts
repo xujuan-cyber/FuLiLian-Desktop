@@ -31,9 +31,9 @@ import {
 } from 'electron'
 
 import { classifyActiveRuntime } from './active-runtime-state'
-import { createApplicationMenuBuilder } from './application-menu'
 import { destroyKeepaliveAgents, downloadAgentFor, jsonAgentFor, withRetry } from './api-transport'
 import { appIconCandidates, resolveAppIcon } from './app-icon'
+import { createApplicationMenuBuilder } from './application-menu'
 import { stopBackendChild as stopBackendChildImpl, stopBackendTreesForUpdate } from './backend-child'
 import {
   type BackendOutputTail,
@@ -66,8 +66,8 @@ import {
   verifyFulilianCli
 } from './backend-probes'
 import { waitForDashboardPortAnnouncement } from './backend-ready'
-import { buildResolveCacheFingerprint, createBackendResolveCache } from './backend-resolve-cache'
 import { isPidAliveWindows, waitForBackendRelease } from './backend-release-gate'
+import { buildResolveCacheFingerprint, createBackendResolveCache } from './backend-resolve-cache'
 import {
   isHostKeyChangedBootFailure,
   isRetryableRemoteBootFailure,
@@ -75,6 +75,7 @@ import {
   shouldLatchHostKeyChangedFailure,
   shouldLatchRemoteReauthFailure
 } from './backend-start-failure'
+import { createBootTiming, formatRendererBootMarkLine, parseRendererBootMark } from './boot-timing'
 import {
   detectRemoteDisplay,
   isWindowsBinaryPathInWsl,
@@ -83,7 +84,6 @@ import {
 } from './bootstrap-platform'
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
 import { runBootstrap } from './bootstrap-runner'
-import { createBootTiming, formatRendererBootMarkLine, parseRendererBootMark } from './boot-timing'
 import {
   BROWSER_WINDOW_HEIGHT,
   BROWSER_WINDOW_MIN_HEIGHT,
@@ -92,6 +92,7 @@ import {
   buildBrowserWindowUrl
 } from './browser-windows'
 import { detectBundleSkew } from './bundle-skew'
+import { registerCaseTimelineIpc } from './case-timeline'
 import { applyConnectionChange, teardownSshState } from './connection-apply'
 import {
   apiRequestRegistryConnectionId,
@@ -203,9 +204,6 @@ import { probeGatewayWebSocket } from './gateway-ws-probe'
 import { registerGitIpc } from './git-ipc'
 import { clearStaleGitLocks } from './gitlock'
 import { readAndConsumeHandoffResult } from './handoff-result'
-import { registerCaseTimelineIpc } from './case-timeline'
-// 报告与导出管线（step 16 · T16）— fulilian:report-export 单通道。
-import { registerReportExportIpc } from './report-export'
 import {
   ATTACHMENT_UPLOAD_DEFAULT_MAX_BYTES,
   clampDataUrlReadMaxMb,
@@ -335,6 +333,8 @@ import {
 import { missingRendererAssets } from './renderer-bundle'
 import { loadRendererLoadErrorPage } from './renderer-load-error-page'
 import { attachRendererConsoleCapture, formatRendererBoundaryReport } from './renderer-log'
+// 报告与导出管线（step 16 · T16）— fulilian:report-export 单通道。
+import { registerReportExportIpc } from './report-export'
 import {
   classifyStoredSecret,
   readSecretStoragePolicy,
@@ -358,9 +358,7 @@ import { createSshProbeConnection, pickLocalPort, redactSecrets, SshConnection }
 import { preflightStateDb } from './state-db-preflight'
 import { createStreamThrottle } from './stream-throttle'
 import { registerTerminalIpc } from './terminal-ipc'
-import { registerWslCliIpc } from './wsl-cli-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
-import { createDesktopTray, type DesktopTray } from './tray'
 import {
   backgroundMaterialFor,
   defaultTranslucencyState,
@@ -374,6 +372,7 @@ import {
   windowOpacityFor,
   windowOpacityOptions
 } from './translucency'
+import { createDesktopTray, type DesktopTray } from './tray'
 import {
   compareApiUrl,
   parseCompareBehindCount,
@@ -446,6 +445,7 @@ import {
 import { installWindowsSystemCaTrust } from './windows-system-ca'
 import { readWindowsUserEnvVar } from './windows-user-env'
 import { isPackagedInstallPath as isPackagedInstallPathUnderRoots } from './workspace-cwd'
+import { registerWslCliIpc } from './wsl-cli-ipc'
 import { readWslWindowsClipboardImage } from './wsl-clipboard-image'
 import { resolvePickerDefaultPath, setActiveGatewayProfile, setWslBridgeProfileState } from './wsl-path-bridge'
 
@@ -842,6 +842,7 @@ const DESKTOP_WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-sta
 const DESKTOP_BACKEND_OWNERSHIP_PATH = path.join(app.getPath('userData'), 'backend-ownership.json')
 // P1：解析结果落盘缓存（只缓存成功解析；命中即零探针返回；损坏/不匹配静默回退）。
 const DESKTOP_BACKEND_RESOLVE_CACHE_PATH = path.join(app.getPath('userData'), 'backend-resolve-cache.json')
+
 // P1 缓存 IO：读缺失/不可读 → null；写失败静默（缓存是加速手段，绝不破坏启动）。
 const backendResolveCacheIo = {
   readFile: (filePath: string) => {
@@ -855,6 +856,7 @@ const backendResolveCacheIo = {
     fs.writeFileSync(filePath, contents, 'utf8')
   }
 }
+
 const backendResolveCache = createBackendResolveCache(DESKTOP_BACKEND_RESOLVE_CACHE_PATH, backendResolveCacheIo)
 const DESKTOP_MANAGED_SSH_RECOVERY_PATH = path.join(app.getPath('userData'), 'managed-ssh-update-recovery.json')
 // active-profile.json records which Fulilian profile the desktop launches its
@@ -4631,6 +4633,7 @@ async function resolveFulilianBackend(backendArgs) {
     const fingerprint = buildResolveCacheFingerprint({
       platform: process.platform, isPackaged: IS_PACKAGED, activeRoot: ACTIVE_FULILIAN_ROOT, sourceRepoRoot: SOURCE_REPO_ROOT, installStamp: INSTALL_STAMP, env: process.env
     })
+
     // 修复（hard reinstall）请求必须走完整阶梯：缓存短路会绕过 step 3 的
     // `!bootstrapRepairRequested` 判定，让 repair 失效 ⇒ 此处显式禁用读缓存。
     const cached = bootstrapRepairRequested
@@ -4639,6 +4642,7 @@ async function resolveFulilianBackend(backendArgs) {
 
     if (cached) {
       rememberLog('[boot-timing] resolve-cache hit')
+
       return cached
     }
 
@@ -12694,6 +12698,7 @@ function focusWindow(win) {
 
   win.focus()
 }
+
 // Front the main window (recreating it if needed) for the tray's click actions.
 const showMainWindow = () => ensureMainWindow(mainWindow, { isReady: app.isReady(), createWindow, focusWindow })
 
@@ -15970,6 +15975,7 @@ const notify = createNotifyHandler({
   focusWindow,
   NotificationCtor: Notification
 })
+
 // Notification center double-write (step 16 · T15): AFTER the notify handler
 // accepted a payload (its gate + dedupe returned), mirror the same payload
 // into the titlebar bell's persistent feed. Strictly additive — the existing
@@ -17303,7 +17309,9 @@ app.whenReady().then(() => {
   desktopTray = bootTiming.span('createDesktopTray', () =>
     createDesktopTray({
       actions: {
-        focusSession: id => { const win = sessionWindows.get(id); if (win) focusWindow(win); else { showMainWindow(); mainWindow?.webContents.send('fulilian:focus-session', id) } },
+        focusSession: id => { const win = sessionWindows.get(id);
+
+ if (win) {focusWindow(win);} else { showMainWindow(); mainWindow?.webContents.send('fulilian:focus-session', id) } },
         newSession: kind => { showMainWindow(); mainWindow?.webContents.send('fulilian:new-session', { kind }) },
         openMainWindow: showMainWindow,
         quit: () => { desktopTray?.destroy(); app.quit() }
@@ -17427,6 +17435,7 @@ app.on('before-quit', event => {
   }
 
   isQuitting = true
+
   // A detached remote updater can outlive this Electron process. Do not tear
   // down its SSH observer/restore transaction at the generic SSH shutdown
   // deadline: join it first (BEFORE sealing the bootstrap coordinator, whose

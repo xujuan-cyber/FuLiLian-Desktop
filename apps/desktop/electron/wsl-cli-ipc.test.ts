@@ -30,6 +30,7 @@ vi.mock('./wsl-path-bridge', () => ({
 }))
 
 import { registerWslCliIpc, WSL_CLI_CHANNELS } from './wsl-cli-ipc'
+import { resetWslCliPersistCache, WSL_CLI_OPTIN_FILE_NAME } from './wsl-cli-persist'
 import {
   configureWslCliOptinPersistence,
   configureWslCliProbeExec,
@@ -37,9 +38,9 @@ import {
   readWslCliOptinState,
   WSL_CLI_PROBE_ERROR
 } from './wsl-cli-probe'
-import { resetWslCliPersistCache, WSL_CLI_OPTIN_FILE_NAME } from './wsl-cli-persist'
 
 const DISTRO_LIST_OUTPUT = 'Ubuntu\nDebian\n'
+
 const PROBE_OUTPUT = [
   'claude\t/usr/local/bin/claude\t2.1.0 (Claude Code)',
   'codex\t/usr/local/bin/codex\t',

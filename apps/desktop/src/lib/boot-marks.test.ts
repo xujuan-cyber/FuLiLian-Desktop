@@ -40,11 +40,13 @@ describe('reportBootMark', () => {
         throw new Error('boom')
       }
     }
+
     expect(() => reportBootMark('boot:html-parse', bridge)).not.toThrow()
   })
 
   test('all declared renderer marks are forwarded', () => {
     const spy = vi.fn()
+
     for (const name of RENDERER_BOOT_MARK_NAMES) {
       reportBootMark(name, { reportBootMark: spy })
     }

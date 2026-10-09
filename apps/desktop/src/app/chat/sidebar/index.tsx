@@ -30,6 +30,7 @@ import { resolveProfileColor } from '@/lib/profile-color'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
 import { $desktopBoot } from '@/store/boot'
+import { toggleCommandPalette } from '@/store/command-palette'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
 import { $bindings } from '@/store/keybinds'
@@ -108,7 +109,6 @@ import {
   refreshPullRequests,
   sessionPrKey
 } from '@/store/pull-requests'
-import { toggleCommandPalette } from '@/store/command-palette'
 import { openRouteTile } from '@/store/route-tiles'
 import {
   $cronSessions,
@@ -142,9 +142,9 @@ import {
 } from '../../routes'
 import type { SidebarNavItem } from '../../types'
 
-import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarKindGroups } from './container-groups'
-import { kindGroupsVisible, type ContainerKindFilter } from './container-kind'
+import { type ContainerKindFilter, kindGroupsVisible } from './container-kind'
+import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarFilterMenu, SidebarKindFilterRow } from './filter-menu'
 import { SidebarGatewayStatusRow } from './gateway-status-row'
 import { SidebarLoadMoreRow } from './load-more-row'

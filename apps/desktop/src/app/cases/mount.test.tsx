@@ -6,8 +6,8 @@
 // (Same double-proof shape as case-timeline/mount.test.tsx, T13 precedent.)
 
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'
+import { describe, expect, it } from 'vitest'
 
 import { CASES_ROUTE, caseTimelineRoute } from '../routes'
 

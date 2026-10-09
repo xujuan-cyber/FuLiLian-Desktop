@@ -504,6 +504,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [textScale, setTextScaleState] = useState<TextScaleTier>(() =>
     typeof window === 'undefined' ? 'default' : textScalePref.resolve(readBootProfileKey())
   )
+
   const [textInk, setTextInkState] = useState<TextInkTier>(() =>
     typeof window === 'undefined' ? 'default' : textInkPref.resolve(readBootProfileKey())
   )

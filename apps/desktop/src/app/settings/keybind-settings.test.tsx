@@ -1,12 +1,11 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { I18nProvider } from '@/i18n'
 import { resetAllBindings, setBinding } from '@/store/keybinds'
 import { stubResizeObserver } from '@/test/jsdom'
 
 import { KeybindSettings } from './keybind-settings'
-
-import { I18nProvider } from '@/i18n'
 
 // Step 16 · T9 (方案 §3-T9): the keybinds settings page renders the SAME
 // four-group layout and the SAME registry data as the ? cheat sheet, and
@@ -36,6 +35,7 @@ describe('KeybindSettings four-group layout (T9-1)', () => {
     renderKeybindSettings()
 
     const labels = ['Global', 'Sessions & approvals', 'Editing', 'Navigation & view']
+
     const positions = labels.map(label => {
       const el = screen.getByText(label)
 

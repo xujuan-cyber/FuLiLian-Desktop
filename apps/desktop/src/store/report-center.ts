@@ -24,7 +24,7 @@
 
 import { atom } from 'nanostores'
 
-import { starredEvents, $caseId } from '@/store/case-timeline'
+import { $caseId, starredEvents } from '@/store/case-timeline'
 import type { TimelineEvent } from '@/store/case-timeline-types'
 
 // ── Section template (T16-2) ────────────────────────────────────────────────
@@ -89,6 +89,7 @@ export interface ReportSourceInput {
 export function buildReportMarkdown(input: ReportSourceInput): string {
   const caseId = String(input?.caseId ?? '')
   const starred = input?.starred ?? []
+
   const lines: string[] = [
     `# 取证报告 ${caseId || '（未命名案件）'}`,
     '',

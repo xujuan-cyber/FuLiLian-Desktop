@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { CAPABILITY_PRESETS, type CapabilityPreset } from '@/lib/personalities'
 import { Layers3 } from '@/lib/icons'
+import { CAPABILITY_PRESETS, type CapabilityPreset } from '@/lib/personalities'
 import { cn } from '@/lib/utils'
 import { $activePreset, $sessionPreset, setActivePreset } from '@/store/presets'
 

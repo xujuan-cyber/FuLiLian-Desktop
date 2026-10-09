@@ -42,6 +42,7 @@ export function registerWslCliIpc({ rememberLog }: WslCliIpcDeps): WslCliIpcApi 
 
   ipcMain.handle('fulilian:wsl-cli:probe', (_event, options) => {
     const payload = (options || {}) as { distro?: unknown; force?: unknown }
+
     const result = probeWslClis({
       // The contract types this as `string | undefined`, but the renderer is
       // untrusted input: a number/object would otherwise reach

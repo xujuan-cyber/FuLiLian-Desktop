@@ -1,7 +1,8 @@
 import { useEffect, useReducer, useRef } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-import { ArrowUp, Bug, Pencil, Search, Terminal } from '@/lib/icons'
 import { useI18n } from '@/i18n'
+import { ArrowUp, Bug, Pencil, Search, Terminal } from '@/lib/icons'
 import {
   initialQuickComposerState,
   QUICK_CAPTURE_MODES,
@@ -11,8 +12,6 @@ import {
   quickComposerReducer,
   type QuickComposerState
 } from '@/store/quick-entry'
-
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 /*
  * Token fallbacks are deliberate (step 16 REV-批次一 S2 / backlog BL-15).
@@ -197,6 +196,7 @@ export function QuickCaptureApp() {
   const { t } = useI18n()
   const qc = t.quickCapture
   const inputRef = useRef<HTMLInputElement>(null)
+
   const [state, dispatch] = useReducer((current: QuickComposerState, event: QuickComposerEvent) => {
     const { send, state: next } = quickComposerReducer(current, event)
     const api = window.fulilianDesktop?.quickEntry
@@ -209,6 +209,7 @@ export function QuickCaptureApp() {
 
     return next
   }, initialQuickComposerState)
+
   const [keycap, setKeycap] = useReducer((_current: string, next: string) => next, '')
 
   // Re-summoned by the chord: the shell reuses the window, so reset the draft

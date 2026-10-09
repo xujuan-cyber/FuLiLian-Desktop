@@ -1,26 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionInfo } from '@/types/fulilian'
-
-import { en } from '@/i18n/en'
-import { APP_ROUTES } from '@/app/routes'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
+import { APP_ROUTES } from '@/app/routes'
+import { en } from '@/i18n/en'
 import { Search } from '@/lib/icons'
 import { $commandPaletteOpen, setCommandPaletteOpen } from '@/store/command-palette'
+import type { SessionInfo } from '@/types/fulilian'
+
+import { sessionBadgeKind } from './session-marks'
 
 import {
-  type PaletteGroup,
   buildActionZoneGroups,
   buildContainerZoneGroups,
   buildPageZoneGroups,
   buildRecentSessionGroups,
   jumpToZone,
+  type PaletteGroup,
+  type PaletteItem,
   paletteStatusLabel,
   rankGroups,
-  tabCompletionValue,
-  type PaletteItem
+  tabCompletionValue
 } from './index'
-import { sessionBadgeKind } from './session-marks'
 
 // Step 16 · T8 (方案 §3-T8): the four work-hub zones + keyboard conventions +
 // the three states. Assertions run against the REAL exported builders the
@@ -81,6 +81,7 @@ describe('buildActionZoneGroups (T8 动作区)', () => {
 
 describe('buildRecentSessionGroups (T8 会话区, empty palette)', () => {
   const openSession = vi.fn((sessionId: string) => () => sessionId)
+
   const sessions = Array.from({ length: 12 }, (_, index) =>
     session({ id: `2026010${index % 10}_00000${index}_abc12${index}`, title: `Session ${index}` })
   )
@@ -163,10 +164,12 @@ describe('buildPageZoneGroups (T8 页面区)', () => {
 describe('buildContainerZoneGroups (T8 容器区)', () => {
   const onOpenFolder = vi.fn()
   const onOpenProject = vi.fn()
+
   const projects = [
     { icon: null, id: 'p1', isNoProject: true, label: 'Home', path: null },
     { icon: null, id: 'p2', label: 'FuLilian', path: 'E:/FuLilian-Desktop' }
   ]
+
   const [group] = buildContainerZoneGroups({ onOpenFolder, onOpenProject, projects, t })
 
   it('heads the zone with the containers vocabulary and lists REAL sources only', () => {
@@ -192,10 +195,12 @@ describe('rankGroups (分组置顶 + fuzzy)', () => {
     heading: 'Exact',
     items: [{ icon: Search, id: 'exact', label: 'theme' }]
   }
+
   const keywordGroup: PaletteGroup = {
     heading: 'Keyword',
     items: [{ icon: Search, id: 'keyword', keywords: ['theme'], label: 'Appearance picker' }]
   }
+
   const unmatchedGroup: PaletteGroup = {
     heading: 'Unmatched',
     items: [{ icon: Search, id: 'unmatched', label: 'Nothing here' }]

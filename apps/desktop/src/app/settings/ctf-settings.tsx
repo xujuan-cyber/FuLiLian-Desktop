@@ -1,8 +1,7 @@
-import { useI18n } from '@/i18n'
-import { Terminal } from '@/lib/icons'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/i18n'
+import { Terminal } from '@/lib/icons'
 
 import { ListRow, SectionHeading, SettingsContent, SettingsSkeleton } from './primitives'
 import { useConfigDraft } from './use-config-draft'

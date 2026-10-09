@@ -8,7 +8,7 @@
 // un-injected probe fails loudly instead of spawning.
 import assert from 'node:assert/strict'
 
-import { describe, afterEach, beforeEach, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, test, vi } from 'vitest'
 
 // The one path that could still reach a real `wsl.exe` is the default-distro
 // fallback, which lives in wsl-path-bridge.ts and spawns `wsl.exe -l -q`.
@@ -28,9 +28,9 @@ import {
   probeWslClis,
   readWslCliOptin,
   readWslCliOptinState,
+  writeWslCliOptin,
   WSL_CLI_NAMES,
-  WSL_CLI_PROBE_ERROR,
-  writeWslCliOptin
+  WSL_CLI_PROBE_ERROR
 } from './wsl-cli-probe'
 
 const FROZEN_ORDER = ['claude', 'codex', 'codebuddy', 'hermes', 'fulilian']
@@ -146,6 +146,7 @@ test('E2/b timeout: five all-unavailable entries and a timeout class token', () 
   const { deps } = makeExec(() => {
     throw execFailure({ code: 'ETIMEDOUT', message: 'spawnSync wsl.exe ETIMEDOUT', signal: 'SIGTERM' })
   })
+
   configureWslCliProbeExec(deps)
 
   const result = probeWslClis({ distro: 'Ubuntu' })
@@ -170,6 +171,7 @@ test('E2/c non-zero exit: five all-unavailable entries and a non-zero-exit class
   const { deps } = makeExec(() => {
     throw execFailure({ message: 'Command failed: wsl.exe -d Ubuntu', status: 127 })
   })
+
   configureWslCliProbeExec(deps)
 
   const result = probeWslClis({ distro: 'Ubuntu' })
@@ -224,6 +226,7 @@ test('E12 spawn refused (EPERM) degrades without bubbling and keeps the five-ent
   const { deps } = makeExec(() => {
     throw execFailure({ code: 'EPERM', message: 'spawnSync wsl.exe EPERM' })
   })
+
   configureWslCliProbeExec(deps)
 
   let result: ReturnType<typeof probeWslClis> | undefined
@@ -252,6 +255,7 @@ test('E12 EACCES is also classified as spawn-failed, not as an empty result', ()
   const { deps } = makeExec(() => {
     throw execFailure({ code: 'EACCES', message: 'spawnSync wsl.exe EACCES' })
   })
+
   configureWslCliProbeExec(deps)
 
   const result = probeWslClis({ distro: 'Ubuntu' })
@@ -262,6 +266,7 @@ test('E12 EACCES is also classified as spawn-failed, not as an empty result', ()
     result.entries.map(entry => entry.name),
     FROZEN_ORDER
   )
+
   for (const entry of result.entries) {
     assert.equal(entry.available, false)
   }
@@ -271,6 +276,7 @@ test('an unknown exec failure classifies as probe-failed, not as success', () =>
   const { deps } = makeExec(() => {
     throw execFailure({ message: 'something else entirely' })
   })
+
   configureWslCliProbeExec(deps)
 
   const result = probeWslClis({ distro: 'Ubuntu' })
@@ -320,6 +326,7 @@ test('a failing distro listing degrades to [distro] without poisoning error', ()
 
     return PROBE_OUTPUT
   })
+
   configureWslCliProbeExec(deps)
 
   const result = probeWslClis({ distro: 'Ubuntu' })
@@ -396,6 +403,7 @@ test('probedAt starts null and is refreshed by a successful probe only', () => {
   const failing = makeExec(() => {
     throw execFailure({ code: 'EPERM', message: 'spawnSync wsl.exe EPERM' })
   })
+
   configureWslCliProbeExec(failing.deps)
   probeWslClis({ distro: 'Ubuntu' })
 
@@ -413,6 +421,7 @@ test('a probe failure is classified but never surfaces as a thrown IPC error', (
   const { deps } = makeExec(() => {
     throw execFailure({ code: 'EPERM', message: 'spawnSync wsl.exe EPERM' })
   })
+
   configureWslCliProbeExec(deps)
 
   assert.doesNotThrow(() => probeWslClis({ distro: undefined }))

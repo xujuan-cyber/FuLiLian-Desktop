@@ -21,9 +21,11 @@ describe('Intro (§5.1 home: greeting + quick chips + mode entry cards)', () => 
     expect(greetings.some(greeting => screen.queryByText(greeting) !== null)).toBe(true)
 
     expect(screen.getByTestId('intro-chip-programming')).toBeTruthy()
+
     for (const key of ['forensics', 'ctf', 'idle']) {
       expect(screen.getByTestId(`intro-chip-placeholder-${key}`).getAttribute('aria-disabled')).toBe('true')
     }
+
     for (const key of ['forensics', 'ctf', 'project']) {
       expect(screen.getByTestId(`intro-mode-card-${key}`)).toBeTruthy()
     }
@@ -44,6 +46,7 @@ describe('Intro (§5.1 home: greeting + quick chips + mode entry cards)', () => 
       expect(chip.tagName).toBe('SPAN')
       expect(chip.getAttribute('aria-disabled')).toBe('true')
     }
+
     // No fabricated creation flow text (no fake case numbers/challenge ids).
     expect(document.body.textContent).not.toMatch(/CASE-\d/)
   })

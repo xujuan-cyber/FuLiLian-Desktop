@@ -1926,6 +1926,7 @@ export function useSessionActions({
         // backlog (see 步骤13-决策记录.md §9.4).
         const inheritedPreset =
           (parentStoredId ? $sessionPreset.get()[parentStoredId] : undefined) ?? $activePreset.get()
+
         const branchToolsets = presetToolsets(inheritedPreset) ?? undefined
 
         const branched = sourceSessionId

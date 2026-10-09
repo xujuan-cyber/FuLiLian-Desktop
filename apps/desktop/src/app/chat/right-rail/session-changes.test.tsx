@@ -2,12 +2,12 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { atom } from 'nanostores'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createClientSessionState } from '@/lib/chat-runtime'
-import type { ChatMessage } from '@/lib/chat-messages'
-import { desktopFileDiff, desktopGitRoot } from '@/lib/desktop-fs'
 import { I18nProvider } from '@/i18n'
-import { publishSessionState, clearAllSessionStates } from '@/store/session-states'
+import type { ChatMessage } from '@/lib/chat-messages'
+import { createClientSessionState } from '@/lib/chat-runtime'
+import { desktopFileDiff, desktopGitRoot } from '@/lib/desktop-fs'
 import type * as SessionStore from '@/store/session'
+import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
 import type * as SessionStatesStore from '@/store/session-states'
 
 import { sessionChangedFiles, SessionChangesPanel } from './session-changes'

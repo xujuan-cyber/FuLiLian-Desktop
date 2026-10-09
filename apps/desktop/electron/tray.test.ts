@@ -10,6 +10,7 @@ import {
   CLOSE_TO_TRAY_DEFAULT,
   composeTrayIcon,
   createDesktopTray,
+  type DesktopTrayOptions,
   EMPTY_TRAY_LABELS,
   EMPTY_TRAY_SNAPSHOT,
   IDLE_TRAY_QUIT_STATE,
@@ -20,16 +21,15 @@ import {
   TRAY_CLOSE_TO_TRAY_CHANNEL,
   TRAY_STATE_CHANNEL,
   TRAY_TONE_CHANNELS,
-  writeCloseToTrayPreference,
-  type DesktopTrayOptions,
   type TrayActions,
   type TrayElectronLike,
   type TrayImageFactory,
   type TrayImageLike,
   type TrayLike,
-  type TrayMenuModelItem,
   type TrayMenuItemTemplate,
-  type TrayStatePayload
+  type TrayMenuModelItem,
+  type TrayStatePayload,
+  writeCloseToTrayPreference
 } from './tray'
 
 type HeadingItem = Extract<TrayMenuModelItem, { type: 'heading' }>
@@ -454,10 +454,12 @@ describe('createDesktopTray', () => {
       ...base.options,
       quitState: () => ({ ...IDLE_TRAY_QUIT_STATE, quitting: true })
     })
+
     const handoff = createDesktopTray({
       ...base.options,
       quitState: () => ({ ...IDLE_TRAY_QUIT_STATE, quittingForHandoff: true })
     })
+
     const guarded = createDesktopTray({
       ...base.options,
       quitState: () => ({ ...IDLE_TRAY_QUIT_STATE, quitInProgress: true })
@@ -484,6 +486,7 @@ describe('createDesktopTray', () => {
 
   test('an undecodable icon degrades to an empty image instead of throwing', () => {
     const harness = createHarness()
+
     const electron: TrayElectronLike = {
       ...harness.electron,
       nativeImage: {

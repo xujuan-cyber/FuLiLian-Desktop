@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react'
 
 import {
+  requestComposerDraftSync,
+  stashSessionDraft,
+  takeSessionDraft
+} from '@/store/composer'
+import { appendQuickCaptureNote } from '@/store/quick-capture-inbox'
+import {
   initQuickEntryBridge,
   QUICK_TARGET_CURRENT,
   QUICK_TARGET_NEW,
@@ -9,12 +15,6 @@ import {
   type QuickEntrySubmitPayload,
   setQuickEntrySubmitHandler
 } from '@/store/quick-entry'
-import { appendQuickCaptureNote } from '@/store/quick-capture-inbox'
-import {
-  requestComposerDraftSync,
-  stashSessionDraft,
-  takeSessionDraft
-} from '@/store/composer'
 import { $gatewayState, $sessions } from '@/store/session'
 import { sessionTileDelegate } from '@/store/session-states'
 import { isAuxiliaryWindow } from '@/store/windows'

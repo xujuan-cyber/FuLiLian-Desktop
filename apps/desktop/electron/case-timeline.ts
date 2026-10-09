@@ -279,7 +279,7 @@ export interface TimelineStarAuditPayload {
  * producer in registerCaseTimelineIpc) and keep the mock as the fail-soft
  * fallback, preserving the `mockGenerated` provenance flag semantics.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- seam kept explicit per 方案 §5-T13
+ 
 function timelineFromBackend(_caseId: string): null {
   return null
 }

@@ -16,13 +16,13 @@
 // windowsHide) is copied from wsl-path-bridge.ts:resolveDefaultWslDistro.
 import { execFileSync, type ExecFileSyncOptions } from 'node:child_process'
 
-import { resolveDefaultWslDistro } from './wsl-path-bridge'
 import {
   readWslCliOptinFile,
   resetWslCliPersistCache,
-  wslCliOptinFilePath,
-  writeWslCliOptinFile
+  writeWslCliOptinFile,
+  wslCliOptinFilePath
 } from './wsl-cli-persist'
+import { resolveDefaultWslDistro } from './wsl-path-bridge'
 
 export const WSL_CLI_NAMES = ['claude', 'codex', 'codebuddy', 'hermes', 'fulilian'] as const
 export type WslCliName = (typeof WSL_CLI_NAMES)[number]

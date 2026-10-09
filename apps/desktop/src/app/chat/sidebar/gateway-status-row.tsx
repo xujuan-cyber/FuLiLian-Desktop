@@ -15,8 +15,10 @@ export function SidebarGatewayStatusRow() {
   const state = useStore($gatewayState)
 
   const dotState = state === 'open' ? 'running' : state === 'error' ? 'failed' : 'background'
+
   const label =
     state === 'open' ? g.connected : state === 'connecting' ? g.connecting : state === 'error' ? g.error : g.offline
+
   const text = `${g.local} · ${label}`
 
   return (

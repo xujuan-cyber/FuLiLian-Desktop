@@ -6,15 +6,16 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { I18nProvider } from '@/i18n'
-import { $archivedSessions } from '@/store/sidebar-archive'
 import { $cronSessions, $messagingSessions, $sessions } from '@/store/session'
+import { $archivedSessions } from '@/store/sidebar-archive'
 import type { SessionInfo } from '@/types/fulilian'
 
-import { CasesOverviewView } from './index'
 import { caseTimelineRoute } from '../routes'
+
+import { CasesOverviewView } from './index'
 
 const session = (overrides: Partial<SessionInfo>): SessionInfo =>
   ({

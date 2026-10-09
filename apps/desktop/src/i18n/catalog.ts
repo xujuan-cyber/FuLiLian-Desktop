@@ -39,20 +39,28 @@ export async function loadTranslations(locale: Locale): Promise<Translations> {
   switch (locale) {
     case 'zh': {
       loaded.zh = (await import('./zh')).zh
+
       break
     }
+
     case 'zh-hant': {
       loaded['zh-hant'] = (await import('./zh-hant')).zhHant
+
       break
     }
+
     case 'ja': {
       loaded.ja = (await import('./ja')).ja
+
       break
     }
+
     case 'ar': {
       loaded.ar = (await import('./ar')).ar
+
       break
     }
+
     default:
       return en
   }

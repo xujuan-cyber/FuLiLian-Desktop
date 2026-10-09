@@ -18,7 +18,7 @@ describe('StatusDot states (DESIGN_PROPOSAL §3.5)', () => {
   })
 
   it('renders the state class on the dot', () => {
-    const { container } = render(<StatusDot state="running" data-testid="dot" />)
+    const { container } = render(<StatusDot data-testid="dot" state="running" />)
 
     const dot = container.querySelector('[data-testid="dot"]') as HTMLElement
 
@@ -31,7 +31,7 @@ describe('StatusDot states (DESIGN_PROPOSAL §3.5)', () => {
   })
 
   it('keeps the legacy tone API working (out-of-set consumers)', () => {
-    const { container } = render(<StatusDot tone="bad" data-testid="dot" />)
+    const { container } = render(<StatusDot data-testid="dot" tone="bad" />)
 
     expect((container.querySelector('[data-testid="dot"]') as HTMLElement).className).toContain('bg-destructive')
   })

@@ -1,9 +1,10 @@
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, type ReactNode, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import { searchSessions } from '@/api/sessions'
 import {
   HUD_HEADING,
   HUD_ITEM,
@@ -17,7 +18,6 @@ import { codiconIcon } from '@/components/ui/codicon'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { HighlightMatches } from '@/components/ui/highlight-matches'
 import { KbdCombo, KbdGroup } from '@/components/ui/kbd'
-import { searchSessions } from '@/api/sessions'
 import { getFulilianConfigRecord, listAllProfileSessions } from '@/fulilian'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { type Translations, useI18n } from '@/i18n'
@@ -31,9 +31,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clipboard,
   Clock,
   Cpu,
-  Clipboard,
   Download,
   Egg,
   FileText,
@@ -74,7 +74,7 @@ import {
   closeCommandPalette,
   setCommandPaletteOpen
 } from '@/store/command-palette'
-import { startNewSessionWithKind, type PaletteSessionKind } from '@/store/command-palette-kind'
+import { type PaletteSessionKind, startNewSessionWithKind } from '@/store/command-palette-kind'
 import { $bindings, bindingsFor } from '@/store/keybinds'
 import { $dismissedAutoProjectIds, filterVisibleProjects } from '@/store/layout'
 import { openPetGenerate } from '@/store/pet-generate'
@@ -122,7 +122,7 @@ import { HighlightWatcher } from './highlight-watcher'
 import { MarketplaceThemePage } from './marketplace-theme-page'
 import { PetInlineToggle, PetPalettePage } from './pet-palette-page'
 import { runSecurityAuditFromPalette } from './security-audit-action'
-import { SessionKindBadge, sessionBadgeKind, sessionLeadNode } from './session-marks'
+import { sessionBadgeKind, SessionKindBadge, sessionLeadNode } from './session-marks'
 import { StatusRow } from './status-row'
 
 // Exported for the zone/keyboard fixture tests (hub-groups.test.tsx) — the
@@ -460,6 +460,7 @@ export function buildSessionSearchGroups({
   // title/preview rows above.
   const remoteItems = remote.map(result => {
     const startedAt = result.session_started
+
     const age = !startedAt
       ? undefined
       : (() => {
@@ -1614,6 +1615,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     // dot resolves the live state from the stored id alone; no SessionInfo
     // exists for these, so no kind badge (honest, per T8-4).
     const localIds = new Set(sessions.map(session => session.id))
+
     const remoteHits = (sessionSearchQuery.data?.results ?? [])
       .filter(hit => !localIds.has(hit.session_id))
       .slice(0, REMOTE_ROOT_LIMIT)
@@ -1623,6 +1625,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         heading: t.commandCenter.sessionSearchRemote,
         items: remoteHits.map(hit => {
           const startedAt = hit.session_started
+
           const age = !startedAt
             ? undefined
             : (() => {

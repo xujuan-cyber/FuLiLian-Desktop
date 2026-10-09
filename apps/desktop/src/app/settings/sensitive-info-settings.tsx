@@ -1,8 +1,8 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { EyeOff } from '@/lib/icons'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ListRow, SectionHeading, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { useConfigDraft } from './use-config-draft'
 

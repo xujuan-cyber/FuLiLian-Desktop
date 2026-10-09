@@ -57,13 +57,18 @@ export const NOTIFICATION_CENTER_CHANNEL = 'fulilian:notification-center'
 export function groupForNotifyPayload(payload: NotifyPayload | null | undefined): NotificationCenterGroup {
   switch (payload?.kind) {
     case 'approval':
+
     case 'input':
       return 'approval'
 
     case 'backgroundDone':
+
     case 'turnDone':
+
     case 'turnError':
+
     case 'credits':
+
     case 'plugin':
       return 'automation'
 

@@ -29,6 +29,7 @@ import {
   findPrevious as findPreviousMatch,
   openFindBar
 } from '@/store/find-in-page'
+import { $gateway } from '@/store/gateway'
 import { toggleHud } from '@/store/hud'
 import { $capture, $comboIndex, endCapture, setBinding } from '@/store/keybinds'
 import { $keybindsSheetOpen, setKeybindsSheetOpen, toggleKeybindsSheet } from '@/store/keybinds-registry'
@@ -65,7 +66,6 @@ import {
   switcherJustClosed
 } from '@/store/session-switcher'
 import { toggleStatusbarVisible } from '@/store/statusbar-prefs'
-import { $gateway } from '@/store/gateway'
 import { openNewWindow } from '@/store/windows'
 import { useTheme } from '@/themes/context'
 

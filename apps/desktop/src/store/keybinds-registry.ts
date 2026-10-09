@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
 
-import { KEYBIND_READONLY, type KeybindCategory, keybindAction } from '@/lib/keybinds/actions'
+import { KEYBIND_READONLY, keybindAction, type KeybindCategory } from '@/lib/keybinds/actions'
 import { canonicalizeCombo } from '@/lib/keybinds/combo'
 
 import { bindingsFor } from './keybinds'

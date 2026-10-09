@@ -242,46 +242,65 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       switch (view) {
         case 'about':
           return { icon: Info, label: t.settings.nav.about }
+
         case 'approvals':
           return { icon: CheckCircle2, label: t.security.approvals.nav }
+
         case 'audit':
           return { icon: Clock, label: t.security.audit.nav }
+
         case 'billing':
           return { icon: BarChart3, label: t.settings.nav.billing }
+
         case 'ctf':
           return { icon: Terminal, label: t.settings.group.ctf.nav }
+
         case 'evidence-protection':
           return { icon: FolderOpen, label: t.security.evidence.nav }
+
         case 'forensics':
           return { icon: FileText, label: t.settings.group.forensics.nav }
+
         case 'gateway':
           return { icon: Globe, label: t.settings.nav.gateway }
+
         case 'keybinds':
           return { icon: Keyboard, label: t.settings.nav.keybinds }
+
         case 'keys':
           return { icon: KeyRound, label: t.settings.nav.apiKeys }
+
         case 'notifications':
           return { icon: Bell, label: t.settings.nav.notifications }
+
         case 'pet':
           // Same string the page renders as its heading — a second key would
           // be exactly the drift the four-locale rule exists to avoid.
           return { icon: PawPrint, label: t.settings.appearance.pet.title }
+
         case 'plugins':
           return { icon: Package, label: t.settings.nav.plugins }
+
         case 'presets':
           return { icon: Layers3, label: t.presets.title }
+
         case 'providers':
           return { icon: Zap, label: t.settings.nav.providers }
+
         case 'quick-entry':
           return { icon: Zap, label: t.settings.quickEntry.enabledTitle }
+
         case 'sensitive-info':
           return { icon: EyeOff, label: t.security.sensitive.nav }
+
         case 'sessions':
           return { icon: Archive, label: t.settings.nav.archivedChats }
+
         case 'tray':
           // Same string the row renders as its label — a second key would be
           // exactly the drift the five-locale rule exists to avoid.
           return { icon: AppWindow, label: t.settings.tray.enabledTitle }
+
         default:
           return { icon: Settings2, label: view }
       }

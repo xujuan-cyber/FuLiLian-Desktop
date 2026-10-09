@@ -13,10 +13,10 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'vitest'
 
 import {
-  buildApplicationMenuTemplate,
-  createApplicationMenuBuilder,
   type ApplicationMenuDeps,
-  type ApplicationMenuWindowLike
+  type ApplicationMenuWindowLike,
+  buildApplicationMenuTemplate,
+  createApplicationMenuBuilder
 } from './application-menu'
 import { DEFAULT_ZOOM_LEVEL, ZOOM_STEP } from './zoom'
 
@@ -231,6 +231,7 @@ describe('buildApplicationMenuTemplate — non-darwin structure', () => {
 describe('buildApplicationMenuTemplate — click dispatch', () => {
   test('Check for Updates → sendOpenUpdatesRequested (app menu and Help entry)', () => {
     const { calls, deps } = makeDeps()
+
     const template = buildApplicationMenuTemplate(deps) as unknown as AnyItem[]
 
     ;(findMenu(template, 'Fulilian').submenu as AnyItem[])[1].click()
@@ -241,6 +242,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
 
   test('About → showAboutPanelFresh', () => {
     const { calls, deps } = makeDeps()
+
     const template = buildApplicationMenuTemplate(deps) as unknown as AnyItem[]
 
     ;(findMenu(template, 'Fulilian').submenu as AnyItem[])[0].click()
@@ -262,6 +264,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
 
   test('File → Close (mac) → sendClosePreviewRequested', () => {
     const { calls, deps } = makeDeps()
+
     const template = buildApplicationMenuTemplate(deps) as unknown as AnyItem[]
 
     ;(findMenu(template, 'File').submenu as AnyItem[])[3].click()
@@ -271,6 +274,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
 
   test('View → Reload → sendPreviewNavCommand("reload")', () => {
     const { calls, deps } = makeDeps()
+
     const template = buildApplicationMenuTemplate(deps) as unknown as AnyItem[]
 
     ;(findMenu(template, 'View').submenu as AnyItem[])[0].click()
@@ -296,6 +300,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
 
   test('Actual Size resets to DEFAULT_ZOOM_LEVEL on the live main window', () => {
     const { calls, deps, window } = makeDeps()
+
     const template = buildApplicationMenuTemplate(deps) as unknown as AnyItem[]
 
     ;(findMenu(template, 'View').submenu as AnyItem[])[4].click()
@@ -320,6 +325,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
 
   test('Zoom In/Out are no-ops without a window or with a destroyed window', () => {
     const { calls, deps } = makeDeps(null)
+
     const viewSubmenu = findMenu(buildApplicationMenuTemplate(deps) as unknown as AnyItem[], 'View')
       .submenu as AnyItem[]
 
@@ -330,6 +336,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
     const destroyed = makeWindow()
     destroyed.isDestroyed = () => true
     const second = makeDeps(destroyed)
+
     const secondSubmenu = findMenu(buildApplicationMenuTemplate(second.deps) as unknown as AnyItem[], 'View')
       .submenu as AnyItem[]
 
@@ -344,6 +351,7 @@ describe('buildApplicationMenuTemplate — click dispatch', () => {
     let current = makeWindow(0.25)
     const { calls, deps } = makeDeps()
     deps.getMainWindow = () => current
+
     const viewSubmenu = findMenu(buildApplicationMenuTemplate(deps) as unknown as AnyItem[], 'View')
       .submenu as AnyItem[]
 
@@ -367,6 +375,7 @@ describe('createApplicationMenuBuilder', () => {
     const { deps } = makeDeps()
     const templates: unknown[] = []
     const sentinel = { fakeMenu: true }
+
     const menu = {
       buildFromTemplate: (template: never) => {
         templates.push(template)
@@ -394,6 +403,7 @@ describe('createApplicationMenuBuilder', () => {
       handed.map(item => item.label ?? item.role),
       expected.map(item => item.label ?? item.role)
     )
+
     for (const [index, item] of handed.entries()) {
       assert.deepEqual(
         (item.submenu as AnyItem[]).map((sub: AnyItem) => sub.label ?? sub.role ?? sub.type),
@@ -405,6 +415,7 @@ describe('createApplicationMenuBuilder', () => {
   test('every builder invocation re-derives a fresh template through the injected surface', () => {
     const { deps } = makeDeps()
     const templates: unknown[] = []
+
     const menu = {
       buildFromTemplate: (template: never) => {
         templates.push(template)

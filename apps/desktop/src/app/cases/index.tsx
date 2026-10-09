@@ -22,19 +22,19 @@ import { useNavigate } from 'react-router'
 
 import { StatusDot } from '@/components/status-dot'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Archive, Clipboard, FileText, Search } from '@/lib/icons'
 import { type Translations, useI18n } from '@/i18n'
+import { Archive, Clipboard, FileText, Search } from '@/lib/icons'
 import { coarseElapsed } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import {
   $casesCards,
   $casesFilter,
   $filteredCaseCards,
-  CASES_FILTERS,
-  clearCasesOverviewState,
-  setCasesFilter,
   type CaseCard,
-  type CasesFilter
+  CASES_FILTERS,
+  type CasesFilter,
+  clearCasesOverviewState,
+  setCasesFilter
 } from '@/store/cases-overview'
 
 import { caseTimelineRoute } from '../routes'
@@ -112,8 +112,8 @@ function CaseCardTile({ card, onOpen }: { card: CaseCard; onOpen: (card: CaseCar
         'flex min-w-0 flex-col gap-2 rounded-xl border bg-card px-4 py-3.5 text-left transition-colors duration-100 hover:border-(--ui-stroke-strong)',
         card.archived && 'opacity-80'
       )}
-      data-testid="cases-card"
       data-cases-card-archived={card.archived ? 'true' : 'false'}
+      data-testid="cases-card"
     >
       <div className="flex items-center gap-2">
         <StatusDot

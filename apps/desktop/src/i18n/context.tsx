@@ -122,6 +122,7 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
     }
 
     let cancelled = false
+
     const bump = () => {
       if (!cancelled) {
         setTranslationsVersion(version => version + 1)

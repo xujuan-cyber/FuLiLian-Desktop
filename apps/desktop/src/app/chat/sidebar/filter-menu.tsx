@@ -233,6 +233,7 @@ export function SidebarFilterMenu({ className }: { className?: string }) {
   const projectsCollapsed = projects.length > 0 && projects.every(project => nodeOpen[project.id] === false)
 
   const label = (key: string): string => fm[key] ?? key
+
   const withLabel = <T extends string>(option: Pick<Option<T>, 'icon' | 'id' | 'dot'>): Option<T> => ({
     ...option,
     label: label(option.id)

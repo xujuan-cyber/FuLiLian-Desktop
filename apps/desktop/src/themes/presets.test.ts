@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  apricotTheme,
   BUILTIN_THEME_LIST,
   BUILTIN_THEMES,
   DEFAULT_SKIN_NAME,

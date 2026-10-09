@@ -160,13 +160,18 @@ export function markAllNotificationsRead(): void {
 export function groupForNotifyKind(kind: string | undefined): NotificationCenterGroup {
   switch (kind) {
     case 'approval':
+
     case 'input':
       return 'approval'
 
     case 'backgroundDone':
+
     case 'turnDone':
+
     case 'turnError':
+
     case 'credits':
+
     case 'plugin':
       return 'automation'
 
