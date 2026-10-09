@@ -88,4 +88,20 @@ describe('ChatRoutesSurface', () => {
     // And the deferred element is wrapped so the swap stays in the pane.
     expect(src).toMatch(/<Route element=\{page\(chatView\)\} index \/>/)
   })
+
+  it('keeps BOTH chat pins lazy — either one left eager re-pins the subtree', () => {
+    // P9b's decisive finding: `surfaces.tsx` and `chat/session-tile.tsx` are two
+    // PARALLEL pins on `chat/index` (the tile is reached eagerly through
+    // controller.tsx → watchSessionTiles). Cutting only one is a no-op that
+    // measured NET NEGATIVE on the first attempt; only cutting both moved the
+    // chat subtree — and katex/vendor-md — out of the entry chunk. This test is
+    // the regression anchor for that "AND" relationship: revert either side and
+    // it goes red (there is otherwise no coverage — no test renders SessionTile).
+    const tile = readFileSync(join(process.cwd(), 'src/app/chat/session-tile.tsx'), 'utf8')
+
+    expect(tile).toContain("lazy(async () => ({ default: (await import('./index')).ChatView }))")
+    expect(tile).not.toMatch(/^import \{ ChatView \} from '\.'$/m)
+    // The deferred view resolves inside the tile's own boundary.
+    expect(tile).toMatch(/<Suspense fallback=\{null\}>[\s\S]*?<ChatView[\s\S]*?<\/Suspense>/)
+  })
 })
