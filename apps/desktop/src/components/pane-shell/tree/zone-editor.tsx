@@ -308,7 +308,7 @@ export function ZoneEditor() {
 
   return (
     <div
-      className="absolute inset-0 z-[70] flex flex-col gap-3 p-6 [-webkit-app-region:no-drag]"
+      className="absolute inset-0 z-(--z-zone-editor) flex flex-col gap-3 p-6 [-webkit-app-region:no-drag]"
       style={{ background: 'color-mix(in srgb, var(--ui-bg-chrome) 88%, transparent)', backdropFilter: 'blur(6px)' }}
     >
       {/* Toolbar — Panel-style title + hint, template chooser on the right. */}

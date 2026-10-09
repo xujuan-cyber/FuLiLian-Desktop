@@ -350,6 +350,16 @@
        without a renumber. Local stacking inside a component (a sticky header
        over its own scroll area) stays on plain `z-10`/`z-20`; these rungs are
        only for surfaces that float over the app. */
+    /* Work-area surfaces (step 17 · P12). These float over the shell but stay
+       below the modal ladder, so a dialog opened on top of one always wins.
+       Order, low→high: a floating pane (HUD-style, dragged around a zone) sits
+       under the app-wide OverlayView shell, which sits under the full-zone
+       editor, which sits under the fixed titlebar control clusters. Kept in the
+       sparse gap below --z-modal-backdrop so a one-off can still slot in. */
+    --z-floating-pane: 60;
+    --z-overlay: 80;
+    --z-zone-editor: 90;
+    --z-titlebar-chrome: 100;
     --z-modal-backdrop: 120;
     --z-modal: 130;
     /* A select/dropdown/popover opened from inside a modal, portaled to body. */

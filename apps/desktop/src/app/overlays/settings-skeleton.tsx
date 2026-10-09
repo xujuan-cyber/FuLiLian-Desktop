@@ -35,7 +35,7 @@ export function SettingsSkeleton() {
         // Full-window backdrop — same veil + equidistant inset as the real
         // overlay (overlay-view.tsx:76-84). Kept in sync by construction: if
         // OverlayView's inset changes, this must change with it.
-        'fixed inset-0 z-50 bg-black/22 backdrop-blur-[0.125rem]',
+        'fixed inset-0 z-(--z-overlay) bg-black/22 backdrop-blur-[0.125rem]',
         'p-[calc(var(--titlebar-height)+0.625rem)]',
         'sm:p-[calc(var(--titlebar-height)+0.875rem)]'
       )}

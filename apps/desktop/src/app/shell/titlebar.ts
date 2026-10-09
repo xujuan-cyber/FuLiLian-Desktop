@@ -72,7 +72,7 @@ export const titlebarButtonClass =
 
 /** Shared flex shell for left/right/pane titlebar tool rows — no gap; 24px buttons abut. */
 export const titlebarToolClusterClass =
-  'fixed z-70 flex flex-row items-center pointer-events-auto select-none [-webkit-app-region:no-drag]'
+  'fixed z-(--z-titlebar-chrome) flex flex-row items-center pointer-events-auto select-none [-webkit-app-region:no-drag]'
 
 /** Width reserved for N abutting titlebar tool buttons. */
 export function titlebarToolsWidthCss(toolCount: number): string {

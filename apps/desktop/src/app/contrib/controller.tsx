@@ -902,7 +902,7 @@ export function ContribController() {
                 - LEFT/RIGHT slots align to the MAIN PANE's geometry via the
                   tree-published --workspace-left/right vars (pure CSS, no rect
                   threading), clamped to clear the REAL TitlebarControls
-                  clusters (fixed, z-70); center is truly window-centered. */}
+                  clusters (fixed, z-(--z-titlebar-chrome)); center is truly window-centered. */}
           <div className="relative flex h-[34px] shrink-0 items-center bg-(--ui-sidebar-surface-background) text-xs">
             {/* Drag strips, AppShell-style: cut to AVOID the fixed control
                 clusters instead of overlapping them — Electron's no-drag

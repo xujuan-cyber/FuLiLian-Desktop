@@ -1,6 +1,68 @@
 import shared from '../../eslint.config.shared.mjs'
 import globals from 'globals'
 
+// ── step 17 · P12 — bare-z-index fence ──────────────────────────────────────
+// DESIGN.md: an app-wide surface picks a rung (a styles.css `--z-*` consumed as
+// `z-(--z-…)`), never an ad-hoc literal. This fence blocks NEW surface-level
+// literals (`z-50`, `z-[70]`, `zIndex: 9999`) while grandfathering the local
+// stacking that §2.2(c) of the P12 brief keeps on plain `z-10`/`z-20`.
+//
+// WHY A DISTINCT RULE NAME, NOT `no-restricted-syntax`: an ESLint v9 flat config
+// block REPLACES a same-named rule from an earlier block over the same file — it
+// does NOT merge selector arrays. A second `no-restricted-syntax` block over
+// `src/**` would silently disable the ref-mirror fence defined above (the
+// override trap MEMORY §7 records, which the icon fence works around with
+// `ignores`). A unique rule name cannot collide, so both fences coexist.
+const SURFACE_Z_CLASS = /\bz-(?:4[5-9]|[5-9]\d|\d{3,})\b/ // z-45…z-99, z-100+
+const ARBITRARY_Z_CLASS = /z-\[\d+\]/
+const BARE_Z_INDEX_MESSAGE =
+  'App-wide surfaces use a z-index rung (`z-(--z-…)` from styles.css), not a bare literal. Local stacking inside a component stays on plain z-10/z-20.'
+
+const bareZIndexPlugin = {
+  rules: {
+    'no-bare-z-index': {
+      create(context) {
+        const report = node => context.report({ message: BARE_Z_INDEX_MESSAGE, node })
+
+        const checkClassString = (node, value) => {
+          if (typeof value === 'string' && (SURFACE_Z_CLASS.test(value) || ARBITRARY_Z_CLASS.test(value))) {
+            report(node)
+          }
+        }
+
+        return {
+          Literal(node) {
+            checkClassString(node, node.value)
+          },
+          Property(node) {
+            const key = node.key
+            if (!key || (key.name !== 'zIndex' && key.value !== 'zIndex')) {
+              return
+            }
+            const value = node.value
+            if (!value || value.type !== 'Literal') {
+              return
+            }
+            let numeric = null
+            if (typeof value.value === 'number') {
+              numeric = value.value
+            } else if (typeof value.value === 'string' && /^\d+$/.test(value.value)) {
+              numeric = Number(value.value)
+            }
+            if (numeric !== null && numeric >= 10) {
+              report(value)
+            }
+          },
+          TemplateElement(node) {
+            checkClassString(node, node.value && node.value.raw)
+          }
+        }
+      },
+      meta: { schema: [], type: 'problem' }
+    }
+  }
+}
+
 export default [
   ...shared,
   {
@@ -134,5 +196,29 @@ export default [
     rules: {
       'no-restricted-imports': 'off'
     }
+  },
+  {
+    // step 17 · P12 — bare-z-index fence (see the note above the plugin).
+    // Excludes the §2.2(c) local-stacking files (existing bare z-50 / zIndex:60
+    // that stay plain by the DESIGN.md policy) and the §2.2(d) injected-string
+    // files (values live in non-app documents where rung tokens are unreachable).
+    // Everything else under src must express a surface via `z-(--z-…)`.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [
+      // §2.2(c) — local stacking, grandfathered.
+      'src/app/chat/chat-swap-overlay.tsx',
+      'src/app/chat/composer/completion-drawer.tsx',
+      'src/app/right-sidebar/terminal/instance.tsx',
+      'src/components/assistant-ui/thread/timeline.tsx',
+      'src/components/pane-shell/tree/renderer/edit-bar.tsx',
+      'src/components/pane-shell/tree/renderer/tree-group.tsx',
+      'src/components/pet/floating-pet.tsx',
+      // §2.2(d) — injected into non-app documents (CSS strings); unreachable.
+      'src/lib/drag-ghost.ts',
+      'src/lib/preview-act/watch-in-page.ts',
+      'src/lib/tour/spotlight-blur.ts'
+    ],
+    plugins: { fulilian: bareZIndexPlugin },
+    rules: { 'fulilian/no-bare-z-index': 'error' }
   }
 ]

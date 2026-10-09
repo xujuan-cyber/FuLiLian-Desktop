@@ -148,7 +148,7 @@ function FloatingPane({ pane }: { pane: Contribution }) {
 
   return (
     <div
-      className={cn('pointer-events-auto fixed z-45 flex flex-col overflow-hidden', HUD_SURFACE)}
+      className={cn('pointer-events-auto fixed z-(--z-floating-pane) flex flex-col overflow-hidden', HUD_SURFACE)}
       data-floating-pane={pane.id}
       style={{
         left: rect.x,
