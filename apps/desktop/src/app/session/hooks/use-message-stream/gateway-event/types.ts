@@ -44,7 +44,10 @@ export interface GatewayEventDeps {
     payload: GatewayEventPayload | undefined,
     phase: 'running' | 'complete',
     sourceEventType?: string,
-    occurredAt?: number
+    occurredAt?: number,
+    /** Queue the upsert through the adaptive-floor flush timer instead of
+     *  applying a store write per event (tool.progress bursts). */
+    defer?: boolean
   ) => void
 }
 

@@ -45,8 +45,20 @@ export function handleToolEvent(ctx: GatewayEventContext): boolean {
       return true
     }
 
-    flushQueuedDeltas(sessionId)
-    upsertToolCall(sessionId, toTodoPayload(payload) ?? payload, 'running', event.type, occurredAt)
+    // tool.start names the row the UI is waiting on — applied immediately (the
+    // upsert flushes queued text first). tool.progress ticks arrive one per
+    // output line during a run; queueing them behind the same adaptive-floor
+    // timer as text deltas coalesces the burst into one store write instead of
+    // one per tick (see P15, 性能专项 §五批次 P2). No flush here: a flush per
+    // tick would re-materialize every earlier queued tick synchronously.
+    upsertToolCall(
+      sessionId,
+      toTodoPayload(payload) ?? payload,
+      'running',
+      event.type,
+      occurredAt,
+      event.type === 'tool.progress'
+    )
 
     if (isActiveEvent) {
       setPetActivity({ reasoning: false, toolRunning: true })

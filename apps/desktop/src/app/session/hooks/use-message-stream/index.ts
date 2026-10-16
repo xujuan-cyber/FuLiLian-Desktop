@@ -60,6 +60,17 @@ interface QueuedStreamDelta {
   type: 'assistant' | 'reasoning'
 }
 
+// A deferred tool.progress upsert, batched through the same adaptive-floor
+// queue as text deltas — tool-dense turns emit one progress tick per output
+// line, and applying each synchronously costs a store write + commit per tick.
+interface QueuedToolEvent {
+  occurredAt: number
+  payload: GatewayEventPayload | undefined
+  type: 'tool'
+}
+
+type QueuedStreamEntry = QueuedStreamDelta | QueuedToolEvent
+
 // Date.now() alone can collide when an interim seal and the next segment's
 // first delta land in the same millisecond — the new segment would then find
 // the sealed bubble by id and append into it instead of starting fresh.
@@ -188,7 +199,7 @@ export function useMessageStream({
     []
   )
 
-  const queuedDeltasRef = useRef<Map<string, QueuedStreamDelta[]>>(new Map())
+  const queuedDeltasRef = useRef<Map<string, QueuedStreamEntry[]>>(new Map())
   const flushHandleRef = useRef<number | null>(null)
   const lastFlushAtRef = useRef<number>(0)
   // What the previous flush cost on the main thread — drives the adaptive
@@ -220,10 +231,15 @@ export function useMessageStream({
 
         const applyQueued = (parts: ChatMessagePart[]) =>
           queued.reduce(
-            (next, delta) =>
-              delta.type === 'assistant'
-                ? dedupeGeneratedImageEchoesInParts(appendAssistantTextPart(next, delta.text, delta.occurredAt))
-                : appendReasoningPart(next, delta.text, delta.occurredAt),
+            (next, entry) => {
+              if (entry.type === 'tool') {
+                return dedupeGeneratedImageEchoesInParts(upsertToolPart(next, entry.payload, 'running', entry.occurredAt))
+              }
+
+              return entry.type === 'assistant'
+                ? dedupeGeneratedImageEchoesInParts(appendAssistantTextPart(next, entry.text, entry.occurredAt))
+                : appendReasoningPart(next, entry.text, entry.occurredAt)
+            },
             parts
           )
 
@@ -449,11 +465,17 @@ export function useMessageStream({
       payload: GatewayEventPayload | undefined,
       phase: 'running' | 'complete',
       sourceEventType?: string,
-      occurredAt = Date.now() / 1000
+      occurredAt = Date.now() / 1000,
+      defer = false
     ) => {
       // Text deltas flush on a timer but tool events apply now; flush first so
-      // a tool part can't jump ahead of the text that preceded it.
-      flushQueuedDeltas(sessionId)
+      // a tool part can't jump ahead of the text that preceded it. A deferred
+      // event (tool.progress) joins the same queue instead — ordering against
+      // queued text comes for free from the shared array, and the flush timer's
+      // adaptive floor coalesces the burst into one write.
+      if (!defer) {
+        flushQueuedDeltas(sessionId)
+      }
 
       if (sessionInterrupted(sessionId)) {
         return
@@ -480,6 +502,15 @@ export function useMessageStream({
         }
       }
 
+      if (defer) {
+        const queued = queuedDeltasRef.current.get(sessionId) ?? []
+        queued.push({ occurredAt, payload, type: 'tool' })
+        queuedDeltasRef.current.set(sessionId, queued)
+        scheduleDeltaFlush()
+
+        return
+      }
+
       mutateStream(
         sessionId,
         parts => dedupeGeneratedImageEchoesInParts(upsertToolPart(parts, payload, phase, occurredAt)),
@@ -488,7 +519,7 @@ export function useMessageStream({
         occurredAt
       )
     },
-    [flushQueuedDeltas, mutateStream, sessionInterrupted]
+    [flushQueuedDeltas, mutateStream, scheduleDeltaFlush, sessionInterrupted]
   )
 
   const finalizeInterimAssistantMessage = useCallback(
