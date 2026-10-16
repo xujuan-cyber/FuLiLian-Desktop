@@ -105,11 +105,11 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
   const [isSavingLocale, setIsSavingLocale] = useState(false)
   const [configLoadError, setConfigLoadError] = useState<Error | null>(null)
   const [saveError, setSaveError] = useState<Error | null>(null)
-  const localeRef = useRef(locale)
+  // P16 (step 17): monotonic id for in-flight locale transitions — a newer
+  // `setLocale` call supersedes the swap an older one has pending.
+  const transitionSeqRef = useRef(0)
 
-  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
-    localeRef.current = locale
     setRuntimeI18nLocale(locale)
     applyDocumentLocale(locale)
 
@@ -122,6 +122,7 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
     }
 
     let cancelled = false
+
     const bump = () => {
       if (!cancelled) {
         setTranslationsVersion(version => version + 1)
@@ -171,35 +172,62 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
     }
   }, [configClient, initialLocale])
 
+  // P16 (step 17): switching languages used to commit the new `locale` state
+  // immediately, so the whole tree re-rendered against the English fallback
+  // while the lazy chunk was still in flight and then re-rendered AGAIN when
+  // the chunk landed. Instead, keep the old locale on screen (transition
+  // state), resolve the chunk out of band, and swap exactly once. A failed
+  // chunk resolves to the English fallback (catalog contract), so the swap
+  // still happens; a failed save rejects before the swap, leaving the old
+  // locale on screen with nothing to roll back. `locale`/`t` stay same-commit
+  // (17d1418): both re-derive from `locale` on the single swap render.
   const setLocale = useCallback(
     async (next: Locale) => {
-      const previousLocale = localeRef.current
+      const target = normalizeLocale(next)
 
       setSaveError(null)
-      setLocaleState(next)
 
-      if (!configClient) {
-        return
-      }
+      const transitionId = ++transitionSeqRef.current
 
-      setIsSavingLocale(true)
+      const chunkReady: Promise<void> = hasTranslations(target)
+        ? Promise.resolve()
+        : loadTranslations(target).then(
+            () => undefined,
+            () => undefined
+          )
 
-      try {
-        const latestConfig = await configClient.getConfig()
-        const result = await configClient.saveConfig(withConfigDisplayLanguage(latestConfig, next))
-
-        if (!result.ok) {
-          throw new Error('Failed to save language')
+      const saveFlow: Promise<void> = (async () => {
+        if (!configClient) {
+          return
         }
-      } catch (error) {
-        const nextError = toError(error)
 
-        setLocaleState(previousLocale)
-        setSaveError(nextError)
+        setIsSavingLocale(true)
 
-        throw nextError
-      } finally {
-        setIsSavingLocale(false)
+        try {
+          const latestConfig = await configClient.getConfig()
+          const result = await configClient.saveConfig(withConfigDisplayLanguage(latestConfig, target))
+
+          if (!result.ok) {
+            throw new Error('Failed to save language')
+          }
+        } catch (error) {
+          const nextError = toError(error)
+
+          setSaveError(nextError)
+          throw nextError
+        } finally {
+          setIsSavingLocale(false)
+        }
+      })()
+
+      // Swap only after BOTH the chunk is resident and the config save
+      // settled; a save failure propagates to the caller (switcher toast) and
+      // the screen keeps showing the old locale. A newer `setLocale` call
+      // supersedes this transition's swap.
+      await Promise.all([chunkReady, saveFlow])
+
+      if (transitionSeqRef.current === transitionId) {
+        setLocaleState(target)
       }
     },
     [configClient]

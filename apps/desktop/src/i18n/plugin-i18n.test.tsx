@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { I18nProvider, useI18n } from './context'
@@ -83,7 +83,7 @@ function SwitchToJa() {
 }
 
 describe('usePluginI18n', () => {
-  it('re-renders on a locale switch', () => {
+  it('re-renders on a locale switch', async () => {
     const dispose = registerPluginLocales('hooked', {
       en: { greet: 'hello' },
       ja: { greet: 'こんにちは' }
@@ -100,7 +100,9 @@ describe('usePluginI18n', () => {
 
     fireEvent.click(screen.getByRole('button'))
 
-    expect(screen.getByTestId('copy').textContent).toBe('こんにちは')
+    // P16: the locale swap is a transition commit now — it lands after the
+    // target chunk resolves, so the re-render is awaited.
+    await waitFor(() => expect(screen.getByTestId('copy').textContent).toBe('こんにちは'))
 
     dispose()
   })
