@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { useRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type * as CatalogModule from './catalog'
 import { type I18nConfigClient, I18nProvider, useI18n } from './context'
 import { getRuntimeI18nLocale, translateNow } from './runtime'
 import type { Locale } from './types'
@@ -22,7 +23,7 @@ const chunkGate = vi.hoisted(() => {
 })
 
 vi.mock('./catalog', async importOriginal => {
-  const actual = await importOriginal()
+  const actual = await importOriginal<typeof CatalogModule>()
 
   return {
     ...actual,
