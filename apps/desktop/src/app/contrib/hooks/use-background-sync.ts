@@ -264,7 +264,13 @@ const ACTIVE_MESSAGING_SESSION_BACKSTOP_INTERVAL_MS = 30_000
 // A 15s cadence made that healthy transition look finished long enough to be
 // alarming (and clicking the row appeared to "fix" it by touching the live
 // session). This snapshot is small and already polled at 1.5s by the TUI.
+// Against a modern backend this cadence only applies while a live session is
+// actually mid-turn (the busy edge); with every session idle the legacy poll
+// stretches so an idle desktop stops burning CPU on a fixed 1.5s timer
+// (perf plan §五 P14). A turn that starts while stretched is picked up within
+// one idle interval, which then re-arms at the fast cadence.
 const LIVE_SESSION_STATUS_POLL_INTERVAL_MS = 1_500
+const LIVE_SESSION_STATUS_IDLE_POLL_INTERVAL_MS = 5_000
 // With change events the snapshot re-pulls on every sessions.changed tick, so
 // the interval only covers the degraded-socket edge the stream can't replay
 // (see rehydrateLiveSessionStatuses) — 30s is plenty for that.
@@ -449,6 +455,35 @@ export function resetLiveRuntimeTracking(): void {
   liveRuntimeIdsByProfile.clear()
 }
 
+/** True while ANY live session is mid-turn or waiting on the user: the local
+ *  transcript is streaming (`$busy`), or a background turn is working/waiting
+ *  per the last authoritative snapshot (`$sessionStates`, published by
+ *  rehydrateLiveSessionStatuses and the stream paths). This is the busy-edge
+ *  criterion that tightens the legacy live-status poll. */
+export function hasBusyLiveSession(): boolean {
+  if ($busy.get()) {
+    return true
+  }
+
+  const states = $sessionStates.get()
+
+  for (const state of Object.values(states)) {
+    if (state.busy || state.needsInput) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/** Cadence for the legacy (no change_events) live-session-status poll: fast
+ *  while a session is mid-turn so the busy→idle edge (spinner, "your turn"
+ *  dot, reap) lands promptly, stretched while everything is idle so the
+ *  desktop stops polling hard for nothing. */
+export function liveSessionStatusPollIntervalMs(): number {
+  return hasBusyLiveSession() ? LIVE_SESSION_STATUS_POLL_INTERVAL_MS : LIVE_SESSION_STATUS_IDLE_POLL_INTERVAL_MS
+}
+
 interface BackgroundSyncParams {
   activeConnectionId: null | string
   activeGatewayProfile: string
@@ -472,10 +507,12 @@ interface BackgroundSyncParams {
 }
 
 /** Poll a callback while the tab is visible, on `intervalMs`; re-checks on tab
- *  re-focus. On battery the cadence stretches (see store/power) — these are
- *  safety-net refreshes, not the live path, so they're the right thing to slow
- *  when the machine is spending its charge. Returns nothing — meant to live
- *  inside an effect. */
+ *  re-focus. `intervalMs` may be a getter — re-resolved before EVERY (re)arm,
+ *  so a busy-edge caller tightens and relaxes without re-subscribing. On
+ *  battery the cadence stretches (see store/power) — these are safety-net
+ *  refreshes, not the live path, so they're the right thing to slow when the
+ *  machine is spending its charge. Returns nothing — meant to live inside an
+ *  effect. */
 export function windowIsActivelyViewed({
   focused,
   visibilityState
@@ -486,8 +523,20 @@ export function windowIsActivelyViewed({
   return visibilityState === 'visible' && focused
 }
 
-function visiblePoll(intervalMs: number, tick: () => void): () => void {
+function visiblePoll(intervalMs: number | (() => number), tick: () => void): () => void {
+  const resolveInterval = () => (typeof intervalMs === 'function' ? intervalMs() : intervalMs)
+  let timerId: null | number = null
+
+  // Self-scheduling timeout rather than a fixed setInterval: each round
+  // re-resolves the (possibly dynamic) interval, so a busy edge switches the
+  // cadence on the next arm without tearing the poll down.
+  const schedule = (onBattery: boolean) => {
+    timerId = window.setTimeout(run, batteryPollInterval(resolveInterval(), onBattery))
+  }
+
   const run = () => {
+    timerId = null
+
     // On macOS an unfocused or app-hidden BrowserWindow commonly remains
     // `visibilityState === "visible"`. Visibility alone therefore kept every
     // safety-net gateway poll alive while the user was in another app. These
@@ -496,13 +545,18 @@ function visiblePoll(intervalMs: number, tick: () => void): () => void {
     if (windowIsActivelyViewed({ focused: document.hasFocus(), visibilityState: document.visibilityState })) {
       tick()
     }
+
+    schedule($onBattery.get())
   }
 
-  let intervalId = window.setInterval(run, batteryPollInterval(intervalMs, $onBattery.get()))
+  schedule($onBattery.get())
 
   const unsubscribeBattery = $onBattery.listen(onBattery => {
-    window.clearInterval(intervalId)
-    intervalId = window.setInterval(run, batteryPollInterval(intervalMs, onBattery))
+    if (timerId !== null) {
+      window.clearTimeout(timerId)
+    }
+
+    schedule(onBattery)
   })
 
   document.addEventListener('visibilitychange', run)
@@ -510,7 +564,11 @@ function visiblePoll(intervalMs: number, tick: () => void): () => void {
 
   return () => {
     unsubscribeBattery()
-    window.clearInterval(intervalId)
+
+    if (timerId !== null) {
+      window.clearTimeout(timerId)
+    }
+
     document.removeEventListener('visibilitychange', run)
     window.removeEventListener('focus', run)
   }
@@ -663,7 +721,7 @@ export function useBackgroundSync({
     }
 
     const dispose = visiblePoll(
-      changeEventsAvailable ? LIVE_SESSION_STATUS_BACKSTOP_INTERVAL_MS : LIVE_SESSION_STATUS_POLL_INTERVAL_MS,
+      changeEventsAvailable ? LIVE_SESSION_STATUS_BACKSTOP_INTERVAL_MS : liveSessionStatusPollIntervalMs,
       () => void refreshLiveStatuses()
     )
 

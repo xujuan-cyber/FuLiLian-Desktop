@@ -17,12 +17,15 @@ import {
   $stalledSessionIds,
   $workingSessionIds,
   clearAllSessionStates,
+  publishSessionState,
   SESSION_WATCHDOG_TIMEOUT_MS
 } from '@/store/session-states'
 
 import {
   type ActiveTranscriptRefreshDeps,
+  hasBusyLiveSession,
   isTypingBurstActive,
+  liveSessionStatusPollIntervalMs,
   noteRendererKeyboardActivity,
   reconcileActiveTranscript,
   reconcileTileTranscripts as reconcileTileTranscriptsForTest,
@@ -816,5 +819,151 @@ describe('isTypingBurstActive', () => {
 
     // Exactly one quiet threshold after the last key the keyboard is cold.
     expect(isTypingBurstActive(1_000_000 + 1_500)).toBe(false)
+  })
+})
+
+describe('legacy live-session status poll cadence (busy edge)', () => {
+  /** Harness exposing the requestGateway spy so the active_list cadence is
+   *  observable from outside (the shared harnesses keep it private). */
+  function renderLegacyPollSync(requestGateway: (method: string, params: unknown) => Promise<unknown>) {
+    const stable = {
+      refreshActiveTranscript: async () => undefined,
+      refreshCronJobs: vi.fn(),
+      refreshCurrentModel: vi.fn(),
+      refreshFulilianConfig: vi.fn(),
+      refreshMessagingSessions: vi.fn(),
+      refreshSessions: vi.fn(async () => undefined),
+      requestGateway: requestGateway as never,
+      updateSessionState: vi.fn(
+        (
+          _sessionId: string,
+          updater: (state: ReturnType<typeof createClientSessionState>) => ReturnType<typeof createClientSessionState>
+        ) => updater(createClientSessionState('stored-cadence'))
+      )
+    }
+
+    return renderHook(() => {
+      useBackgroundSync({
+        activeConnectionId: 'local',
+        activeGatewayProfile: 'default',
+        activeIsMessaging: false,
+        activeSessionId: null,
+        activeStoredSessionId: null,
+        freshDraftReady: false,
+        gatewayState: 'open',
+        ...stable
+      })
+    })
+  }
+
+  const activeListCalls = (requestGateway: ReturnType<typeof vi.fn>): number =>
+    requestGateway.mock.calls.filter(([method]) => method === 'session.active_list').length
+
+  it('anchors the busy-edge cadence: 5s idle, 1.5s while any live session is busy or waiting', () => {
+    // Fully idle → stretched cadence.
+    expect(hasBusyLiveSession()).toBe(false)
+    expect(liveSessionStatusPollIntervalMs()).toBe(5_000)
+
+    // Local transcript streaming → fast cadence.
+    setBusy(true)
+    expect(hasBusyLiveSession()).toBe(true)
+    expect(liveSessionStatusPollIntervalMs()).toBe(1_500)
+    setBusy(false)
+
+    // A background turn working per the last authoritative snapshot → fast.
+    publishSessionState('runtime-bg', { ...createClientSessionState('stored-bg'), busy: true })
+    expect(hasBusyLiveSession()).toBe(true)
+    expect(liveSessionStatusPollIntervalMs()).toBe(1_500)
+
+    // Waiting on the user is still a live edge worth the fast cadence.
+    clearAllSessionStates()
+    publishSessionState('runtime-bg', { ...createClientSessionState('stored-bg'), needsInput: true })
+    expect(hasBusyLiveSession()).toBe(true)
+    expect(liveSessionStatusPollIntervalMs()).toBe(1_500)
+  })
+
+  it('polls every 5s while idle and tightens to 1.5s once a turn goes busy (legacy backend)', async () => {
+    vi.useFakeTimers()
+    // changeEventsAvailable stays false (resetLiveSync in afterEach) — the
+    // legacy path this busy edge exists for.
+    const requestGateway = vi.fn(async () => ({ sessions: [] }))
+
+    renderLegacyPollSync(requestGateway)
+
+    // On-connect seed poll, then nothing more within one idle interval minus a
+    // step — the idle cadence is 5s, NOT the legacy constant 1.5s.
+    expect(activeListCalls(requestGateway)).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(4_999)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(1)
+
+    // The busy flag was raised mid-interval; the poll that lands at 5s re-arms
+    // at the tightened cadence.
+    setBusy(true)
+
+    await act(async () => {
+      vi.advanceTimersByTime(1)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(2)
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_499)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(2)
+
+    await act(async () => {
+      vi.advanceTimersByTime(1)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(3)
+
+    // Busy ends → the pending fast tick (armed while busy) lands once, then
+    // the poll relaxes back to the idle cadence.
+    setBusy(false)
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_500)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(4)
+
+    await act(async () => {
+      vi.advanceTimersByTime(4_999)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(4)
+
+    await act(async () => {
+      vi.advanceTimersByTime(1)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(5)
+  })
+
+  it('keeps the 30s backstop cadence when change events are available', async () => {
+    vi.useFakeTimers()
+    $changeEventsAvailable.set(true)
+    const requestGateway = vi.fn(async () => ({ sessions: [] }))
+
+    renderLegacyPollSync(requestGateway)
+
+    expect(activeListCalls(requestGateway)).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(29_999)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(1)
+
+    await act(async () => {
+      vi.advanceTimersByTime(1)
+      await Promise.resolve()
+    })
+    expect(activeListCalls(requestGateway)).toBe(2)
   })
 })
