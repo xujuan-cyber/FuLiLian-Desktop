@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tip } from '@/components/ui/tooltip'
 import type { DesktopAuthProvider, DesktopCloudAgent, DesktopCloudOrg, DesktopConnectionProbeResult } from '@/global'
 import { useI18n } from '@/i18n'
@@ -29,7 +30,7 @@ import { notify, notifyError, readableError } from '@/store/notifications'
 import { ConnectionsRegistrySection } from './connections-registry'
 import { CONTROL_TEXT } from './constants'
 import { ManagedUpdatesSection } from './managed-updates-section'
-import { EmptyState, ListRow, Pill, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
+import { EmptyState, ListRow, ListRowSkeleton, Pill, SettingsContent, ToggleRow } from './primitives'
 import { enrichSelectedSshHost, selectSshHost } from './ssh-host-selection'
 
 type Mode = 'local' | 'remote' | 'cloud' | 'ssh'
@@ -144,6 +145,69 @@ function ModeCard({
         {description}
       </p>
     </button>
+  )
+}
+
+// Skeleton mirror of the Gateway page's local-mode shape (the state the real
+// render always starts from: EMPTY_STATE defaults to mode 'local' with no env
+// override), so the loading page keeps its containers — title block, the 4-card
+// mode grid, the loopback note, the action row — instead of flashing a generic
+// heading+rows run the swap replaces wholesale (step 17 P18). Same
+// bare/embedded split as the real render; textless bars only.
+function GatewaySettingsSkeleton({ embedded }: { embedded: boolean }) {
+  return (
+    <SettingsContent bare={embedded}>
+      {/* Title block — non-embedded only, same gate as the real header. */}
+      {embedded ? null : (
+        <div className="mb-5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="size-4" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <Skeleton className="mt-2 h-3 w-full max-w-2xl" />
+        </div>
+      )}
+
+      {/* Mode section: caption heading over the responsive 4-card grid. */}
+      <div className="mb-5 grid gap-2" data-testid="gateway-skeleton">
+        <Skeleton className="h-3 w-28" />
+        <div className="grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2 min-[72rem]:grid-cols-4">
+          {Array.from({ length: 4 }, (_, card) => (
+            <div className="flex h-full min-h-0 w-full flex-col p-3" key={card}>
+              <div className="flex items-center gap-1.5">
+                <Skeleton className="size-3.5 shrink-0" />
+                <Skeleton className="h-3.5 w-24 max-w-full" />
+              </div>
+              <div className="mt-1.5 flex-1 space-y-1.5">
+                <Skeleton className="h-3 w-full max-w-full" />
+                <Skeleton className="h-3 w-2/3 max-w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Loopback note (local mode, no env override — always during load). */}
+      <div className="mb-5 flex items-start gap-2">
+        <Skeleton className="mt-0.5 size-4 shrink-0" />
+        <Skeleton className="mt-1 h-3 w-2/3 max-w-2xl" />
+      </div>
+
+      {/* Action row: right-aligned buttons; the restart-save button is
+          embedded-gated like the real one. */}
+      <div className="mt-6 flex flex-wrap items-center justify-end gap-4">
+        {embedded ? null : <Skeleton className="h-8 w-28" />}
+        <Skeleton className="h-8 w-36" />
+      </div>
+
+      {/* Diagnostics rows — non-embedded only, same gate as the real render. */}
+      {embedded ? null : (
+        <div className="mt-6 grid gap-1">
+          <ListRowSkeleton />
+          <ListRowSkeleton />
+        </div>
+      )}
+    </SettingsContent>
   )
 }
 
@@ -1061,14 +1125,10 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   }
 
   if (loading) {
-    return (
-      <SettingsSkeleton
-        sections={[
-          { heading: true, rows: 3 },
-          { heading: true, rows: 3 }
-        ]}
-      />
-    )
+    // Same shape contract as the real render below (step 17 P18): the skeleton
+    // mirrors the local-mode layout instead of a generic heading+rows run, and
+    // honors the bare/embedded split so the swap fills in rather than jumps.
+    return <GatewaySettingsSkeleton embedded={embedded} />
   }
 
   if (!window.fulilianDesktop?.getConnectionConfig) {

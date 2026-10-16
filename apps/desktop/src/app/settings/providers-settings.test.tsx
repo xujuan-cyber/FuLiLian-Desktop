@@ -235,3 +235,87 @@ describe('ProvidersSettings', () => {
     await waitFor(() => expect(startManualLocalEndpoint).toHaveBeenCalledWith(null))
   })
 })
+
+// Step 17 P18: the `!vars` loading state must mirror the shape the real render
+// is about to show (the real render branches on hasOauth — accounts picker vs
+// keys catalog), so the skeleton→real swap fills the pane in rather than
+// replacing it wholesale.
+describe('ProvidersSettings loading skeletons (step 17 P18)', () => {
+  function hangEnvVars() {
+    getEnvVars.mockReturnValue(new Promise(() => {}))
+  }
+
+  it('accounts view with OAuth providers shows the picker shape — no search field', async () => {
+    hangEnvVars()
+    // beforeEach seeds one connected + one unconnected provider, so the real
+    // render would show the accounts picker.
+    const { ProvidersSettings } = await import('./providers-settings')
+    const { container } = render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="accounts" />)
+
+    // oauthProviders starts empty and resolves async, so the first paint is
+    // the keys-shaped skeleton; it flips to the picker shape once the list
+    // lands (while vars is still hanging). Wait out the flip.
+    await waitFor(() => {
+      expect(screen.getByTestId('providers-skeleton').className).toContain('grid gap-2')
+    })
+    const skeleton = screen.getByTestId('providers-skeleton')
+    // Same section container as OAuthPicker: section.mb-5.grid.gap-2.
+    expect(skeleton.className).toContain('mb-5')
+
+    // Picker rows are rounded row cards; no search input anywhere.
+    expect(skeleton.querySelectorAll('.rounded-\\[6px\\], .rounded-\\[8px\\]').length).toBeGreaterThanOrEqual(5)
+    expect(container.querySelector('input')).toBeNull()
+
+    // Same page gutters as the real SettingsContent.
+    const scrollBody = container.querySelector('section > div')
+    expect(scrollBody?.className).toContain('pb-20')
+  })
+
+  it('accounts view without OAuth providers falls to the keys shape, like the real render', async () => {
+    hangEnvVars()
+    listOAuthProviders.mockResolvedValue({ providers: [] })
+
+    const { ProvidersSettings } = await import('./providers-settings')
+    const { container } = render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="accounts" />)
+
+    // The real render shows the keys catalog when there is nothing to pick —
+    // the loading shape must branch the same way (LocalEndpointRow over the
+    // key-card stack, search field present).
+    await screen.findByTestId('providers-skeleton')
+    expect(container.querySelectorAll('[data-testid="providers-skeleton"] .rounded-\\[6px\\]').length).toBeGreaterThanOrEqual(5)
+  })
+
+  it('keys view shows the keys shape: endpoint row, search field, key cards', async () => {
+    hangEnvVars()
+    listOAuthProviders.mockResolvedValue({ providers: [] })
+
+    const { ProvidersSettings } = await import('./providers-settings')
+    const { container } = render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="keys" />)
+
+    await screen.findByTestId('providers-skeleton')
+
+    // The key cards reuse ProviderKeyRows' @2xl label/control column split —
+    // read via the cards' own grid container (grid gap-2, 4 cards).
+    const cards = container.querySelector('[data-testid="providers-skeleton"] .grid.gap-2')
+    expect(cards?.children.length).toBe(4)
+    expect(cards?.firstElementChild?.className).toContain('@2xl:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)]')
+
+    // LocalEndpointRow leads the real keys render; the skeleton mirrors it.
+    const skeleton = screen.getByTestId('providers-skeleton')
+    expect(skeleton.firstElementChild?.className).toContain('grid-cols-[minmax(0,1fr)_auto]')
+  })
+
+  it('custom-endpoints view delegates to its own loading state instead of the generic skeleton', async () => {
+    hangEnvVars()
+
+    const { ProvidersSettings } = await import('./providers-settings')
+    const { container } = render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="custom-endpoints" />)
+
+    // CustomEndpointsSettings owns its env-vars fetch and loading skeleton;
+    // the outer `!vars` gate must not swallow it (its skeleton has no
+    // providers-skeleton marker).
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="providers-skeleton"]')).toBeNull()
+    })
+  })
+})

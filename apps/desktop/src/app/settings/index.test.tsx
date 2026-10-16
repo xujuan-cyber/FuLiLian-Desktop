@@ -160,4 +160,25 @@ describe('SettingsView tab shell (step 17 · P3b)', () => {
     // pane: the shell's own <Suspense> around `activeSettingsContent`.
     expect(src).toMatch(/<Suspense[\s\S]*?\{activeSettingsContent\}\s*<\/Suspense>/)
   })
+
+  it('keeps the inner Suspense fallback free of a double SettingsContent wrap (step 17 P18)', () => {
+    // Read the shell's own text (same reasoning as above: the fallback itself
+    // never renders under happy-dom — the mocked module promises settle on the
+    // same microtask queue, so React never suspends). SettingsSkeleton already
+    // renders its own <SettingsContent>; the P3b fallback used to nest the two,
+    // doubling the page gutters + bottom pad so the skeleton→real swap jumped
+    // sideways. The fallback must be the bare skeleton.
+    const src = readFileSync(join(process.cwd(), 'src/app/settings/index.tsx'), 'utf8')
+
+    // lastIndexOf: the file's own comment quotes an earlier `fallback={`
+    // (the wiring-level one); the inner boundary's JSX is the last occurrence.
+    const start = src.lastIndexOf('fallback={')
+    const end = src.indexOf('{activeSettingsContent}')
+    expect(start).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+
+    const fallback = src.slice(start, end)
+    expect(fallback).toContain('<SettingsSkeleton sections={[{ rows: 4 }]} />')
+    expect(fallback).not.toContain('<SettingsContent')
+  })
 })

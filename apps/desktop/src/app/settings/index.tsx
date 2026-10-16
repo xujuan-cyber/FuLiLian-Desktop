@@ -598,9 +598,11 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         <OverlayMain className="px-0 pb-0">
           <Suspense
             fallback={
-              <SettingsContent>
-                <SettingsSkeleton sections={[{ rows: 4 }]} />
-              </SettingsContent>
+              // SettingsSkeleton renders its own SettingsContent wrapper (page
+              // gutters + bottom pad) — nesting another one here would double
+              // both and make the skeleton→real swap jump sideways. (P18 fix:
+              // the P3b fallback used to nest the two.)
+              <SettingsSkeleton sections={[{ rows: 4 }]} />
             }
           >
             {activeSettingsContent}

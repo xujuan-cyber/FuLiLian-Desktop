@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { RowButton } from '@/components/ui/row-button'
 import { SearchField } from '@/components/ui/search-field'
+import { Skeleton } from '@/components/ui/skeleton'
 import { disconnectOAuthProvider, listOAuthProviders } from '@/fulilian'
 import { useI18n } from '@/i18n'
 import { Check, ChevronDown, ChevronRight, KeyRound, Loader2, Terminal, Trash2 } from '@/lib/icons'
@@ -29,7 +30,7 @@ import { isKeyVar, ProviderKeyRows } from './credential-key-ui'
 import { CustomEndpointsSettings } from './custom-endpoints-settings'
 import { SettingsCategoryHeading, useEnvCredentials } from './env-credentials'
 import { providerGroup, providerMeta, providerPriority } from './helpers'
-import { SettingsContent, SettingsSkeleton } from './primitives'
+import { SettingsContent } from './primitives'
 
 // The embedded terminal (and thus the "run disconnect command" path) only
 // exists in the Electron desktop shell, not the web dashboard.
@@ -332,6 +333,92 @@ function LocalEndpointRow({ onOpen }: { onOpen: (reason: null | string) => void 
   )
 }
 
+// Loading mirrors of the two real Providers shapes (step 17 P18). The real
+// render branches into the accounts picker or the keys catalog, so the loading
+// page branches the same way: each skeleton reuses the real containers
+// (rounded row cards, p-3 key cards, the gap rhythm) instead of a generic
+// heading+rows run that the swap would replace wholesale. Textless by
+// contract — bars only, like the overlay-level SettingsSkeleton.
+
+// Mirrors OAuthPicker (below): heading row + intro + featured card + provider
+// row cards + collapse affordance, all inside section.mb-5.grid.gap-2.
+function AccountsSkeleton() {
+  return (
+    <SettingsContent>
+      <section className="mb-5 grid gap-2" data-testid="providers-skeleton">
+        {/* SettingsCategoryHeading + the trailing "I have an API key" affordance. */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <div className="mb-3 flex items-center gap-2">
+            <Skeleton className="size-4" />
+            <Skeleton className="h-4 w-36 max-w-full" />
+          </div>
+          <Skeleton className="h-4 w-28" />
+        </div>
+        {/* intro paragraph (-mt-2 mb-1, one caption line). */}
+        <Skeleton className="-mt-2 mb-1 h-3 w-2/3 max-w-full" />
+        {/* FeaturedProviderRow: arc card, icon + title, one-line pitch. */}
+        <div className="rounded-[8px] bg-primary/[0.06] px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="size-5 shrink-0 rounded" />
+            <Skeleton className="h-3.5 w-32" />
+          </div>
+          <Skeleton className="mt-2 h-3 w-3/4 max-w-full" />
+        </div>
+        {/* FireworksProviderRow / ProviderRow / OpenRouterProviderRow cards. */}
+        {Array.from({ length: 4 }, (_, row) => (
+          <div className="rounded-[6px] px-3 py-2.5" key={row}>
+            <Skeleton className="h-3.5 w-28 max-w-full" />
+            <Skeleton className="mt-2 h-3 w-1/2 max-w-full" />
+          </div>
+        ))}
+        {/* Collapse / "connect another" affordance. */}
+        <Skeleton className="h-4 w-24" />
+      </section>
+    </SettingsContent>
+  )
+}
+
+// Mirrors the keys render (below): LocalEndpointRow over the search field and
+// the ProviderKeyRows card stack, same wrappers and grid gaps.
+function KeysSkeleton() {
+  return (
+    <SettingsContent>
+      <div data-testid="providers-skeleton">
+        {/* LocalEndpointRow: full-row button, two-line label + trailing chevron. */}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] px-3 py-2.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <Skeleton className="h-3.5 w-44 max-w-full" />
+            <Skeleton className="h-3 w-2/3 max-w-full" />
+          </div>
+          <Skeleton className="size-4" />
+        </div>
+        <div className="grid gap-3">
+          {/* SearchField: icon + underline input. */}
+          <div className="flex items-center gap-1.5 px-0.5">
+            <Skeleton className="size-3.5 shrink-0" />
+            <Skeleton className="h-4 w-48 max-w-full" />
+          </div>
+          {/* ProviderKeyRows cards: p-3 card, h-8 label row, h-8 control column. */}
+          <div className="grid gap-2">
+            {Array.from({ length: 4 }, (_, card) => (
+              <div
+                className="grid grid-cols-1 items-start gap-x-3 gap-y-1.5 rounded-[6px] p-3 @2xl:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)] @2xl:gap-y-3"
+                key={card}
+              >
+                <div className="flex h-8 min-w-0 items-center gap-2">
+                  <Skeleton className="size-2 shrink-0 rounded-full" />
+                  <Skeleton className="h-3.5 w-32 max-w-full" />
+                </div>
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </SettingsContent>
+  )
+}
+
 export function ProvidersSettings({
   onClose,
   onConfigSaved,
@@ -443,14 +530,26 @@ export function ProvidersSettings({
     }
   }
 
+  if (view === 'custom-endpoints') {
+    // Above the `!vars` gate: this view owns its env-vars fetch and its own
+    // loading skeleton, so the outer gate must not swallow it.
+    return <CustomEndpointsSettings onConfigSaved={onConfigSaved} onMainModelChanged={onMainModelChanged} />
+  }
+
   if (!vars) {
-    return <SettingsSkeleton search sections={[{ rows: 6 }]} />
+    // The real render branches on `hasOauth` (accounts picker vs keys catalog —
+    // `showApiKeys` below), so the loading shape must branch the same way or
+    // the swap replaces the whole pane instead of filling it in (step 17 P18).
+    return oauthProviders.length > 0 ? <AccountsSkeleton /> : <KeysSkeleton />
   }
 
   const hasOauth = oauthProviders.length > 0
   // The sidebar subnav owns the Accounts/API-keys split now; with no OAuth
   // providers there's nothing for the "Accounts" view to show, so fall to keys.
-  const showApiKeys = view === 'keys' || (!hasOauth && view !== 'custom-endpoints')
+  // (custom-endpoints already returned above, so it's off the type here — the
+  // P18 view-branch reorder is what makes the old `view !== 'custom-endpoints'`
+  // guard here a dead comparison.)
+  const showApiKeys = view === 'keys' || !hasOauth
 
   const keyGroups = buildProviderKeyGroups(vars)
 
@@ -501,10 +600,6 @@ export function ProvidersSettings({
         )}
       </SettingsContent>
     )
-  }
-
-  if (view === 'custom-endpoints') {
-    return <CustomEndpointsSettings onConfigSaved={onConfigSaved} onMainModelChanged={onMainModelChanged} />
   }
 
   return (
