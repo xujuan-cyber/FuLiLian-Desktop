@@ -16269,27 +16269,34 @@ ipcMain.handle('fulilian:stopPreviewFileWatch', (_event, id) => stopPreviewFileW
 // merged picture. Keyed by webContents id so a closed window stops counting.
 const activeWorkByWebContents = new Map<number, ActiveWork>()
 
-// The same merged picture drives background throttling: chat windows run
-// unthrottled while any turn is in flight (streaming must paint while hidden)
-// and fall back to Chromium's default throttling at idle. See stream-throttle.ts.
+// The same per-window picture drives background throttling: a chat window
+// whose own renderer has a turn in flight runs unthrottled (streaming must
+// paint while hidden) and falls back to Chromium's default throttling once
+// its work settles. Idle background windows keep their throttling — see
+// stream-throttle.ts.
 const streamThrottle = createStreamThrottle()
-
-function updateStreamThrottleFromActiveWork() {
-  streamThrottle.update(mergeActiveWork(activeWorkByWebContents.values()).count > 0)
-}
 
 ipcMain.on('fulilian:active-work', (event, payload) => {
   const id = event.sender.id
 
   if (!activeWorkByWebContents.has(id)) {
+    // A reloaded renderer re-reports its (initially idle) summary on boot, so
+    // a stale busy report cannot outlive the document. The window's own
+    // 'closed' path drops its throttle entry (stream-throttle.ts).
     event.sender.once('destroyed', () => {
       activeWorkByWebContents.delete(id)
-      updateStreamThrottleFromActiveWork()
     })
   }
 
-  activeWorkByWebContents.set(id, normalizeActiveWork(payload))
-  updateStreamThrottleFromActiveWork()
+  const work = normalizeActiveWork(payload)
+
+  activeWorkByWebContents.set(id, work)
+
+  const win = BrowserWindow.fromWebContents(event.sender)
+
+  if (win) {
+    streamThrottle.update(win, work.count > 0)
+  }
 })
 
 ipcMain.on('fulilian:titlebar-theme', (_event, payload) => {
