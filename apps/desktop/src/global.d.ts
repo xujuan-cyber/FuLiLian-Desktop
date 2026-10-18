@@ -501,6 +501,10 @@ declare global {
         getOptin: () => Promise<WslCliOptinState>
         setOptin: (payload: { optin: Partial<WslCliOptin> }) => Promise<WslCliOptinState>
       }
+      terminalShell: {
+        get: () => Promise<TerminalShellPref>
+        set: (patch: { local?: TerminalShellChoice; wslDistro?: null | string }) => Promise<TerminalShellPref>
+      }
       reachPreviewUrl?: (url: string) => Promise<string>
       setActiveConnectionRoute?: (
         route: {
@@ -650,6 +654,18 @@ export type WslCliOptin = Record<WslCliName, boolean> // 默认五键全 false
 export interface WslCliOptinState {
   optin: WslCliOptin
   probedAt: null | number // 最近一次探测快照时间；从未探测为 null
+}
+
+// Terminal shell preference (step17) — renderer-side mirror of
+// electron/terminal-shell-pref.ts. The renderer cannot import electron/
+// modules, so these must stay field-for-field identical to the main types.
+export type TerminalShellChoice = 'auto' | 'cmd' | 'powershell' | 'pwsh'
+
+export interface TerminalShellPref {
+  /** 本地 shell 选择；'auto' = 沿用主进程自动探测。 */
+  local: TerminalShellChoice
+  /** 默认 WSL 发行版（喂给终端 rail 的 distro picker 作初始值）；null = 未选。 */
+  wslDistro: null | string
 }
 
 export interface DesktopVersionInfo {

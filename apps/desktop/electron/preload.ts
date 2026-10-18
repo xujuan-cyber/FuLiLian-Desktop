@@ -407,6 +407,10 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
     getOptin: () => ipcRenderer.invoke('fulilian:wsl-cli:get-optin'),
     setOptin: payload => ipcRenderer.invoke('fulilian:wsl-cli:set-optin', payload)
   },
+  terminalShell: {
+    get: () => ipcRenderer.invoke('fulilian:terminal-shell:get'),
+    set: patch => ipcRenderer.invoke('fulilian:terminal-shell:set', patch)
+  },
   onClosePreviewRequested: callback => {
     const listener = () => callback()
     ipcRenderer.on('fulilian:close-preview-requested', listener)

@@ -1,4 +1,5 @@
 import { useStore } from '@nanostores/react'
+import { useEffect } from 'react'
 
 import { Codicon } from '@/components/ui/codicon'
 import {
@@ -23,6 +24,7 @@ import { formatCombo } from '@/lib/keybinds/combo'
 import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
 import { cn } from '@/lib/utils'
 import { $bindings } from '@/store/keybinds'
+import { loadTerminalShellPref, setTerminalShellPref } from '@/store/terminal-shell'
 import { $wslCliDistro, $wslCliEnabledClis, $wslCliProbe, selectWslCli, selectWslCliDistro, type WslCliTarget } from '@/store/wsl-cli'
 
 import { setTerminalTakeover } from '../store'
@@ -61,6 +63,12 @@ export function TerminalRail() {
   const distros = probe?.distros ?? []
   const currentDistro = activeTerminal?.wsl?.distro ?? distroPref ?? probe?.distro ?? ''
 
+  // The persisted default distro (step17) feeds the picker as its initial
+  // value; without one the probe's default distro applies as before.
+  useEffect(() => {
+    void loadTerminalShellPref()
+  }, [])
+
   // The switcher re-targets the ACTIVE tab only. The workspace keys each
   // instance on its CLI, so the tab's PTY is re-created inside WSL by remount
   // (and re-created again when the same CLI is picked in another distro, since
@@ -88,6 +96,9 @@ export function TerminalRail() {
   // WSL; the next CLI pick then lands in that distro.
   function switchDistro(distro: string) {
     selectWslCliDistro(distro)
+    // Persist the pick so it survives a restart (step17); fire-and-forget, the
+    // in-memory atom above is already the source of truth for this session.
+    void setTerminalShellPref({ wslDistro: distro })
 
     const cli = activeTerminal?.wsl?.cli
 

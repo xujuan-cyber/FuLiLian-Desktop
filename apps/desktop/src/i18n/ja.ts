@@ -960,6 +960,18 @@ export const ja = defineLocale({
       terminalFontPlaceholder: 'MesloLGS NF または CSS フォントスタック',
       terminalFontPreview: 'グリフのプレビュー',
       terminalFontReset: '既定値を使用',
+      terminalShell: {
+        sectionTitle: 'ターミナルのコマンド実行環境',
+        sectionDesc: '新しいターミナルタブで使うローカルシェルと、ターミナルスイッチャーの既定 WSL ディストリビューションを選択します。',
+        localShellTitle: 'ローカルシェル',
+        shellAuto: '自動検出',
+        shellPwsh: 'PowerShell 7',
+        shellPowershell: 'Windows PowerShell 5.1',
+        shellCmd: 'cmd',
+        wslDistroTitle: '既定の WSL ディストリビューション',
+        wslDistroHint: 'ターミナルスイッチャーで事前選択されます。FULILIAN_DESKTOP_SHELL 環境変数が常に優先されます。',
+        saveFailed: 'ターミナルシェル設定を保存できませんでした'
+      },
       translucencyTitle: 'ウィンドウの透過',
       translucencyDesc: 'テキストも含めウィンドウ全体を透過させてデスクトップを表示します。',
       translucencyGlassDesc: 'マットガラス: デスクトップが滑らかなぼかしとして透け、テキストは鮮明なまま。',

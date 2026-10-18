@@ -303,3 +303,149 @@ test('P8/3b buffered PTY output is flushed before `exit`, and `exit` is never bu
     vi.useRealTimers()
   }
 })
+
+// step17: the local-shell preference chain. The priority is frozen as
+// FULILIAN_DESKTOP_SHELL (env escape hatch) > persisted preference > auto.
+// The harness re-registers with a stubbed readShellPref; handle.mockReset()
+// keeps handlerFor() pointing at the fresh registration.
+function registerWithShellPref(
+  pref: { local?: unknown; wslDistro?: unknown } | null,
+  options: { pwshAvailable?: boolean } = {}
+) {
+  handle.mockReset()
+
+  registerTerminalIpc({
+    isWindows: true,
+    findOnPath: (command: string) => {
+      if (command === 'pwsh.exe') {
+        return options.pwshAvailable === false ? null : 'C:\\mock\\pwsh.exe'
+      }
+
+      // The env escape hatch carries an arbitrary path; echo it back so the
+      // override resolves without touching the real filesystem.
+      return command.startsWith('C:\\env\\') ? command : null
+    },
+    rememberLog: () => {},
+    activeSshTerminalTarget: () => null,
+    ensureBackend: async () => undefined,
+    getSshConnectionState: () => undefined,
+    readShellPref: () => pref
+  })
+}
+
+async function localShellFor(payload: Record<string, unknown> = {}) {
+  const result = (await handlerFor('fulilian:terminal:start')({ sender: makeSender() }, payload)) as {
+    shell: string
+  }
+
+  assert.equal(spawnSpy.mock.calls.length, 1)
+  assert.notEqual(spawnSpy.mock.calls[0][0], 'wsl.exe', 'a local-shell test must not spawn wsl.exe')
+
+  return { command: spawnSpy.mock.calls[0][0] as string, result }
+}
+
+test('step17 FULILIAN_DESKTOP_SHELL outranks the persisted shell preference', async () => {
+  const previousComspec = process.env.COMSPEC
+
+  process.env.COMSPEC = 'C:\\mock\\cmd.exe'
+
+  try {
+    process.env.FULILIAN_DESKTOP_SHELL = 'C:\\env\\escape-hatch-shell'
+
+    registerWithShellPref({ local: 'cmd' })
+
+    const { command } = await localShellFor()
+
+    assert.equal(command, 'C:\\env\\escape-hatch-shell', 'the env escape hatch wins')
+  } finally {
+    if (previousComspec === undefined) {
+      delete process.env.COMSPEC
+    } else {
+      process.env.COMSPEC = previousComspec
+    }
+
+    delete process.env.FULILIAN_DESKTOP_SHELL
+  }
+})
+
+test('step17 the persisted preference outranks auto-detect (pwsh)', async () => {
+  const previousShell = process.env.FULILIAN_DESKTOP_SHELL
+
+  delete process.env.FULILIAN_DESKTOP_SHELL
+
+  try {
+    registerWithShellPref({ local: 'pwsh' })
+
+    const { command } = await localShellFor()
+
+    assert.equal(command, 'C:\\mock\\pwsh.exe')
+    assert.deepEqual(spawnSpy.mock.calls[0][1], ['-NoLogo'], 'the PowerShell family drops its banner')
+  } finally {
+    if (previousShell !== undefined) {
+      process.env.FULILIAN_DESKTOP_SHELL = previousShell
+    }
+  }
+})
+
+test('step17 the persisted preference resolves the cmd family on Windows', async () => {
+  const previousComspec = process.env.COMSPEC
+  const previousShell = process.env.FULILIAN_DESKTOP_SHELL
+
+  process.env.COMSPEC = 'C:\\mock\\cmd.exe'
+
+  delete process.env.FULILIAN_DESKTOP_SHELL
+
+  try {
+    registerWithShellPref({ local: 'cmd' })
+
+    const { command } = await localShellFor()
+
+    assert.equal(command, 'C:\\mock\\cmd.exe')
+    assert.deepEqual(spawnSpy.mock.calls[0][1], [], 'cmd takes no interactive flags')
+  } finally {
+    if (previousComspec === undefined) {
+      delete process.env.COMSPEC
+    } else {
+      process.env.COMSPEC = previousComspec
+    }
+
+    if (previousShell !== undefined) {
+      process.env.FULILIAN_DESKTOP_SHELL = previousShell
+    }
+  }
+})
+
+test('step17 an unavailable preference degrades to auto-detect and junk local is ignored', async () => {
+  const previousShell = process.env.FULILIAN_DESKTOP_SHELL
+
+  delete process.env.FULILIAN_DESKTOP_SHELL
+
+  try {
+    // 'pwsh' chosen but not installed (findOnPath returns null for it) — the
+    // spawn must still happen via the auto chain instead of failing.
+    registerWithShellPref({ local: 'pwsh' }, { pwshAvailable: false })
+
+    await localShellFor()
+
+    assert.notEqual(spawnSpy.mock.calls[0][0], 'C:\\mock\\pwsh.exe')
+
+    // A junk local value (a hostile file can only carry whitelisted names, but
+    // the injection seam is typed loosely) is ignored entirely.
+    spawnSpy.mockClear()
+
+    registerWithShellPref({ local: 'zsh', wslDistro: 'kali-linux' } as { local: string; wslDistro: string }, {
+      pwshAvailable: false
+    })
+
+    const junk = await localShellFor()
+
+    // Auto-detect on the harness box: pwsh misses, so the chain ends at the
+    // System32 PowerShell or comspec — never at the injected mock pwsh path.
+    assert.notEqual(spawnSpy.mock.calls[0][0], 'C:\\mock\\pwsh.exe')
+    assert.ok(['powershell.exe', 'cmd.exe'].includes(junk.result.shell), `auto fell back to ${junk.result.shell}`)
+  } finally {
+    if (previousShell !== undefined) {
+      process.env.FULILIAN_DESKTOP_SHELL = previousShell
+    }
+  }
+})

@@ -929,6 +929,18 @@ export const zhHant = defineLocale({
       terminalFontPlaceholder: 'MesloLGS NF 或 CSS 字型堆疊',
       terminalFontPreview: '字形預覽',
       terminalFontReset: '使用預設字型',
+      terminalShell: {
+        sectionTitle: '終端命令執行環境',
+        sectionDesc: '選擇新終端分頁使用的本地 shell，以及終端切換器的預設 WSL 發行版。',
+        localShellTitle: '本地 shell',
+        shellAuto: '自動探測',
+        shellPwsh: 'PowerShell 7',
+        shellPowershell: 'Windows PowerShell 5.1',
+        shellCmd: 'cmd',
+        wslDistroTitle: '預設 WSL 發行版',
+        wslDistroHint: '將在終端切換器中預選；FULILIAN_DESKTOP_SHELL 環境變數始終優先。',
+        saveFailed: '終端 shell 偏好儲存失敗'
+      },
       translucencyTitle: '視窗透明',
       translucencyDesc: '讓整個視窗（包括文字）透出桌面。',
       translucencyGlassDesc: '霧面玻璃：桌面以柔和模糊透出，文字保持清晰。',

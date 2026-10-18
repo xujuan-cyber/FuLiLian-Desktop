@@ -952,6 +952,19 @@ export const en: Translations = {
       terminalFontPlaceholder: 'MesloLGS NF or a CSS font stack',
       terminalFontPreview: 'Glyph preview',
       terminalFontReset: 'Use default',
+      terminalShell: {
+        sectionTitle: 'Terminal Command Environment',
+        sectionDesc:
+          'Choose the shell new terminal tabs open with, and the default WSL distro for the terminal switcher.',
+        localShellTitle: 'Local shell',
+        shellAuto: 'Auto-detect',
+        shellPwsh: 'PowerShell 7',
+        shellPowershell: 'Windows PowerShell 5.1',
+        shellCmd: 'cmd',
+        wslDistroTitle: 'Default WSL distro',
+        wslDistroHint: 'Preselected in the terminal switcher; the FULILIAN_DESKTOP_SHELL override always wins.',
+        saveFailed: 'Could not save the terminal shell preference'
+      },
       translucencyTitle: 'Window Translucency',
       translucencyDesc: 'See your desktop through the whole window, text and all. Tuned separately for light and dark.',
       translucencyGlassDesc:

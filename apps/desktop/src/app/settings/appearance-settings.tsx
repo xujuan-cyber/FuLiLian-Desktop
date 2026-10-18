@@ -58,6 +58,7 @@ import { MODE_OPTIONS } from './constants'
 import { ListRow, SectionHeading, SettingsContent, ToggleRow } from './primitives'
 import { APPEARANCE_SETTING_IDS } from './settings-search'
 import { TerminalFontSetting } from './terminal-font-setting'
+import { TerminalShellSetting } from './terminal-shell-setting'
 import { useDeepLinkHighlight } from './use-deep-link-highlight'
 
 function ThemePreview({ name, mode }: { name: string; mode: 'light' | 'dark' }) {
@@ -683,6 +684,8 @@ export function AppearanceSettings() {
           />
 
           <TerminalFontSetting />
+
+          <TerminalShellSetting />
 
           <ListRow
             action={

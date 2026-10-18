@@ -358,6 +358,7 @@ import { createSshProbeConnection, pickLocalPort, redactSecrets, SshConnection }
 import { preflightStateDb } from './state-db-preflight'
 import { createStreamThrottle } from './stream-throttle'
 import { registerTerminalIpc } from './terminal-ipc'
+import { registerTerminalShellIpc } from './terminal-shell-ipc'
 import { registerWslCliIpc } from './wsl-cli-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
 import { createDesktopTray, type DesktopTray } from './tray'
@@ -16725,7 +16726,7 @@ registerFsIpc({
 // Git-driven features (worktrees, review pane, repo scan) — see git-ipc.ts.
 registerGitIpc({ resolveGitBinary, resolveGhBinary })
 
-// Embedded terminal PTY host (fulilian:terminal:*) — see terminal-ipc.ts.
+// Terminal PTY host + WSL CLI probe/opt-in + shell preference — see terminal-ipc.ts / wsl-cli-ipc.ts / terminal-shell-ipc.ts.
 const terminalIpc = registerTerminalIpc({
   isWindows: IS_WINDOWS,
   findOnPath,
@@ -16735,11 +16736,10 @@ const terminalIpc = registerTerminalIpc({
   getSshConnectionState: scope => sshConnections.get(scope)
 })
 
-// WSL CLI probe / opt-in (fulilian:wsl-cli:*) — see wsl-cli-ipc.ts.
 registerWslCliIpc({ rememberLog })
+registerTerminalShellIpc({ rememberLog })
 
-// 取证时间线桥接（step 16 · T13）：ctf:importEvent / forensics:timeline。
-// P2 管线未就绪 ⇒ mock 数据集（显式标注 mockGenerated，见 case-timeline.ts）。
+// 取证时间线桥接（step 16 · T13）：ctf:importEvent / forensics:timeline；P2 管线未就绪 ⇒ mock 数据集（显式标注 mockGenerated，见 case-timeline.ts）。
 registerCaseTimelineIpc({ log: rememberLog })
 
 // 报告与导出管线（step 16 · T16）：fulilian:report-export 单通道——MD→PDF

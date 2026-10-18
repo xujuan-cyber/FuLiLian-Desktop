@@ -825,6 +825,18 @@ export interface Translations {
       terminalFontPlaceholder: string
       terminalFontPreview: string
       terminalFontReset: string
+      terminalShell: {
+        sectionTitle: string
+        sectionDesc: string
+        localShellTitle: string
+        shellAuto: string
+        shellPwsh: string
+        shellPowershell: string
+        shellCmd: string
+        wslDistroTitle: string
+        wslDistroHint: string
+        saveFailed: string
+      }
       translucencyTitle: string
       translucencyDesc: string
       translucencyGlassDesc: string

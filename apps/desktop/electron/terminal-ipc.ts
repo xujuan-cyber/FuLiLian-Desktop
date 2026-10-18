@@ -18,6 +18,7 @@ import {
   TERMINAL_OUTPUT_FLUSH_BYTES,
   TERMINAL_OUTPUT_FLUSH_MS
 } from './terminal-output-buffer'
+import { readTerminalShellPref } from './terminal-shell-pref'
 import { buildWindowsInteractiveCommand } from './windows-remote-lifecycle'
 import { windowsToWslPosix } from './wsl-cli-paths'
 import { WSL_CLI_NAMES, type WslCliName } from './wsl-cli-probe'
@@ -29,6 +30,8 @@ export interface TerminalIpcDeps {
   activeSshTerminalTarget: (webContentsId: number) => unknown
   ensureBackend: (webContentsId: number) => Promise<unknown>
   getSshConnectionState: (scope: string) => undefined | { remotePlatform?: string }
+  /** Persisted shell preference (step17); defaults to the real reader. */
+  readShellPref?: () => { local?: unknown; wslDistro?: unknown } | null
 }
 
 export interface TerminalIpcApi {
@@ -43,7 +46,8 @@ export function registerTerminalIpc({
   rememberLog,
   activeSshTerminalTarget,
   ensureBackend,
-  getSshConnectionState
+  getSshConnectionState,
+  readShellPref = readTerminalShellPref
 }: TerminalIpcDeps): TerminalIpcApi {
   const terminalSessions = new Map()
 
@@ -119,6 +123,29 @@ export function registerTerminalIpc({
       if (resolved) {
         return shellSpecFor(resolved)
       }
+    }
+
+    // The persisted shell preference (step17) sits between the env escape
+    // hatch above and auto-detection below. An unknown local choice from a
+    // hostile file never reaches here (normalize whitelists it); a choice
+    // whose binary is missing degrades to auto-detect instead of failing the
+    // spawn. `pwsh` is portable; the 5.1 / cmd choices are Windows-only.
+    const pref = readShellPref()
+    const requested = pref && pref.local && pref.local !== 'auto' ? String(pref.local) : ''
+
+    const prefCommand =
+      requested === 'pwsh'
+        ? findOnPath('pwsh.exe') || findOnPath('pwsh')
+        : isWindows && requested === 'powershell'
+          ? windowsPowerShellPath()
+          : isWindows && requested === 'cmd'
+            ? process.env.COMSPEC || 'cmd.exe'
+            : undefined
+
+    if (prefCommand) {
+      rememberLog(`[terminal] shell preference applied: ${requested}`)
+
+      return shellSpecFor(prefCommand)
     }
 
     if (isWindows) {

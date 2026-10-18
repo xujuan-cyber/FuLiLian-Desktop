@@ -944,6 +944,18 @@ export const ar = defineLocale({
       terminalFontPlaceholder: 'MesloLGS NF أو حزمة خطوط CSS',
       terminalFontPreview: 'معاينة الرموز',
       terminalFontReset: 'استخدام الافتراضي',
+      terminalShell: {
+        sectionTitle: 'بيئة تنفيذ أوامر الطرفية',
+        sectionDesc: 'اختر الصدفة المحلية التي تفتح بها علامات الطرفية الجديدة، وتوزيعة WSL الافتراضية لمبدّل الطرفية.',
+        localShellTitle: 'الصدفة المحلية',
+        shellAuto: 'كشف تلقائي',
+        shellPwsh: 'PowerShell 7',
+        shellPowershell: 'Windows PowerShell 5.1',
+        shellCmd: 'cmd',
+        wslDistroTitle: 'توزيعة WSL الافتراضية',
+        wslDistroHint: 'تُحدد مسبقًا في مبدّل الطرفية؛ متغير البيئة FULILIAN_DESKTOP_SHELL له الأولوية دائمًا.',
+        saveFailed: 'تعذر حفظ تفضيل صدفة الطرفية'
+      },
       translucencyTitle: 'شفافية النافذة',
       translucencyDesc: 'إظهار سطح المكتب من خلال النافذة بالكامل، بما في ذلك النص.',
       translucencyGlassDesc: 'زجاج غير لامع: يظهر سطح المكتب كضبابية ناعمة بينما يبقى النص واضحًا.',

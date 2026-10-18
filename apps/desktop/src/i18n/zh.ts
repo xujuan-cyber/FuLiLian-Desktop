@@ -923,6 +923,18 @@ export const zh: Translations = {
       terminalFontPlaceholder: 'MesloLGS NF 或 CSS 字体栈',
       terminalFontPreview: '字形预览',
       terminalFontReset: '使用默认字体',
+      terminalShell: {
+        sectionTitle: '终端命令执行环境',
+        sectionDesc: '选择新终端标签页使用的本地 shell，以及终端切换器的默认 WSL 发行版。',
+        localShellTitle: '本地 shell',
+        shellAuto: '自动探测',
+        shellPwsh: 'PowerShell 7',
+        shellPowershell: 'Windows PowerShell 5.1',
+        shellCmd: 'cmd',
+        wslDistroTitle: '默认 WSL 发行版',
+        wslDistroHint: '将在终端切换器中预选；FULILIAN_DESKTOP_SHELL 环境变量始终优先。',
+        saveFailed: '终端 shell 偏好保存失败'
+      },
       translucencyTitle: '窗口透明',
       translucencyDesc: '让整个窗口（包括文字）透出桌面。',
       translucencyGlassDesc: '磨砂玻璃：桌面以柔和模糊透出，文字保持清晰。',
