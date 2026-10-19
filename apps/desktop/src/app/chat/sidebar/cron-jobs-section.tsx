@@ -193,13 +193,15 @@ export function SidebarCronJobsSection({
 
   return (
     <SidebarGroup className="shrink-0 p-0 pb-1">
-      <div className="group/section flex shrink-0 items-center justify-between pb-1 pt-1.5">
+      <div className="group/section flex h-7 shrink-0 items-center justify-between">
         <button
           className="group/section-label flex w-fit min-w-0 items-center gap-1 bg-transparent text-left leading-none"
           onClick={onToggle}
           type="button"
         >
-          <SidebarPanelLabel>{label}</SidebarPanelLabel>
+          <SidebarPanelLabel className="gap-1.5 pl-0 text-xs font-medium normal-case tracking-normal text-(--ui-text-tertiary)">
+            {label}
+          </SidebarPanelLabel>
           <DisclosureCaret
             className="text-(--ui-text-tertiary) opacity-0 transition group-hover/section-label:opacity-100"
             open={open}
@@ -207,7 +209,7 @@ export function SidebarCronJobsSection({
         </button>
       </div>
       {open && (
-        <SidebarGroupContent className="scrollbar-fade flex max-h-72 flex-col gap-px overflow-x-hidden overflow-y-auto overscroll-contain pb-1.75 compact:max-h-none compact:overflow-visible">
+        <SidebarGroupContent className="scrollbar-fade flex max-h-72 flex-col gap-0.5 overflow-x-hidden overflow-y-auto overscroll-contain pb-1.75 compact:max-h-none compact:overflow-visible">
           {shown.map(job => (
             <CronJobSidebarRow
               busy={triggeringJobIds.has(job.id)}
@@ -327,9 +329,7 @@ function CronJobSidebarRow({
           actions={
             /* Trailing cluster: countdown by default, quick actions on hover. */
             <div className="flex items-center gap-0.5">
-              <span className="text-[0.6875rem] text-(--ui-text-tertiary) tabular-nums group-hover/cron:hidden">
-                {meta}
-              </span>
+              <span className="text-xs text-(--ui-text-tertiary) tabular-nums group-hover/cron:hidden">{meta}</span>
               <div className="hidden items-center gap-0.5 group-hover/cron:flex">
                 <Tip label={c.triggerNow}>
                   <button
@@ -446,19 +446,19 @@ function CronJobSidebarRuns({ jobId, onOpenRun }: { jobId: string; onOpenRun: (s
   }, [changeEventsAvailable, cronChangeTick, jobId, visible])
 
   return (
-    <div className="mb-1 ml-[1.375rem] flex flex-col gap-px">
+    <div className="mb-1 ml-[1.375rem] flex flex-col gap-0.5">
       {runs === null ? (
-        <div className="flex items-center gap-1.5 py-1 pl-1 text-[0.6875rem] text-(--ui-text-tertiary)">
+        <div className="flex items-center gap-1.5 py-1 pl-1 text-xs text-(--ui-text-tertiary)">
           <GlyphSpinner ariaLabel={c.loading} className="text-[0.75rem]" />
         </div>
       ) : runs.length === 0 ? (
-        <div className="py-1 pl-1 text-[0.6875rem] text-(--ui-text-tertiary)">{c.noRuns}</div>
+        <div className="py-1 pl-1 text-xs text-(--ui-text-tertiary)">{c.noRuns}</div>
       ) : (
         <>
           {runs.map(run => (
             <button
               className={cn(
-                'truncate rounded-md px-1.5 py-0.5 text-left text-[0.6875rem] tabular-nums focus-visible:bg-(--chrome-action-hover) focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                'truncate rounded-lg px-1.5 py-1 text-left text-xs tabular-nums focus-visible:bg-(--chrome-action-hover) focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                 run.id === selectedSessionId
                   ? 'bg-(--ui-row-active-background) text-foreground'
                   : 'text-(--ui-text-secondary) hover:bg-(--chrome-action-hover) hover:text-foreground'

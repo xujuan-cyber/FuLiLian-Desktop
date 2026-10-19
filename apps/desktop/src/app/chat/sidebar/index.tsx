@@ -133,13 +133,7 @@ import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
-import {
-  type AppView,
-  CRON_ROUTE,
-  SIDEBAR_NAV_AREA,
-  type SidebarNavContribution,
-  SKILLS_ROUTE
-} from '../../routes'
+import { type AppView, CRON_ROUTE, SIDEBAR_NAV_AREA, type SidebarNavContribution, SKILLS_ROUTE } from '../../routes'
 import type { SidebarNavItem } from '../../types'
 
 import { SidebarCronJobsSection } from './cron-jobs-section'
@@ -1367,34 +1361,32 @@ export function ChatSidebar({
         // paints itself fully.
         'relative h-full min-w-0 overflow-hidden border-t-0 border-b-0 text-foreground transition-none',
         panesFlipped ? 'border-l border-r-0' : 'border-r border-l-0',
-        'border-(--sidebar-edge-border) bg-(--ui-sidebar-surface-background) opacity-100'
+        'border-(--ui-stroke-secondary) bg-(--ui-sidebar-surface-background) opacity-100'
       )}
       collapsible="none"
       data-tip-region=""
       data-tour="sessions-sidebar"
     >
-      <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
+      <SidebarContent className="gap-3 overflow-hidden bg-transparent px-2.5">
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[var(--titlebar-height)]">
           <SidebarGroupContent>
             {/* §4.3 brand row: mark + wordmark. The layout lives HERE so the
                 brand-mark component itself stays untouched (it is outside this
                 step's file set). The row keeps the titlebar's drag region —
                 the app drags by its brand, like every native window. */}
-            <div className="flex items-center gap-2 px-2 pb-1.5 pt-1.5">
+            <div className="flex items-center gap-2 px-2 pb-2 pt-1">
               <BrandMark className="size-5 rounded-[4px]" />
-              <span className="truncate text-[0.8125rem] font-semibold tracking-tight text-foreground">
-                {s.brandWordmark}
-              </span>
+              <span className="truncate text-[13px] font-semibold text-(--ui-text-primary)">{s.brandWordmark}</span>
             </div>
             {/* [＋新建任务] [搜索]: one deep-ink primary and the command
                 palette (§4.3 — the palette carries the session deep-search the
                 old inline field used to own). */}
-            <div className="flex shrink-0 items-center gap-1 px-2 pb-1.5">
+            <div className="flex shrink-0 items-center gap-1 px-2 pb-1">
               <ContextMenu>
                 <ContextMenuTrigger asChild>
                   <SidebarMenuButton
                     aria-label={s.newTask}
-                    className="flex h-7 w-full justify-start gap-2 rounded-md border border-transparent bg-primary px-2 text-left text-[0.8125rem] font-medium text-primary-foreground transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-primary/90 hover:text-primary-foreground hover:transition-none"
+                    className="flex h-8 w-full justify-start gap-2 rounded-lg bg-primary px-2.5 text-left text-[13px] font-medium text-primary-foreground transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-primary/90 hover:text-primary-foreground hover:transition-none"
                     data-tip-region=""
                     data-tour="sidebar-nav-new-session"
                     onClick={() => {
@@ -1426,7 +1418,7 @@ export function ChatSidebar({
               <Tip label={s.searchCommandPalette}>
                 <Button
                   aria-label={s.searchCommandPalette}
-                  className="size-7 shrink-0 text-(--ui-text-secondary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
+                  className="size-8 shrink-0 rounded-lg text-(--ui-text-secondary) hover:bg-(--ui-bg-tertiary) hover:text-foreground"
                   onClick={toggleCommandPalette}
                   size="icon"
                   variant="ghost"
@@ -1435,7 +1427,7 @@ export function ChatSidebar({
                 </Button>
               </Tip>
             </div>
-            <SidebarMenu className="gap-px">
+            <SidebarMenu className="gap-0.5 pb-1">
               {[...SIDEBAR_NAV, ...contributedNav].map(item => {
                 const isInteractive = Boolean(item.action) || Boolean(item.route)
 
@@ -1458,11 +1450,9 @@ export function ChatSidebar({
                       // resolved region has been observed to swallow clicks on the
                       // top rows. Same carve-out as USER_BUBBLE_BASE_CLASS in
                       // thread.tsx.
-                      'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
-                      active &&
-                        'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
-                      !isInteractive &&
-                        'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
+                      'flex h-8 w-full justify-start gap-2 rounded-lg px-2.5 text-left text-[13px] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-bg-tertiary) hover:text-foreground hover:transition-none',
+                      active && 'bg-(--ui-bg-secondary) text-foreground',
+                      !isInteractive && 'cursor-default hover:bg-transparent hover:text-inherit'
                     )}
                     // A tip anchored to the label points at the end of the
                     // word; the row is what it's actually about.
@@ -1533,14 +1523,14 @@ export function ChatSidebar({
 
         {showSessionSections && (
           <div
-            className={cn('flex min-h-0 flex-1 flex-col pb-1.75', SCROLL_Y, SCROLL_GUTTER)}
+            className={cn('flex min-h-0 flex-1 flex-col gap-2 pb-1.75', SCROLL_Y, SCROLL_GUTTER)}
             data-sessions-mode={sessionsMode}
             data-sessions-project={inProject ? (enteredProjectId ?? undefined) : undefined}
           >
             {kindVisible.project && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
-                contentClassName="flex flex-col gap-px rounded-lg pb-2 pt-1"
+                contentClassName="flex flex-col gap-0.5 rounded-lg pb-2 pt-1"
                 dndSensors={dndSensors}
                 emptyState={<SidebarPinnedEmptyState />}
                 label={s.pinned}
@@ -1571,7 +1561,7 @@ export function ChatSidebar({
                 card={cardRows}
                 collapsible={!inProject}
                 contentClassName={cn(
-                  'flex min-h-0 flex-1 flex-col gap-px pb-1.75',
+                  'flex min-h-0 flex-1 flex-col gap-0.5 pb-1.75',
                   // The section is the ONE authority on whether the virtual
                   // list owns scrolling: it neutralizes this wrapper scroller
                   // itself (overflow-visible) when it virtualizes. Gating
@@ -1749,7 +1739,8 @@ export function ChatSidebar({
               />
             )}
 
-            {kindVisible.project && !worktreeGroupingActive &&
+            {kindVisible.project &&
+              !worktreeGroupingActive &&
               messagingGroups.map(group => {
                 const visible = messagingVisible[group.sourceId] ?? NON_SESSION_INITIAL_ROWS
                 const shownSessions = group.sessions.slice(0, visible)
@@ -1760,7 +1751,7 @@ export function ChatSidebar({
                 return (
                   <SidebarSessionsSection
                     activeSessionId={activeSidebarSessionId}
-                    contentClassName={cn('flex max-h-56 flex-col gap-px pb-1.75', GROUP_BODY)}
+                    contentClassName={cn('flex max-h-56 flex-col gap-0.5 pb-1.75', GROUP_BODY)}
                     emptyState={null}
                     footer={
                       canRevealMore ? (

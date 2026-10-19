@@ -109,7 +109,9 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  font-feature-settings: 'liga' 0, 'calt' 0;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
   src: url('./fonts/FulilianSans-Regular.woff2') format('woff2');
 }
 @font-face {
@@ -117,7 +119,9 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  font-feature-settings: 'liga' 0, 'calt' 0;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
   src: url('./fonts/FulilianSans-Bold.woff2') format('woff2');
 }
 @font-face {
@@ -178,10 +182,10 @@
      each mapping carries its own fallback: a skin that declares nothing (all
      twelve legacy skins) still resolves to a real colour instead of an invalid
      `var()`. Values are the Workbench Light constants (DESIGN_PROPOSAL §3.1). */
-  --color-accent-bright: var(--dt-accent-bright, #EA620E);
-  --color-info: var(--dt-info, #0969DA);
-  --color-success: var(--dt-success, #1A7F37);
-  --color-warning: var(--dt-warning, #9A6700);
+  --color-accent-bright: var(--dt-accent-bright, #ea620e);
+  --color-info: var(--dt-info, #0969da);
+  --color-success: var(--dt-success, #1a7f37);
+  --color-warning: var(--dt-warning, #9a6700);
 
   --font-sans: var(--dt-font-sans);
   --font-mono: var(--dt-font-mono);
@@ -193,11 +197,11 @@
   --radius-md: calc(var(--radius-scalar) * 0.625rem);
   --radius-lg: calc(var(--radius-scalar) * 0.75rem);
   --radius-xl: calc(var(--radius-scalar) * 1rem);
-  /* step 15 · T1 — the input card / composer and the overlay / modal radius.
-     Deliberately the same formula as `--radius-xl` (DESIGN_PROPOSAL §3.4):
-     named rungs of the ladder, not a second scale. */
-  --radius-input: calc(var(--radius-scalar) * 1rem);
-  --radius-overlay: calc(var(--radius-scalar) * 1rem);
+  /* ZCode-aligned rungs. The input card and overlays are pinned in rem rather
+     than derived from the scalar: the composer needs a 16px radius (the single
+     most recognisable ZCode shape) while buttons/list rows stay at 6–9px. */
+  --radius-input: 1rem;
+  --radius-overlay: 0.75rem;
   --radius-2xl: calc(var(--radius-scalar) * 1.5rem);
   --radius-3xl: calc(var(--radius-scalar) * 2rem);
   --radius-4xl: calc(var(--radius-scalar) * 2.5rem);
@@ -263,17 +267,17 @@
        runs; this block only decides what the very first paint looks like, so it
        has to track DEFAULT_SKIN_NAME in the SAME commit or the app flashes the
        previous skin's palette (step 15 hard acceptance). */
-    --theme-foreground: #1F2328;
-    --theme-primary: #1F2328;
-    --theme-secondary: #F2F3F5;
-    --theme-accent-soft: #FDF0E5;
-    --theme-midground: #1F2328;
-    --theme-warm: #1F2328;
-    --theme-background-seed: #FFFFFF;
-    --theme-sidebar-seed: #F7F7F8;
-    --theme-card-seed: #FFFFFF;
-    --theme-elevated-seed: #FFFFFF;
-    --theme-bubble-seed: #FDF0E5;
+    --theme-foreground: #1f2328;
+    --theme-primary: #1f2328;
+    --theme-secondary: #f2f3f5;
+    --theme-accent-soft: #fdf0e5;
+    --theme-midground: #1f2328;
+    --theme-warm: #1f2328;
+    --theme-background-seed: #ffffff;
+    --theme-sidebar-seed: #f7f7f8;
+    --theme-card-seed: #ffffff;
+    --theme-elevated-seed: #ffffff;
+    --theme-bubble-seed: #fdf0e5;
     /* The neutral endpoints below are skin-independent AND are not written by
        applyTheme(), so they hold the same value on both sides of the hydration
        boundary — they cannot flash. Retuned from github's greys to the
@@ -285,9 +289,9 @@
        themes/context.tsx (it owns the native titlebar colour).
        NOTE: global retune — the twelve legacy skins' dark cards and popovers
        move off apricot's warm endpoint onto this cool one. */
-    --theme-neutral-chrome: #FFFFFF;
-    --theme-neutral-sidebar: #F2F3F5;
-    --theme-neutral-card: #FFFFFF;
+    --theme-neutral-chrome: #ffffff;
+    --theme-neutral-sidebar: #f2f3f5;
+    --theme-neutral-card: #ffffff;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
@@ -311,13 +315,13 @@
     --ui-accent: var(--theme-midground);
     --ui-accent-secondary: var(--theme-primary);
     --ui-warm: var(--theme-warm);
-    --ui-red: #B3324B;
-    --ui-orange: #A5582B;
-    --ui-yellow: #96661A;
-    --ui-green: #4F7A3A;
-    --ui-cyan: #3E7A78;
-    --ui-blue: #9A6528;
-    --ui-purple: #7E5C9E;
+    --ui-red: #b3324b;
+    --ui-orange: #a5582b;
+    --ui-yellow: #96661a;
+    --ui-green: #4f7a3a;
+    --ui-cyan: #3e7a78;
+    --ui-blue: #0969da;
+    --ui-purple: #7e5c9e;
     --context-usage-system: color-mix(in srgb, var(--ui-base) 55%, transparent);
     --context-usage-tools: var(--ui-purple);
     --context-usage-rules: var(--ui-green);
@@ -392,7 +396,7 @@
       var(--theme-neutral-card)
     );
     --ui-bg-card: color-mix(in srgb, var(--ui-accent) 4%, color-mix(in srgb, var(--ui-base) 4%, transparent));
-    --ui-bg-input: #fcfcfc;
+    --ui-bg-input: var(--ui-bg-editor);
     --ui-bg-primary: color-mix(
       in srgb,
       var(--ui-accent) var(--theme-fill-primary-accent-mix),
@@ -497,7 +501,8 @@
     --ui-chat-bubble-opaque-background: var(--ui-bg-editor);
     --ui-inline-code-background: color-mix(in srgb, #141414 5%, transparent);
     --ui-inline-code-foreground: color-mix(in srgb, #141414 88%, transparent);
-    --ui-selection-background: color-mix(in srgb, #ffd24a 55%, transparent);
+    /* ZCode selection: a neutral ink wash, not GitHub's yellow highlighter. */
+    --ui-selection-background: color-mix(in srgb, var(--theme-midground) 16%, transparent);
 
     --dt-background: var(--ui-bg-chrome);
     --dt-foreground: var(--ui-text-primary);
@@ -547,8 +552,8 @@
        danger or boot flashes the previous skin's red. Retuned to
        `fulilian-workbench` light in step 15 · T1 (was apricot's #B3324B),
        matching the --dt-primary-solid pair above. */
-    --dt-destructive: #D1242F;
-    --dt-destructive-foreground: #FFFFFF;
+    --dt-destructive: #d1242f;
+    --dt-destructive-foreground: #ffffff;
     --dt-sidebar-bg: var(--ui-bg-sidebar);
     --dt-sidebar-border: var(--ui-stroke-secondary);
     --dt-user-bubble: var(--ui-chat-bubble-background);
@@ -565,10 +570,10 @@
        legacy skins). `applyTheme()` does not write them yet, so the `.dark`
        block below carries the dark values and consumers reach them through the
        `@theme inline` mappings (`--color-accent-bright` etc.). */
-    --dt-accent-bright: #EA620E;
-    --dt-info: #0969DA;
-    --dt-success: #1A7F37;
-    --dt-warning: #9A6700;
+    --dt-accent-bright: #ea620e;
+    --dt-info: #0969da;
+    --dt-success: #1a7f37;
+    --dt-warning: #9a6700;
 
     --dt-font-sans:
       'Fulilian Sans', 'Sarasa Gothic SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC',
@@ -584,16 +589,16 @@
       'Fulilian Mono', 'Sarasa Term SC', 'JetBrains Mono', Menlo, Monaco, 'SF Mono', 'Courier Prime', monospace,
       'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji;
     --dt-base-size: 1rem;
-    --dt-line-height: 1.5;
+    --dt-line-height: 1.6;
     --dt-letter-spacing: 0;
     --dt-spacing-mul: 1;
 
     --radius: 0.75rem;
-    /* Effective value everywhere: the chat backdrop used to force 0.2 onto the
-       root element at runtime (an ungated leva slider default), so this 0.6
-       only ever applied to the windows that don't mount the backdrop. Pinned
-       to the value the app actually renders at. */
-    --radius-scalar: 0.2;
+    /* ZCode geometry (step 18 · UI refresh): the 0.2 scalar flattened every
+       rung to 2–5px, which is what made the shell read as a terminal rather
+       than a workbench. 0.75 yields md 7.5px / lg 9px / xl 12px / 2xl 18px —
+       softly rounded controls with the composer's 16px pinned separately. */
+    --radius-scalar: 0.75;
 
     /* Space under last message vs overlay composer — driven by the measured composer DOCK height (see
        composer/index.tsx), which covers the micro-action strip, the status stack, the composer, and the
@@ -603,10 +608,10 @@
 
     --composer-shell-pad-block-end: 0.625rem;
     --message-text-indent: 0.75rem;
-    --conversation-text-font-size: calc(0.8125rem * var(--ui-text-scale, 1));
-    --conversation-tool-font-size: calc(0.6875rem * var(--ui-text-scale, 1));
-    --conversation-caption-font-size: calc(0.75rem * var(--ui-text-scale, 1));
-    --conversation-line-height: 1.125rem;
+    --conversation-text-font-size: calc(0.875rem * var(--ui-text-scale, 1));
+    --conversation-tool-font-size: calc(0.75rem * var(--ui-text-scale, 1));
+    --conversation-caption-font-size: calc(0.8125rem * var(--ui-text-scale, 1));
+    --conversation-line-height: 1.375rem;
     --conversation-caption-line-height: 1rem;
     --conversation-turn-gap: 0.375rem;
     /* Gap between top-level turn blocks (prose ↔ tools ↔ thinking) — enough air
@@ -627,9 +632,12 @@
        freely. */
     --paragraph-gap: 0.7rem;
     --sticky-human-top: 0.23rem;
-    --file-tree-row-height: 1.375rem;
+    --file-tree-row-height: 1.75rem;
 
-    --composer-width: 100%;
+    /* ZCode reading column: one 820px measure shared by thread, intro and the
+       composer dock, so the input card sits exactly under the message body
+       instead of spanning the full window. */
+    --composer-width: 820px;
     --composer-control-size: 1.5rem;
     --composer-control-primary-size: 1.625rem;
     --composer-control-gap: 0.25rem;
@@ -688,9 +696,9 @@
     /* Same neutral endpoints as `:root`, in Graphite. See the note there for why
        they are retuned globally rather than per skin; `--theme-neutral-chrome`
        stays in step with `NEUTRAL_CHROME` in themes/context.tsx. */
-    --theme-neutral-chrome: #10151C;
-    --theme-neutral-sidebar: #0F141A;
-    --theme-neutral-card: #161C24;
+    --theme-neutral-chrome: #10151c;
+    --theme-neutral-sidebar: #0f141a;
+    --theme-neutral-card: #161c24;
 
     /* Dark never had a `--dt-destructive` of its own, so the cool light value
        leaked into dark's first frame (3.50 against the then-default #1C1814).
@@ -698,29 +706,29 @@
        from the active theme via `applyTheme()`. Retuned to the
        `fulilian-workbench` Graphite danger when the default skin flipped
        (step 15 · T1) — the pair has to describe whatever skin is default. */
-    --dt-destructive: #F85149;
-    --dt-destructive-foreground: #FFFFFF;
+    --dt-destructive: #f85149;
+    --dt-destructive-foreground: #ffffff;
 
     /* step 15 · T1 — dark values for the optional semantic slots. `applyTheme()`
        does not write these yet, so this block is what makes the dark appearance
        resolve correctly; the light pair lives in `:root`. `--dt-shadow-tint` is
        shared — only the rung alphas differ between appearances. */
-    --dt-accent-bright: #F2760F;
-    --dt-info: #4493F8;
-    --dt-success: #3FB950;
-    --dt-warning: #D29922;
+    --dt-accent-bright: #f2760f;
+    --dt-info: #4493f8;
+    --dt-success: #3fb950;
+    --dt-warning: #d29922;
 
     /* Dark-only accent palette overrides. The full warm set is restated, not
        just the three the old cool palette happened to need — otherwise orange,
        yellow, blue and purple would keep falling back to :root's light-tuned
        hues and read as cold spots on the dark page. */
-    --ui-red: #E4677F;
-    --ui-orange: #E0955F;
-    --ui-yellow: #D9B153;
-    --ui-green: #8FBF74;
-    --ui-cyan: #7FBDB8;
-    --ui-blue: #D9A56A;
-    --ui-purple: #B79BD6;
+    --ui-red: #e4677f;
+    --ui-orange: #e0955f;
+    --ui-yellow: #d9b153;
+    --ui-green: #8fbf74;
+    --ui-cyan: #7fbdb8;
+    --ui-blue: #6cb6ff;
+    --ui-purple: #b79bd6;
     --ui-diff-add-foreground: color-mix(in srgb, var(--ui-green) 62%, #fff);
     --ui-diff-remove-foreground: color-mix(in srgb, var(--ui-red) 62%, #fff);
 
@@ -735,7 +743,7 @@
 
     --ui-inline-code-background: color-mix(in srgb, #ffffff 7%, transparent);
     --ui-inline-code-foreground: color-mix(in srgb, #ffffff 88%, transparent);
-    --ui-selection-background: color-mix(in srgb, #ffd24a 38%, transparent);
+    --ui-selection-background: color-mix(in srgb, var(--theme-midground) 28%, transparent);
     /* A dark card sits ABOVE the chrome (#161618 over #0d0d0e), so an inline
        widget wearing the raw card fill reads as a lit panel. Take it down a
        touch — still clearly a surface, no longer the brightest thing in the
@@ -1922,7 +1930,7 @@ body.guest-pointer-lock :is(webview, iframe) {
 
 [data-slot='composer-rich-input'] {
   color: var(--ui-text-primary);
-  font-size: 0.8125rem;
+  font-size: var(--conversation-text-font-size);
 }
 
 [data-slot='composer-rich-input']:is(:empty, [data-empty])::before {
@@ -3106,7 +3114,8 @@ button[data-slot='aui_msg-reactions'] svg {
    Widgets on the shared shell (components/assistant-ui/widget-shell.ts →
    `--ui-widget-surface-background`) and any chat-surface card are matched on
    their class, so new ones inherit this without touching the list. */
-[data-hud-shell] [data-slot='composer-bounds']
+[data-hud-shell]
+  [data-slot='composer-bounds']
   :is(
     [data-slot='clarify-inline'],
     [data-slot='tool-block'],

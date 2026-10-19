@@ -353,6 +353,14 @@ function applyTheme(
     // `harmonize`); a blue one turns the sidebar's finished dots teal rather
     // than leaving eight emerald spots fighting the theme.
     '--ui-success': harmonize('#10b981', midground, 0.25),
+    // Semantic slots were declared on the skin but never written, so every skin
+    // fell back to the styles.css constants. Write them so a skin that does
+    // declare them (workbench) actually drives badges, status dots and signal
+    // counts; legacy skins keep the same constants via the `??` fallbacks.
+    '--dt-accent-bright': c.accentBright ?? (isDark ? '#F2760F' : '#EA620E'),
+    '--dt-info': c.info ?? (isDark ? '#4493F8' : '#0969DA'),
+    '--dt-success': c.success ?? (isDark ? '#3FB950' : '#1A7F37'),
+    '--dt-warning': c.warning ?? (isDark ? '#D29922' : '#9A6700'),
     '--dt-font-sans': typo.fontSans,
     '--dt-font-mono': typo.fontMono,
     '--noise-opacity-mul': isDark ? 'calc(0.04 / 0.21)' : 'calc(0.34 / 0.21)'
@@ -574,7 +582,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // What actually gets painted (matches the `.dark` class applyTheme toggles).
   const renderedMode = useMemo(() => renderedModeFor(paintedTheme.colors, paintedMode), [paintedTheme, paintedMode])
 
-  useEffect(() => applyTheme(paintedTheme, paintedMode, { textInk, textScale }), [paintedTheme, paintedMode, textInk, textScale])
+  useEffect(
+    () => applyTheme(paintedTheme, paintedMode, { textInk, textScale }),
+    [paintedTheme, paintedMode, textInk, textScale]
+  )
 
   // Keep the native window appearance pinned to the app theme (vibrancy
   // material, titlebar, new-window pre-paint background).

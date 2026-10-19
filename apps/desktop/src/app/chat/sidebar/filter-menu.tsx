@@ -176,7 +176,7 @@ export function SidebarKindFilterRow({
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5 px-2 pb-1" data-testid="sidebar-kind-filter" role="radiogroup">
+    <div className="flex shrink-0 items-center gap-1 px-0 pb-2" data-testid="sidebar-kind-filter" role="radiogroup">
       {CONTAINER_KIND_FILTERS.map(id => {
         const active = value === id
 
@@ -185,10 +185,10 @@ export function SidebarKindFilterRow({
             aria-checked={active}
             aria-label={copy[id]}
             className={cn(
-              'rounded-md px-1.5 py-0.5 text-[0.65rem] leading-none transition-colors duration-100 ease-out',
+              'flex h-7 items-center rounded-full px-2.5 text-xs font-medium leading-none transition-colors duration-100 ease-out',
               active
-                ? 'bg-(--ui-control-active-background) text-foreground'
-                : 'text-(--ui-text-tertiary) hover:bg-(--ui-control-hover-background) hover:text-foreground'
+                ? 'bg-(--ui-bg-secondary) text-foreground'
+                : 'bg-(--ui-bg-tertiary) text-(--ui-text-tertiary) hover:bg-(--ui-bg-secondary) hover:text-foreground'
             )}
             key={id}
             onClick={() => onChange(id as ContainerKindFilter)}

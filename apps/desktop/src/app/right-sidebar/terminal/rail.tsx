@@ -25,7 +25,14 @@ import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
 import { cn } from '@/lib/utils'
 import { $bindings } from '@/store/keybinds'
 import { loadTerminalShellPref, setTerminalShellPref } from '@/store/terminal-shell'
-import { $wslCliDistro, $wslCliEnabledClis, $wslCliProbe, selectWslCli, selectWslCliDistro, type WslCliTarget } from '@/store/wsl-cli'
+import {
+  $wslCliDistro,
+  $wslCliEnabledClis,
+  $wslCliProbe,
+  selectWslCli,
+  selectWslCliDistro,
+  type WslCliTarget
+} from '@/store/wsl-cli'
 
 import { setTerminalTakeover } from '../store'
 
@@ -80,8 +87,7 @@ export function TerminalRail() {
 
     const distro = currentDistro
 
-    const target: null | WslCliTarget =
-      value === 'local' ? null : distro ? { cli: value as WslCliName, distro } : null
+    const target: null | WslCliTarget = value === 'local' ? null : distro ? { cli: value as WslCliName, distro } : null
 
     if (value !== 'local' && !target) {
       return
@@ -114,7 +120,7 @@ export function TerminalRail() {
 
   return (
     <div
-      className="group/rail relative z-40 flex h-full w-9 shrink-0 flex-col items-center border-l border-(--ui-stroke-quaternary) bg-(--ui-terminal-surface-background)"
+      className="group/rail relative z-40 flex h-full w-10 shrink-0 flex-col items-center bg-(--ui-terminal-surface-background)"
       // The rail sits at the pane's outer edge, under the collapsed sidebars'
       // hover-reveal triggers; mark it so those triggers go pointer-transparent
       // while it's hovered (see the suppression rules in styles.css) and a reach
@@ -224,7 +230,7 @@ function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: T
           {active && (
             <span
               aria-hidden="true"
-              className="absolute inset-y-0.5 right-0 w-0.5 rounded-l-sm bg-(--ui-stroke-primary)"
+              className="absolute inset-y-0.5 right-0 w-0.5 rounded-l-sm bg-(--ui-text-primary)"
             />
           )}
           <Tip label={<TipHintLabel hint={toggleHint && formatCombo(toggleHint)} text={label} />} side="left">
@@ -232,7 +238,7 @@ function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: T
               aria-label={label}
               aria-selected={active}
               className={cn(
-                'grid size-7 place-items-center rounded-md transition-colors',
+                'grid size-8 place-items-center rounded-lg transition-colors',
                 active
                   ? 'bg-(--chrome-action-hover) text-foreground'
                   : 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'

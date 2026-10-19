@@ -147,8 +147,12 @@ export const Thread = memo(function Thread({
     [hasBranchInNewChat, hasCancel, hasDismissError, hasRestoreToMessage, requestRestoreConfirm]
   )
 
+  // Centred in the row the reader actually has (the viewport already stops at
+  // the composer), which lands the greeting at ~38–40% of the visible height.
+  // The old `pt-[composer-measured-height]` double-counted that clearance and
+  // pushed the intro down against the composer.
   const emptyPlaceholder = intro ? (
-    <div className="flex min-h-0 w-full flex-col items-center justify-center pt-[var(--composer-measured-height)]">
+    <div className="flex min-h-0 w-full flex-col items-center justify-center">
       <Intro {...intro} />
     </div>
   ) : undefined

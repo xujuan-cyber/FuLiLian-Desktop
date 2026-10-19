@@ -15,12 +15,12 @@ import { $sidebarRowMeta } from '@/store/layout'
 
 /** The muted slot beside a section label (loading glyph, status hint). */
 export function SidebarSectionMeta({ children }: { children: React.ReactNode }) {
-  return <span className="shrink-0 text-[0.6875rem] font-medium text-(--ui-text-quaternary)">{children}</span>
+  return <span className="shrink-0 text-xs font-medium text-(--ui-text-quaternary)">{children}</span>
 }
 
 // ── Row geometry (session row is canonical — everything composes these) ─────
 //
-// Height lives ONLY on SidebarRowShell (min-h-[1.625rem]). Inset children
+// Height lives ONLY on SidebarRowShell (h-8). Inset children
 // stretch to fill the cell and center content internally — never items-center
 // on the shell grid, or short clusters (projects) float 1–2px off sessions.
 //
@@ -33,18 +33,18 @@ export function SidebarSectionMeta({ children }: { children: React.ReactNode }) 
 // where a working row paints its arc (`.arc-row` has zero standoff) — the ring
 // ran through the text.
 
-const rowMinH = 'min-h-[1.625rem]'
-const rowPadX = 'pl-2 pr-2'
-const rowPadTrail = 'pr-2'
-const rowGap = 'gap-1.5'
-const rowLead = 'grid size-3.5 shrink-0 place-items-center'
+const rowMinH = 'h-8'
+const rowPadX = 'px-2.5'
+const rowPadTrail = 'pr-2.5'
+const rowGap = 'gap-2'
+const rowLead = 'grid size-4 shrink-0 place-items-center'
 const rowInset = cn(rowPadX, rowGap, 'flex h-full min-w-0 items-center self-stretch py-0.5')
 // `truncate` is overflow:hidden. `leading-none` (line-height: 1) makes the
 // line box equal the em-square, so glyph ink that sticks out — Segoe UI on
 // Windows is ~1.33em — gets shaved. 1.35 leaves room; the shell still owns
 // row height, so the extra leading just centers.
 export const SIDEBAR_TRUNCATED_LEADING = 'leading-[1.35]' as const
-const rowLabel = cn('min-w-0 truncate text-[0.8125rem] text-(--ui-text-secondary)', SIDEBAR_TRUNCATED_LEADING)
+const rowLabel = cn('min-w-0 truncate text-[13px] text-(--ui-text-secondary)', SIDEBAR_TRUNCATED_LEADING)
 
 /** Inbox-style card (workspace + age, title + preview, model + size). */
 export const SIDEBAR_ROW_CARD_MIN_H = 'min-h-[3.375rem]' as const
@@ -52,9 +52,9 @@ export const SIDEBAR_ROW_CARD_MIN_H = 'min-h-[3.375rem]' as const
 /** Codicon size in sidebar row leads — matches the file tree (`tree.tsx`). */
 export const SIDEBAR_LEAD_ICON_SIZE = '0.875rem' as const
 
-/** Vertical stack of rows (gap-px, single column). */
+/** Vertical stack of rows (gap-0.5, single column). */
 export function SidebarRowStack({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('grid grid-cols-[minmax(0,1fr)] gap-px', className)} {...props} />
+  return <div className={cn('grid grid-cols-[minmax(0,1fr)] gap-0.5', className)} {...props} />
 }
 
 /** Nested rows (session previews, worktree bodies). */
@@ -64,8 +64,8 @@ export function SidebarRowNest({ className, ...props }: React.ComponentProps<'di
 
 /**
  * Chronological date-bucket separator ("Yesterday" / "Last week" / "June") for
- * the session list. One flat row — a small caption plus a hairline rule — so it
- * groups sessions by recency without adding a level of indentation.
+ * the session list. A plain caption row — no rule, no letter-spaced caps — so
+ * the buckets read as quiet group titles rather than as terminal chrome.
  */
 export function SidebarDateDivider({
   action,
@@ -76,11 +76,15 @@ export function SidebarDateDivider({
   return (
     // group/workspace: a divider heads a group the same way a repo header does,
     // so it borrows the header's hover-revealed "+" verbatim.
-    <div className={cn('group/workspace flex select-none items-center gap-2 px-2 pb-0.5 pt-2', className)} {...props}>
-      <span className="shrink-0 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-(--ui-text-quaternary)">
-        {label}
-      </span>
-      <span aria-hidden="true" className="h-px flex-1 bg-(--ui-stroke-tertiary)" />
+    <div
+      className={cn(
+        'group/workspace mt-4 mb-1.5 flex select-none items-center gap-2 px-2.5 text-xs text-(--ui-text-tertiary)',
+        className
+      )}
+      {...props}
+    >
+      <span className="shrink-0">{label}</span>
+      <span className="flex-1" />
       {action}
     </div>
   )
@@ -100,7 +104,7 @@ export function SidebarRowShell({
 }: React.ComponentProps<'div'> & { actions?: React.ReactNode; actionsClassName?: string }) {
   return (
     <div
-      className={cn(rowMinH, rowPadTrail, 'grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-md', className)}
+      className={cn(rowMinH, rowPadTrail, 'grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-lg', className)}
       {...props}
     >
       {children}
@@ -193,7 +197,7 @@ export function SidebarGroupRow({
         // group, never both at once.
         facts.length ? (
           <div className="relative flex items-center">
-            <span className="min-w-9 whitespace-nowrap text-right text-[0.625rem] leading-none text-(--ui-text-tertiary) transition-opacity group-hover/workspace:opacity-0">
+            <span className="min-w-9 whitespace-nowrap text-right text-xs leading-none text-(--ui-text-tertiary) transition-opacity group-hover/workspace:opacity-0">
               {facts.join(' · ')}
             </span>
             {actions ? <div className="absolute right-0 flex items-center">{actions}</div> : null}

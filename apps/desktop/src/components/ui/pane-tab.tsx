@@ -14,39 +14,37 @@ export const PANE_TAB_STRIP_LINE_RIGHT = 'shadow-[inset_-1px_0_0_var(--ui-stroke
 
 // `--tab-face` is the tab's EFFECTIVE surface color — what actually sits under
 // the label after every wash lands. The hover close-button gradient fades into
-// it, so the fade is seamless on any theme. Idle hover repaints it below with
-// the same color-mix the darkening wash applies.
+// it, so the fade is seamless on any theme.
 const TAB =
-  'group/tab relative flex shrink-0 items-center border-transparent bg-(--tab-bg) text-[0.6875rem] font-medium [-webkit-app-region:no-drag] [--tab-face:var(--tab-bg)]'
+  'group/tab relative flex shrink-0 items-center border-transparent bg-(--tab-bg) text-xs font-medium [-webkit-app-region:no-drag] [--tab-face:var(--tab-bg)]'
 
-// Full height: with the strip's rule removed there is no last-pixel row to
-// leave uncovered, so tabs fill the bar and no sliver of gutter shows through.
-const TAB_HORIZONTAL = 'h-full min-w-0 max-w-48 not-first:border-l not-first:border-l-(--ui-stroke-quaternary)'
+// Full height: tabs fill the 36px bar; separation is a 4px gutter on the list
+// (`gap-1`), never a per-tab divider.
+const TAB_HORIZONTAL = 'h-full min-w-0 max-w-48'
 
 const TAB_VERTICAL =
   'w-full max-h-48 justify-center not-first:border-t not-first:border-t-(--ui-stroke-quaternary) [writing-mode:vertical-rl]'
 
-const TAB_ACTIVE = 'h-full text-foreground [--tab-bg:var(--pane-tab-active-bg,var(--ui-editor-surface-background))]'
-
-// Horizontal only: the active tab is the sole seam on the strip — a
-// theme-primary underline drawn as an inset shadow in its own last pixel row,
-// so it costs no layout and can't shift the tab.
-const TAB_ACTIVE_UNDERLINE = 'shadow-[inset_0_-2px_0_var(--pane-tab-active-accent,var(--theme-primary))]'
+// Active = a light card surface + primary ink + 500 weight. No accent
+// underline: ZCode marks the active tab by surface, not by a colored edge.
+const TAB_ACTIVE =
+  'h-full font-medium text-(--ui-text-primary) [--tab-bg:var(--pane-tab-active-bg,var(--ui-bg-editor))]'
 
 // Inactive = gutter, defaulting to the shared chrome surface so a strip that
 // sets no vars still matches the sidebar/titlebar instead of falling through to
-// the raw (unmixed) card seed. Hover DARKENS: surfaces this close in value need
-// a darkening wash to register at all. `--tab-face` tracks the wash — the same
-// mix flattened onto `--tab-bg` — so the close gradient matches what shows.
+// the raw (unmixed) card seed. Hover is a light gray wash (never a darkening
+// overlay); `--tab-face` follows `--tab-bg`, so the close gradient matches.
 const TAB_IDLE =
-  'text-(--ui-text-tertiary) [--tab-bg:var(--pane-tab-strip-bg,var(--ui-sidebar-surface-background))] hover:shadow-[inset_0_0_0_100vmax_color-mix(in_srgb,#000_var(--ui-tab-hover-darken),transparent)] hover:[--tab-face:color-mix(in_srgb,#000_var(--ui-tab-hover-darken),var(--tab-bg))] hover:text-(--ui-text-secondary)'
+  'text-(--ui-text-tertiary) [--tab-bg:var(--pane-tab-strip-bg,var(--ui-sidebar-surface-background))] hover:[--tab-bg:var(--ui-bg-tertiary)] hover:text-(--ui-text-secondary)'
 
-// A tab riding a multi-tab selection: an accent wash over whatever surface the
-// tab sits on. A background-image gradient (not a shadow) so it stacks cleanly
-// over `--tab-bg` without fighting the active underline / hover shadows.
+// A tab riding a multi-tab selection: a neutral wash over whatever surface the
+// tab sits on. ZCode never tints chrome with the accent — orange is reserved
+// for signals (permissions, CTF, counters) — so selection reads as "pressed
+// surface", not "brand highlight". A background-image gradient (not a shadow)
+// stacks cleanly over `--tab-bg` without fighting the close gradients.
 // `--tab-face` gets the same wash flattened in, keeping the close fade honest.
 const TAB_SELECTED =
-  '[background-image:linear-gradient(color-mix(in_srgb,var(--ui-accent)_14%,transparent),color-mix(in_srgb,var(--ui-accent)_14%,transparent))] [--tab-face:color-mix(in_srgb,var(--ui-accent)_14%,var(--tab-bg))] text-foreground'
+  '[background-image:linear-gradient(color-mix(in_srgb,var(--ui-text-primary)_7%,transparent),color-mix(in_srgb,var(--ui-text-primary)_7%,transparent))] [--tab-face:color-mix(in_srgb,var(--ui-text-primary)_7%,var(--tab-bg))] text-foreground'
 
 interface PaneTabProps extends React.ComponentProps<'div'> {
   active?: boolean
@@ -103,9 +101,7 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
         TAB,
         vertical ? TAB_VERTICAL : TAB_HORIZONTAL,
         edge,
-        active
-          ? cn(TAB_ACTIVE, !vertical && TAB_ACTIVE_UNDERLINE)
-          : cn(TAB_IDLE, edge && `${edge}-(--ui-stroke-tertiary)`),
+        active ? TAB_ACTIVE : cn(TAB_IDLE, edge && `${edge}-(--ui-stroke-tertiary)`),
         selected && TAB_SELECTED,
         className
       )}
@@ -170,16 +166,12 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
         // Rendered after the dirty dot: on hover the ✕ takes the dot's spot,
         // VS Code-style.
         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-stretch opacity-0 transition-opacity group-hover/tab:pointer-events-auto group-hover/tab:opacity-100">
-          {/* Both pieces re-draw the active underline: they paint over the
-              tab's own last-pixel row, so without it the ✕ would bite a
-              notch out of the accent line on the active tab. */}
-          <span
-            aria-hidden
-            className="w-4 bg-linear-to-r from-transparent to-(--tab-face) group-data-[active=true]/tab:shadow-[inset_0_-2px_0_var(--pane-tab-active-accent,var(--theme-primary))]"
-          />
+          {/* The runway fades transparent → `--tab-face` so the ✕ melts into
+              the tab's own surface instead of hard-clipping the label. */}
+          <span aria-hidden className="w-4 bg-linear-to-r from-transparent to-(--tab-face)" />
           <button
             aria-label={translateNow('common.close')}
-            className="grid cursor-pointer place-items-center bg-(--tab-face) pr-1.5 pl-0.5 text-(--ui-text-tertiary) outline-none hover:text-foreground group-data-[active=true]/tab:shadow-[inset_0_-2px_0_var(--pane-tab-active-accent,var(--theme-primary))]"
+            className="grid cursor-pointer place-items-center bg-(--tab-face) pr-1.5 pl-0.5 text-(--ui-text-tertiary) outline-none hover:text-foreground"
             onClick={event => {
               event.preventDefault()
               event.stopPropagation()
@@ -210,8 +202,7 @@ interface PaneTabLabelProps extends React.ComponentProps<'button'> {
   as?: 'button' | 'span'
 }
 
-/** Truncating label inside a `PaneTab`. `className` merges into the text span
- *  (e.g. `normal-case tracking-normal` for filenames). */
+/** Truncating label inside a `PaneTab`. `className` merges into the text span. */
 export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(function PaneTabLabel(
   { as = 'span', className, children, ...props },
   ref
@@ -220,13 +211,11 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
 
   return (
     <Comp
-      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
+      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2.5 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
       ref={ref}
       {...props}
     >
-      <span className={cn('block min-w-0 truncate text-[9px] font-medium tracking-wide uppercase', className)}>
-        {children}
-      </span>
+      <span className={cn('block min-w-0 truncate text-xs font-medium', className)}>{children}</span>
     </Comp>
   )
 })
@@ -255,18 +244,17 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
 ) {
   return (
     <div
-      // Strip and active tab both sit on the sidebar surface, so the bar reads
-      // as one piece of chrome with the titlebar above it. No bottom rule — the
-      // active tab's primary underline is the only seam.
+      // 36px bar on the sidebar surface with a single bottom hairline — the
+      // strip is the only seam, tabs never paint their own rules.
       className={cn(
-        'group/pane-header relative flex h-7 shrink-0 select-none bg-(--ui-sidebar-surface-background) [-webkit-app-region:no-drag] [--pane-tab-active-bg:var(--ui-sidebar-surface-background)]',
+        'group/pane-header relative flex h-9 shrink-0 select-none border-b border-(--ui-stroke-secondary) bg-(--ui-sidebar-surface-background) [-webkit-app-region:no-drag] [--pane-tab-active-bg:var(--ui-bg-editor)]',
         className
       )}
       ref={ref}
       {...props}
     >
       <div
-        className="flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex min-w-0 flex-1 gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         ref={listRef}
         role="tablist"
       >

@@ -17,10 +17,10 @@ import { FileEntryContextMenu, InlineRenameInput, isRenameShortcut } from '../fi
 import { getFileTreeDndManager } from './dnd-manager'
 import type { TreeNode } from './use-project-tree'
 
-const ROW_HEIGHT = 22
-const INDENT = 10
-/** Fixed base inset (`px-6.5`) layered on top of arborist's depth indent. */
-const TREE_ROW_INSET = '17px'
+const ROW_HEIGHT = 28
+const INDENT = 12
+/** Fixed base inset (`px-2.5`) layered on top of arborist's depth indent. */
+const TREE_ROW_INSET = '10px'
 
 function withTreeInset(paddingLeft: number | string | undefined): string {
   if (typeof paddingLeft === 'number') {
@@ -295,8 +295,8 @@ function ProjectTreeRow({
       aria-expanded={isFolder ? node.isOpen : undefined}
       aria-selected={node.isSelected}
       className={cn(
-        'group/row row-hover flex h-full select-none items-center gap-1 border border-transparent px-3 text-xs font-normal leading-(--file-tree-row-height) text-(--ui-text-secondary) hover:text-foreground',
-        node.isSelected && 'bg-(--ui-row-active-background) text-foreground',
+        'group/row flex h-full cursor-pointer select-none items-center gap-1 border border-transparent px-2.5 text-[13px] font-normal leading-7 text-(--ui-text-secondary) transition-colors hover:bg-(--ui-bg-tertiary) hover:text-foreground',
+        node.isSelected && 'bg-(--ui-bg-secondary) text-foreground',
         isPlaceholder && 'pointer-events-none italic text-muted-foreground/70'
       )}
       draggable={!isPlaceholder && !editing}
@@ -351,15 +351,15 @@ function ProjectTreeRow({
     >
       {/* No chevron column — the folder icon (open/closed) already carries the
           expand state, so the extra glyph was pure noise. */}
-      <span aria-hidden className="flex w-3.5 items-center justify-center text-(--ui-text-tertiary)">
+      <span aria-hidden className="flex w-4 items-center justify-center text-(--ui-text-tertiary)">
         {isPlaceholder && !isErrorPlaceholder ? (
-          <Codicon name="loading" size="0.75rem" spinning />
+          <Codicon name="loading" size="1rem" spinning />
         ) : isErrorPlaceholder ? (
-          <Codicon name="warning" size="0.75rem" />
+          <Codicon name="warning" size="1rem" />
         ) : isFolder ? (
-          <Codicon name={node.isOpen ? 'folder-opened' : 'folder'} size="0.875rem" />
+          <Codicon name={node.isOpen ? 'folder-opened' : 'folder'} size="1rem" />
         ) : (
-          <Codicon name="file" size="0.875rem" />
+          <Codicon name="file" size="1rem" />
         )}
       </span>
       {editing ? (

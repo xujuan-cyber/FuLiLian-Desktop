@@ -77,10 +77,8 @@ export function RightSidebarPane({ onActivateFile, onActivateFolder }: RightSide
     <aside
       aria-label={r.aria}
       className={cn(
-        'before:pointer-events-none relative flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-secondary) bg-(--ui-sidebar-surface-background) pt-(--titlebar-height) text-(--ui-text-tertiary)',
-        panesFlipped
-          ? 'border-r shadow-[inset_-0.0625rem_0_0_color-mix(in_srgb,white_18%,transparent)]'
-          : 'border-l shadow-[inset_0.0625rem_0_0_color-mix(in_srgb,white_18%,transparent)]'
+        'relative flex h-full w-full min-w-0 flex-col overflow-hidden border-(--ui-stroke-secondary) bg-(--ui-sidebar-surface-background) pt-(--titlebar-height) text-(--ui-text-tertiary)',
+        panesFlipped ? 'border-r' : 'border-l'
       )}
     >
       <FilesystemTab
@@ -116,7 +114,7 @@ interface FilesystemTabProps extends FileTreeBodyProps {
 // Sidebar palette + hover-reveal: header actions stay reachable while moving
 // from the project label to the action buttons.
 const HEADER_ACTION_CLASS =
-  'text-sidebar-foreground/70 hover:bg-sidebar-accent! hover:text-sidebar-accent-foreground! focus-visible:bg-sidebar-accent! focus-visible:text-sidebar-accent-foreground! focus-visible:ring-sidebar-ring'
+  'text-(--ui-text-tertiary) hover:bg-(--ui-bg-tertiary) hover:text-(--ui-text-primary) focus-visible:bg-(--ui-bg-tertiary) focus-visible:text-(--ui-text-primary)'
 
 const HEADER_ACTION_LABEL_REVEAL = `${HEADER_ACTION_CLASS} pointer-events-none opacity-0 transition-opacity focus-visible:pointer-events-auto focus-visible:opacity-100 group-focus-within/project-header:pointer-events-auto group-focus-within/project-header:opacity-100 group-hover/project-header:pointer-events-auto group-hover/project-header:opacity-100`
 
@@ -162,7 +160,7 @@ function FilesystemTab({
             size="icon-xs"
             variant="ghost"
           >
-            <Codicon name="refresh" size="0.8125rem" spinning={loading} />
+            <Codicon name="refresh" size="1rem" spinning={loading} />
           </Button>
         </Tip>
         <Tip label={r.collapseAll}>
@@ -174,7 +172,7 @@ function FilesystemTab({
             size="icon-xs"
             variant="ghost"
           >
-            <Codicon name="collapse-all" size="0.8125rem" />
+            <Codicon name="collapse-all" size="1rem" />
           </Button>
         </Tip>
       </RightSidebarSectionHeader>
@@ -198,7 +196,7 @@ function FilesystemTab({
 
 export function RightSidebarSectionHeader({ children, className, ...props }: ComponentProps<'div'>) {
   return (
-    <div className={cn('group/project-header flex h-7 shrink-0 items-center px-2.5', className)} {...props}>
+    <div className={cn('group/project-header flex h-9 shrink-0 items-center px-2.5', className)} {...props}>
       {children}
     </div>
   )
@@ -251,7 +249,7 @@ function FileTreeBody({
         <EmptyState body={r.unreadableBody(error)} title={r.unreadableTitle} />
         {onRetry && (
           <button
-            className="text-[0.68rem] font-medium text-muted-foreground transition hover:text-foreground"
+            className="text-xs font-medium text-(--ui-text-tertiary) transition hover:text-(--ui-text-primary)"
             onClick={onRetry}
             type="button"
           >
@@ -276,7 +274,7 @@ function FileTreeBody({
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
           <EmptyState body={r.treeErrorBody} title={r.treeErrorTitle} />
           <button
-            className="text-[0.68rem] font-medium text-muted-foreground transition hover:text-foreground"
+            className="text-xs font-medium text-(--ui-text-tertiary) transition hover:text-(--ui-text-primary)"
             onClick={reset}
             type="button"
           >
@@ -327,10 +325,8 @@ export function PaneEmptyState({ label }: { label: string }) {
 export function EmptyState({ body, title }: { body: string; title?: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
-      {title && (
-        <div className="text-[0.7rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground/75">{title}</div>
-      )}
-      <div className="text-[0.68rem] leading-relaxed text-muted-foreground/65">{body}</div>
+      {title && <div className="text-xs font-semibold text-(--ui-text-tertiary)">{title}</div>}
+      <div className="text-xs leading-relaxed text-(--ui-text-tertiary)">{body}</div>
     </div>
   )
 }

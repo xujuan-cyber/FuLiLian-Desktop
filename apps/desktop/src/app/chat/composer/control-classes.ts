@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 // so both the row (`controls.tsx`) and the menus it renders can wear them
 // without importing each other in a cycle.
 
-export const ICON_BTN = 'size-(--composer-control-size) shrink-0 rounded-md'
+export const ICON_BTN = 'size-(--composer-control-size) shrink-0 rounded-lg'
 
 export const GHOST_ICON_BTN = cn(
   ICON_BTN,
@@ -13,13 +13,15 @@ export const GHOST_ICON_BTN = cn(
 
 // Send/voice-conversation primary: solid foreground-on-background circle
 // (reads as black-on-white in light mode, white-on-black in dark mode) to
-// match the reference composer's high-contrast CTA. Keeps the pill itself
-// neutral and lets the action visually dominate the row.
+// match the ZCode composer's high-contrast CTA — 28px, the one dark object in
+// the row. Keeps the pill itself neutral and lets the action dominate.
 export const PRIMARY_ICON_BTN = cn(
-  'size-(--composer-control-primary-size,var(--composer-control-size)) shrink-0 rounded-full p-0',
-  'bg-foreground text-background hover:bg-foreground/90',
+  'size-7 shrink-0 rounded-full p-0',
+  'bg-foreground text-background hover:opacity-90',
   'disabled:bg-foreground/30 disabled:text-background disabled:opacity-100'
 )
 
-/** A toggle that is currently ON — dictation, spoken replies, the wake word. */
-export const ACTIVE_ICON_BTN = 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+/** A toggle that is currently ON — dictation, spoken replies, the wake word.
+ *  Neutral grey, never accent: ZCode keeps the tool row colourless. */
+export const ACTIVE_ICON_BTN =
+  'bg-(--ui-bg-tertiary) text-foreground hover:bg-(--ui-bg-secondary) hover:text-foreground'

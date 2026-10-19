@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react'
 import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router'
 
-import { composerFill, composerFloatingStrip, composerSurfaceGlass } from '@/app/chat/composer/composer-dock'
+import { composerFloatingStrip } from '@/app/chat/composer/composer-dock'
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { openSession } from '@/app/open-session'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
@@ -1081,7 +1081,7 @@ export function ChatBar({
         autoCapitalize="off"
         autoCorrect="off"
         className={cn(
-          'min-h-[1.625rem] min-h-(--composer-input-min-height) max-h-(--composer-input-max-height) cursor-text overflow-y-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] bg-transparent pb-1 pr-1 pt-1 leading-normal text-foreground outline-none disabled:cursor-not-allowed',
+          'min-h-[1.625rem] min-h-(--composer-input-min-height) max-h-(--composer-input-max-height) cursor-text overflow-y-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] bg-transparent pb-1 pr-1 pt-1 text-sm leading-[1.6] text-foreground outline-none disabled:cursor-not-allowed',
           '**:data-ref-text:cursor-default',
           stacked && 'pl-3',
           stacked ? 'w-full' : 'min-w-(--composer-input-inline-min-width) flex-1',
@@ -1201,7 +1201,10 @@ export function ChatBar({
         <div
           className={cn(
             'z-30 flex flex-col',
-            poppedOut ? 'fixed max-w-[calc(100vw-1.5rem)]' : 'absolute bottom-0 left-1/2 max-w-full -translate-x-1/2'
+            poppedOut
+              ? 'fixed max-w-[calc(100vw-1.5rem)]'
+              : // Docked cap: 830 = the 820px reading column + the 10px grab margin the dock adds.
+                'absolute bottom-0 left-1/2 max-w-[830px] -translate-x-1/2'
           )}
           data-popped-out={poppedOut ? '' : undefined}
           data-slot="composer-dock"
@@ -1268,7 +1271,7 @@ export function ChatBar({
           />
           <ComposerPrimitive.Root
             className={cn(
-              'group/composer relative w-full overflow-visible rounded-2xl',
+              'group/composer relative w-full overflow-visible rounded-[var(--radius-input)]',
               poppedOut && 'bg-transparent',
               dragging && 'cursor-grabbing select-none touch-none',
               // Native Wayland HUD: setBounds cannot position a top-level
@@ -1350,21 +1353,14 @@ export function ChatBar({
                   // track past the surface — and every `w-full` child (the fade,
                   // the input/controls row) laid out against that phantom width
                   // and got clipped by overflow-hidden, send button first.
-                  'group/composer-surface relative z-4 isolate grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden rounded-[inherit] border border-[color-mix(in_srgb,var(--dt-composer-ring)_calc(18%*var(--composer-ring-strength)),var(--dt-input))]',
+                  'group/composer-surface relative z-4 isolate grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden rounded-[inherit] border border-(--dt-composer-ring) shadow-signature',
                   COMPOSER_DROP_FADE_CLASS,
                   dragActive && COMPOSER_DROP_ACTIVE_CLASS
                 )}
                 data-slot="composer-surface"
                 ref={composerSurfaceRef}
               >
-                <div
-                  aria-hidden
-                  className={cn(
-                    'pointer-events-none absolute inset-0 -z-10 rounded-[inherit]',
-                    composerFill,
-                    composerSurfaceGlass
-                  )}
-                />
+                <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-card" />
                 <CodingStatusRow
                   onBranchOff={handleBranchOff}
                   onConvertBranch={handleConvertBranch}
@@ -1379,7 +1375,7 @@ export function ChatBar({
                 />
                 <div
                   className={cn(
-                    'relative z-1 flex min-h-0 w-full flex-col gap-(--composer-row-gap) overflow-hidden rounded-[inherit] px-(--composer-surface-pad-x) py-(--composer-surface-pad-y) transition-opacity duration-200 ease-out',
+                    'relative z-1 flex min-h-0 w-full flex-col gap-(--composer-row-gap) overflow-hidden rounded-[inherit] px-3.5 py-3 transition-opacity duration-200 ease-out',
                     scrolledUp
                       ? 'opacity-30 group-hover/composer:opacity-100 group-focus-within/composer-surface:opacity-100'
                       : 'opacity-100'
@@ -1419,18 +1415,18 @@ export function ChatBar({
                   {attachments.length > 0 && <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />}
                   <div
                     className={cn(
-                      'grid w-full',
+                      'grid min-h-8 w-full',
                       stacked
                         ? 'grid-cols-[auto_1fr] gap-(--composer-row-gap) [grid-template-areas:"input_input"_"menu_controls"]'
-                        : 'grid-cols-[auto_1fr_auto] items-center gap-(--composer-control-gap) [grid-template-areas:"menu_input_controls"]'
+                        : 'grid-cols-[auto_1fr_auto] items-center gap-1.5 [grid-template-areas:"menu_input_controls"]'
                     )}
                   >
-                    <div className="flex translate-y-[3px] items-start gap-(--composer-control-gap) self-start [grid-area:menu]">
+                    <div className="flex translate-y-[3px] items-start gap-1.5 self-start [grid-area:menu]">
                       {contextMenu}
                       <ContribSlot area={COMPOSER_AREAS.leading} />
                     </div>
                     <div className="min-w-0 [grid-area:input]">{input}</div>
-                    <div className="flex min-w-0 items-center justify-end gap-(--composer-control-gap) [grid-area:controls]">
+                    <div className="flex min-w-0 items-center justify-end gap-1.5 [grid-area:controls]">
                       <ContribSlot area={COMPOSER_AREAS.actions} />
                       {controls}
                     </div>
@@ -1466,20 +1462,13 @@ export function ChatBarFallback() {
   return (
     <div
       className={cn(
-        'group/composer absolute bottom-0 left-1/2 z-30 w-[min(var(--composer-width),calc(100%-2rem))] max-w-full -translate-x-1/2 rounded-2xl pt-2 pb-[var(--composer-shell-pad-block-end)]',
+        'group/composer absolute bottom-0 left-1/2 z-30 w-[min(var(--composer-width),calc(100%-2rem))] max-w-[820px] -translate-x-1/2 rounded-[var(--radius-input)] pt-2 pb-[var(--composer-shell-pad-block-end)]',
         'bg-linear-to-b from-transparent to-background/55'
       )}
       data-slot="composer-root"
     >
-      <div className="composer-fallback-surface relative isolate h-(--composer-fallback-height) w-full rounded-[inherit] border border-[color-mix(in_srgb,var(--dt-composer-ring)_calc(18%*var(--composer-ring-strength)),var(--dt-input))]">
-        <div
-          aria-hidden
-          className={cn(
-            'pointer-events-none absolute inset-0 -z-10 rounded-[inherit]',
-            composerFill,
-            composerSurfaceGlass
-          )}
-        />
+      <div className="composer-fallback-surface relative isolate h-(--composer-fallback-height) w-full rounded-[inherit] border border-(--dt-composer-ring) shadow-signature">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-card" />
       </div>
     </div>
   )

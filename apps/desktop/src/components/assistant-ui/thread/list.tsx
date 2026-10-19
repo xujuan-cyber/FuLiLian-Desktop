@@ -769,14 +769,17 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
       >
         {renderEmpty ? (
           <div
-            className="mx-auto grid h-full w-full max-w-(--composer-width) grid-rows-[minmax(0,1fr)_auto] min-w-0 gap-(--conversation-turn-gap) px-6 py-8"
+            className="mx-auto grid h-full w-full max-w-[min(820px,var(--composer-width))] min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-(--conversation-turn-gap) px-6 py-8"
             data-slot="aui_thread-content"
           >
             {emptyPlaceholder}
           </div>
         ) : (
           <div
-            className={cn('mx-auto flex w-full max-w-(--composer-width) min-w-0 flex-col px-6', threadContentTopPad)}
+            className={cn(
+              'mx-auto flex w-full max-w-[min(820px,var(--composer-width))] min-w-0 flex-col px-6',
+              threadContentTopPad
+            )}
             data-slot="aui_thread-content"
             ref={contentRef as React.RefCallback<HTMLDivElement>}
           >

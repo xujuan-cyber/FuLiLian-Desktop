@@ -56,7 +56,6 @@ import {
   FILE_BROWSER_MIN_WIDTH,
   setFileBrowserOpen,
   setSidebarOpen,
-  SIDEBAR_DEFAULT_WIDTH,
   SIDEBAR_MAX_WIDTH
 } from '@/store/layout'
 import { runExportProfileFlow, runImportProfileFlow } from '@/store/profile-share'
@@ -107,8 +106,12 @@ import { ContribWiring, WiredPane } from './wiring'
 // on the default chat frame. Their bodies load on demand instead of riding the
 // entry module graph; each renders behind the Suspense boundary at its mount
 // site below.
-const BrowserPopoutShell = lazy(async () => ({ default: (await import('../chat/browser-popout-shell')).BrowserPopoutShell }))
-const SessionChangesPanel = lazy(async () => ({ default: (await import('../chat/right-rail/session-changes')).SessionChangesPanel }))
+const BrowserPopoutShell = lazy(async () => ({
+  default: (await import('../chat/browser-popout-shell')).BrowserPopoutShell
+}))
+const SessionChangesPanel = lazy(async () => ({
+  default: (await import('../chat/right-rail/session-changes')).SessionChangesPanel
+}))
 
 // ---------------------------------------------------------------------------
 // Pane contributions. `data.placement` = semantic role for grid presets;
@@ -176,8 +179,8 @@ registry.registerMany([
       // Standing chrome: no close gestures at all — the tab is shown/hidden
       // (zone menu Show/Hide rows + the auto-registered ⌘K toggle below).
       hideOnly: true,
-      width: `${SIDEBAR_DEFAULT_WIDTH}px`,
-      minWidth: `${SIDEBAR_DEFAULT_WIDTH}px`,
+      width: '240px',
+      minWidth: '240px',
       maxWidth: `${SIDEBAR_MAX_WIDTH}px`
     },
     render: () => <WiredPane part="sidebar" />
@@ -212,7 +215,7 @@ registry.registerMany([
     // its rail there). A real floor left a sliver of unusable terminal.
     data: {
       placement: 'bottom',
-      height: '20vh',
+      height: '24vh',
       maxHeight: '80vh',
       revealOnPreset: true,
       lifecycleKeepAlive: true
@@ -229,7 +232,7 @@ registry.registerMany([
       collapsible: true,
       dock: { pane: 'workspace', pos: 'right' },
       revealAliases: ['file-browser'],
-      width: FILE_BROWSER_DEFAULT_WIDTH,
+      width: '240px',
       minWidth: FILE_BROWSER_MIN_WIDTH,
       maxWidth: FILE_BROWSER_MAX_WIDTH
     },
@@ -266,11 +269,12 @@ registry.registerMany([
       minWidth: FILE_BROWSER_MIN_WIDTH,
       maxWidth: FILE_BROWSER_MAX_WIDTH
     },
-    render: () => idle(
-      <Suspense fallback={null}>
-        <SessionChangesPanel />
-      </Suspense>
-    )
+    render: () =>
+      idle(
+        <Suspense fallback={null}>
+          <SessionChangesPanel />
+        </Suspense>
+      )
   }
 ])
 
@@ -693,7 +697,7 @@ const syncLogsPane = (open: boolean) => {
       data: {
         placement: 'bottom',
         dock: { pane: 'terminal', pos: 'right' },
-        height: '20vh',
+        height: '24vh',
         maxHeight: '80vh'
       },
       render: () => idle(<LogsPane />)
@@ -903,7 +907,7 @@ export function ContribController() {
                   tree-published --workspace-left/right vars (pure CSS, no rect
                   threading), clamped to clear the REAL TitlebarControls
                   clusters (fixed, z-(--z-titlebar-chrome)); center is truly window-centered. */}
-          <div className="relative flex h-[34px] shrink-0 items-center bg-(--ui-sidebar-surface-background) text-xs">
+          <div className="relative flex h-[34px] shrink-0 items-center bg-background text-xs">
             {/* Drag strips, AppShell-style: cut to AVOID the fixed control
                 clusters instead of overlapping them — Electron's no-drag
                 carve-out of fixed/transformed elements is unreliable, so a

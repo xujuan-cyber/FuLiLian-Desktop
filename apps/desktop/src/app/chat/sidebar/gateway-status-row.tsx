@@ -20,9 +20,14 @@ export function SidebarGatewayStatusRow() {
   const text = `${g.local} · ${label}`
 
   return (
-    <div aria-label={text} className="flex items-center gap-1.5 rounded-md px-2 py-1" data-testid="sidebar-gateway-status" role="status">
+    <div
+      aria-label={text}
+      className="flex h-8 items-center gap-2 rounded-lg px-2.5 text-xs text-(--ui-text-tertiary) transition-colors duration-100 ease-out hover:bg-(--ui-bg-tertiary) hover:transition-none"
+      data-testid="sidebar-gateway-status"
+      role="status"
+    >
       <StatusDot state={dotState} />
-      <span className="min-w-0 truncate text-[0.6875rem] leading-[1.35] text-(--ui-text-tertiary)">{text}</span>
+      <span className="min-w-0 truncate leading-[1.35]">{text}</span>
     </div>
   )
 }
