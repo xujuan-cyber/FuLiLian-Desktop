@@ -228,9 +228,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
       const ctx: GatewayEventContext = {
         deps,
-        event,
         parsed,
-        payload,
         sessionId,
         explicitSid,
         isActiveEvent,

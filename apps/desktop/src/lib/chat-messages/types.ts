@@ -44,6 +44,16 @@ export type ChatMessage = {
   reactions?: MessageReaction[]
 }
 
+/**
+ * Legacy flat payload for gateway events — every event type shared these
+ * 130+ optional fields with no discriminant.
+ *
+ * @deprecated Superseded by the discriminated union in
+ * `gateway-event-schema.ts` (`parseGatewayEvent` / `ParsedGatewayEvent`).
+ * Remaining consumers are the store-layer signatures
+ * (`upsertToolCall`, `toTodoPayload`, tool-parts) still fed raw payloads;
+ * migrate them off before deleting this type.
+ */
 export type GatewayEventPayload = {
   /** Unix seconds supplied by tests/newer gateways; the desktop falls back to
    * its local receipt clock when older gateways omit it. */

@@ -10,11 +10,12 @@ import { notifyWorkspaceChanged, toolChangedPath, toolMayMutateFiles } from '@/s
 
 import { SUBAGENT_EVENT_TYPES, toTodoPayload } from '../utils'
 
+import type { GatewayEventPayload } from '@/lib/chat-messages'
 import type { GatewayEventContext } from './types'
 
 /** tool.generating / tool.start / tool.progress / tool.complete / subagent.*. */
 export function handleToolEvent(ctx: GatewayEventContext): boolean {
-  const { deps, event, parsed, payload, sessionId, isActiveEvent, occurredAt } = ctx
+  const { deps, parsed, sessionId, isActiveEvent, occurredAt } = ctx
   const { flushQueuedDeltas, nativeSubagentSessionsRef, sessionInterrupted, updateSessionState, upsertToolCall } = deps
 
   if (parsed.kind === 'tool_call_update' && parsed.type === 'tool.generating') {
@@ -53,7 +54,7 @@ export function handleToolEvent(ctx: GatewayEventContext): boolean {
     // tick would re-materialize every earlier queued tick synchronously.
     upsertToolCall(
       sessionId,
-      toTodoPayload(payload) ?? payload,
+      toTodoPayload(parsed.payload as GatewayEventPayload) ?? parsed.payload,
       'running',
       parsed.type,
       occurredAt,
@@ -71,7 +72,13 @@ export function handleToolEvent(ctx: GatewayEventContext): boolean {
     const toolPayload = parsed.payload
     if (sessionId) {
       flushQueuedDeltas(sessionId)
-      upsertToolCall(sessionId, toTodoPayload(payload) ?? payload, 'complete', parsed.type, occurredAt)
+      upsertToolCall(
+        sessionId,
+        toTodoPayload(toolPayload as GatewayEventPayload) ?? toolPayload,
+        'complete',
+        parsed.type,
+        occurredAt
+      )
 
       if (isActiveEvent) {
         setPetActivity({ toolRunning: false })
@@ -134,8 +141,10 @@ export function handleToolEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (SUBAGENT_EVENT_TYPES.has(event.type)) {
-    if (sessionId && payload && !sessionInterrupted(sessionId)) {
+  if (parsed.kind === 'desktop' && SUBAGENT_EVENT_TYPES.has(parsed.type)) {
+    const subagentPayload = parsed.payload
+
+    if (sessionId && !sessionInterrupted(sessionId)) {
       if (!nativeSubagentSessionsRef.current.has(sessionId)) {
         pruneDelegateFallbackSubagents(sessionId)
       }
@@ -143,9 +152,9 @@ export function handleToolEvent(ctx: GatewayEventContext): boolean {
       nativeSubagentSessionsRef.current.add(sessionId)
       upsertSubagent(
         sessionId,
-        payload as Record<string, unknown>,
-        event.type === 'subagent.spawn_requested' || event.type === 'subagent.start',
-        event.type
+        subagentPayload,
+        parsed.type === 'subagent.spawn_requested' || parsed.type === 'subagent.start',
+        parsed.type
       )
     }
 
