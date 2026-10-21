@@ -105,6 +105,9 @@ class WSTransport:
         #: browser-controller registration.
         self.auth_identity = auth_identity
         self._closed = False
+        #: Event-frame protocol level; raised to 2 when the client sends
+        #: ``client.hello {"protocol": 2}`` (see server._V2_EVENT_NAMES).
+        self.protocol = 1
         self._last_inbound_at = time.monotonic()
         # Token-coalescing buffer (CF-2). Streamed token frames land here and a
         # short timer flushes the batch. The lock guards the buffer + the

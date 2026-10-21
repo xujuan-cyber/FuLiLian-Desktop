@@ -2508,6 +2508,45 @@ def write_json(obj: dict) -> bool:
     return (current_transport() or _stdio_transport).write(obj)
 
 
+# Protocol v2 (P1-3): ACP-shaped event vocabulary, negotiated per transport
+# via ``client.hello``. Desktop private events keep their v1 names by design
+# (design/桌面端事件模型对齐ACP-设计稿.md §2.4) — only the agent-process
+# family participates. Payloads stay as-is: the desktop normalizes legacy
+# field aliases (tool_id/arguments) at its single parse entry.
+_V2_EVENT_NAMES = {
+    "message.delta": "agent_message_chunk",
+    "message.interim": "agent_message_chunk",
+    "thinking.delta": "agent_thought_chunk",
+    "reasoning.delta": "agent_thought_chunk",
+    "tool.start": "tool_call",
+    "tool.progress": "tool_call_update",
+    "tool.generating": "tool_call_update",
+    "tool.complete": "tool_call_update",
+    "session.usage": "usage_update",
+    "approval.request": "permission_request",
+    "clarify.request": "elicitation",
+    "secret.request": "elicitation",
+    "mcp.setup.request": "elicitation",
+}
+
+
+def _transport_protocol(transport) -> int:
+    """Protocol level a transport negotiated: 1 = legacy, 2 = ACP-shaped."""
+    return getattr(transport, "protocol", 1) or 1
+
+
+def _v2_frame(event: str, sid: str, payload: dict | None) -> dict | None:
+    """Build the v2 frame for *event*, or None when the name stays v1-only."""
+    v2 = _V2_EVENT_NAMES.get(event)
+    if v2 is None:
+        return None
+    if event == "message.interim" and isinstance(payload, dict):
+        # v1 distinguishes the interim preview by its own event name; v2
+        # folds it into agent_message_chunk with a payload flag.
+        payload = {**payload, "interim": True}
+    return _event_frame(v2, sid, payload)
+
+
 def _event_frame(event: str, sid: str, payload: dict | None = None) -> dict:
     params: dict = {"type": event, "session_id": sid}
     if payload is not None:
@@ -2516,6 +2555,20 @@ def _event_frame(event: str, sid: str, payload: dict | None = None) -> dict:
 
 
 def _emit(event: str, sid: str, payload: dict | None = None):
+    # Per-transport protocol split: a v2-negotiated transport receives the
+    # ACP-shaped name, everyone else the legacy one. The routing target here
+    # must mirror write_json's precedence (session transport first, then the
+    # context-bound one) so the frame lands with the negotiated vocabulary.
+    transport = (
+        (_sessions.get(sid) or {}).get("transport")
+        if sid
+        else current_transport()
+    ) or _stdio_transport
+    if _transport_protocol(transport) >= 2:
+        v2 = _v2_frame(event, sid, payload)
+        if v2 is not None:
+            write_json(v2)
+            return
     write_json(_event_frame(event, sid, payload))
 
 
@@ -16462,6 +16515,30 @@ def _(rid, params: dict) -> dict:
     in the former case instead of letting the next ``prompt.submit`` hang.
     """
     return _ok(rid, {"pong": True})
+
+
+@method("client.hello")
+def _(rid, params: dict) -> dict:
+    """Protocol negotiation for gateway event frames.
+
+    The client declares the event vocabulary it speaks: ``{"protocol": 2}``
+    opts into the ACP-shaped names (``agent_message_chunk`` &
+    friends, P1-3) for every session-scoped event routed to this
+    transport. Unnegotiated transports — the stdio TUI, older desktop
+    builds, tests — stay on v1, which is why the default answer is 1.
+    Acknowledges with the effective level so the client can verify the
+    upgrade actually stuck before relying on v2 names.
+    """
+    requested = params.get("protocol") if isinstance(params, dict) else None
+    transport = current_transport()
+    if requested == 2:
+        if transport is None:
+            return _err(rid, -32602, "protocol negotiation requires a transport")
+        try:
+            transport.protocol = 2
+        except AttributeError:
+            return _err(rid, -32602, "transport does not support protocol negotiation")
+    return _ok(rid, {"protocol": _transport_protocol(transport)})
 
 
 @method("wake.start")

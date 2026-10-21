@@ -105,11 +105,14 @@ class StdioTransport:
     existing test suite relies on (``monkeypatch.setattr(server, "_real_stdout", ...)``).
     """
 
-    __slots__ = ("_stream_getter", "_lock")
+    __slots__ = ("_stream_getter", "_lock", "protocol")
 
     def __init__(self, stream_getter: Callable[[], Any], lock: threading.Lock) -> None:
         self._stream_getter = stream_getter
         self._lock = lock
+        #: Event-frame protocol level (see server._V2_EVENT_NAMES). The stdio
+        #: TUI never negotiates — it stays on v1 for its whole lifetime.
+        self.protocol = 1
 
     def write(self, obj: dict) -> bool:
         """Return ``True`` on success, ``False`` ONLY when the peer is gone.
