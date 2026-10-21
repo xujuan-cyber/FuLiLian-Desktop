@@ -110,6 +110,8 @@ export interface MessageChunkPayload {
 /** `message.complete` — the turn settled (success or failure). */
 export interface MessageCompletePayload {
   text?: string
+  /** Pre-rendered rich text for the final bubble when the backend renders it. */
+  rendered?: string
   status?: string
   /** `status: 'error'` — structured layer descriptor (agent/error_surface.py). */
   error?: string | boolean

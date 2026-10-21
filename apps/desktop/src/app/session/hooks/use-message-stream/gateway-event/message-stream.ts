@@ -66,7 +66,7 @@ function surfaceBillingBlock(sessionId: string, raw: unknown): void {
 /** The message/reasoning/MoA streaming family: message.start → deltas →
  *  interim → complete, thinking/reasoning deltas, moa.* progress, reaction. */
 export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
-  const { deps, event, payload, sessionId, isActiveEvent, occurredAt } = ctx
+  const { deps, parsed, sessionId, isActiveEvent, occurredAt } = ctx
 
   const {
     appendAssistantDelta,
@@ -80,7 +80,7 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     updateSessionState
   } = deps
 
-  if (event.type === 'message.start') {
+  if (parsed.kind === 'message_start') {
     if (!sessionId) {
       return true
     }
@@ -150,22 +150,22 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'message.delta') {
+  if (parsed.kind === 'message_chunk' && !parsed.interim) {
     if (sessionId) {
-      appendAssistantDelta(sessionId, coerceGatewayText(payload?.text), occurredAt)
+      appendAssistantDelta(sessionId, coerceGatewayText(parsed.payload.text), occurredAt)
     }
 
     return true
   }
 
-  if (event.type === 'message.interim') {
+  if (parsed.kind === 'message_chunk' && parsed.interim) {
     // The agent emitted interim assistant commentary (text alongside tool
     // calls, or the attempted final answer before a verify-on-stop nudge).
     // Finalize it as its own sealed bubble so message.complete doesn't wipe
     // it — the text was already streamed via message.delta and is visible.
     if (sessionId) {
       flushQueuedDeltas(sessionId)
-      const text = coerceGatewayText(payload?.text)
+      const text = coerceGatewayText(parsed.payload.text)
 
       if (text) {
         finalizeInterimAssistantMessage(sessionId, text, occurredAt)
@@ -175,31 +175,31 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'thinking.delta') {
+  if (parsed.kind === 'thought_chunk' && parsed.type === 'thinking.delta') {
     // Most thinking.delta frames are kawaii spinner rewrites and stay out
     // of the transcript. Explained provider waits are different: the core
     // emits them after prolonged silence, so name that wait in the existing
     // bottom-of-thread status row instead of leaving only an unlabeled timer.
     if (sessionId) {
-      setSessionProviderWait(sessionId, providerWaitText(coerceGatewayText(payload?.text)))
+      setSessionProviderWait(sessionId, providerWaitText(coerceGatewayText(parsed.payload.text)))
     }
 
     return true
   }
 
-  if (event.type === 'reaction') {
+  if (parsed.kind === 'desktop' && parsed.type === 'reaction') {
     // Core-detected affection (ily / <3 / good bot) on the user's message.
     // Play hearts only for the visible session so background turns stay quiet.
-    if (isActiveEvent && (payload?.kind ?? 'vibe') === 'vibe') {
+    if (isActiveEvent && (parsed.payload.kind ?? 'vibe') === 'vibe') {
       burstVibeHearts()
     }
 
     return true
   }
 
-  if (event.type === 'reasoning.delta') {
+  if (parsed.kind === 'thought_chunk' && parsed.type === 'reasoning.delta') {
     if (sessionId) {
-      appendReasoningDelta(sessionId, coerceThinkingText(payload?.text), false, occurredAt)
+      appendReasoningDelta(sessionId, coerceThinkingText(parsed.payload.text), false, occurredAt)
     }
 
     if (isActiveEvent) {
@@ -209,9 +209,9 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'reasoning.available') {
+  if (parsed.kind === 'thought_snapshot') {
     if (sessionId) {
-      appendReasoningDelta(sessionId, coerceThinkingText(payload?.text), true, occurredAt)
+      appendReasoningDelta(sessionId, coerceThinkingText(parsed.payload.text), true, occurredAt)
     }
 
     if (isActiveEvent) {
@@ -221,17 +221,17 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'moa.reference') {
+  if (parsed.kind === 'desktop' && parsed.type === 'moa.reference') {
     // MoA reference-model output — surface as a labelled thinking chunk
     // (tagged with the source model) before the aggregator's response, so
     // the mixture-of-agents process is visible. Reuses the reasoning
     // disclosure rather than introducing a parallel surface.
     if (sessionId) {
-      const label = coerceGatewayText(payload?.label) || 'reference'
-      const idx = typeof payload?.index === 'number' ? payload.index : undefined
-      const cnt = typeof payload?.count === 'number' ? payload.count : undefined
+      const label = coerceGatewayText(parsed.payload.label) || 'reference'
+      const idx = typeof parsed.payload.index === 'number' ? parsed.payload.index : undefined
+      const cnt = typeof parsed.payload.count === 'number' ? parsed.payload.count : undefined
       const header = idx && cnt ? `◇ Reference ${idx}/${cnt} — ${label}` : `◇ Reference — ${label}`
-      const body = coerceThinkingText(payload?.text)
+      const body = coerceThinkingText(parsed.payload.text)
       const text = `${header}\n${body}\n\n`
 
       if (idx === undefined || idx <= 1) {
@@ -261,7 +261,7 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'moa.aggregating') {
+  if (parsed.kind === 'desktop' && parsed.type === 'moa.aggregating') {
     // Status transition only; the aggregator's reply arrives via the normal
     // message stream. No reasoning/transcript mutation here.
     if (isActiveEvent) {
@@ -271,20 +271,24 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'moa.progress') {
+  if (parsed.kind === 'desktop' && parsed.type === 'moa.progress') {
     // Live reference fan-out progress ("refs k/n") — surfaced in the same
     // reasoning disclosure the references land in. These lines arrive
     // BEFORE any moa.reference event (references are only emitted once the
     // whole fan-out completes), and the first moa.reference replaces the
     // block, so the progress trail is self-cleaning.
-    if (sessionId && typeof payload?.refs_done === 'number' && typeof payload?.refs_total === 'number') {
-      const label = coerceGatewayText(payload?.label)
+    if (
+      sessionId &&
+      typeof parsed.payload.refs_done === 'number' &&
+      typeof parsed.payload.refs_total === 'number'
+    ) {
+      const label = coerceGatewayText(parsed.payload.label)
 
       const line = label
-        ? `◇ MoA refs ${payload.refs_done}/${payload.refs_total} — ${label}\n`
-        : `◇ MoA refs ${payload.refs_done}/${payload.refs_total}\n`
+        ? `◇ MoA refs ${parsed.payload.refs_done}/${parsed.payload.refs_total} — ${label}\n`
+        : `◇ MoA refs ${parsed.payload.refs_done}/${parsed.payload.refs_total}\n`
 
-      appendReasoningDelta(sessionId, line, payload.refs_done <= 1, occurredAt)
+      appendReasoningDelta(sessionId, line, parsed.payload.refs_done <= 1, occurredAt)
       flushQueuedDeltas(sessionId)
     }
 
@@ -295,11 +299,11 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'moa.phase') {
+  if (parsed.kind === 'desktop' && parsed.type === 'moa.phase') {
     // Phase transition — currently only phase="aggregator" (fan-out done,
     // aggregator acting). Append a one-line marker; the first
     // moa.reference that follows replaces the whole block.
-    if (sessionId && payload?.phase === 'aggregator') {
+    if (sessionId && parsed.payload.phase === 'aggregator') {
       appendReasoningDelta(sessionId, '◇ MoA aggregating…\n', false, occurredAt)
       flushQueuedDeltas(sessionId)
     }
@@ -311,7 +315,7 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'message.complete') {
+  if (parsed.kind === 'message_complete') {
     if (!sessionId) {
       return true
     }
@@ -333,27 +337,27 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
     // Keyed by session so only one window beeps when several are open.
     playCompletionSound(sessionId)
 
-    const finalText = coerceGatewayText(payload?.text) || coerceGatewayText(payload?.rendered)
+    const finalText = coerceGatewayText(parsed.payload.text) || coerceGatewayText(parsed.payload.rendered)
 
     // Terminal error frames (status "error") carry the failure in
     // structured fields: `error` is the message, `partial` marks
     // `text` as streamed output to keep rather than the error string, and
     // `error_surface` (newer gateways) names the failing layer for the card.
     const failure =
-      payload?.status === 'error'
+      parsed.payload.status === 'error'
         ? {
-            error: coerceGatewayText(payload.error).trim() || finalText || 'Fulilian reported an error',
-            partial: Boolean(payload.partial),
-            surface: parseErrorSurface(payload.error_surface)
+            error: coerceGatewayText(parsed.payload.error).trim() || finalText || 'Fulilian reported an error',
+            partial: Boolean(parsed.payload.partial),
+            surface: parseErrorSurface(parsed.payload.error_surface)
           }
         : undefined
 
-    completeAssistantMessage(sessionId, finalText, payload?.response_previewed, failure, occurredAt)
+    completeAssistantMessage(sessionId, finalText, parsed.payload.response_previewed, failure, occurredAt)
 
     // Structured billing wall forwarded by the gateway (out of credits /
     // payment required) — cache it + raise a billing-specific toast.
-    if (payload?.billing) {
-      surfaceBillingBlock(sessionId, payload.billing)
+    if (parsed.payload.billing) {
+      surfaceBillingBlock(sessionId, parsed.payload.billing)
     }
 
     if (isActiveEvent) {
@@ -374,17 +378,19 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
       }
     }
 
-    if (payload?.usage) {
+    if (parsed.payload.usage) {
+      const usage = parsed.payload.usage
+
       // Per-session twin FIRST (the statusbar reads it for focused tiles);
       // the primary-only global mirrors the ACTIVE session — ungated it
       // let a background tile's turn overwrite the primary's count.
       updateSessionState(sessionId, state => ({
         ...state,
-        usage: { calls: 0, input: 0, output: 0, total: 0, ...state.usage, ...payload.usage }
+        usage: { calls: 0, input: 0, output: 0, total: 0, ...state.usage, ...usage }
       }))
 
       if (isActiveEvent) {
-        setCurrentUsage(current => ({ ...current, ...payload.usage }))
+        setCurrentUsage(current => ({ ...current, ...usage }))
       }
     }
 
