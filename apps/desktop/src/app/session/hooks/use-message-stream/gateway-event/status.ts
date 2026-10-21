@@ -20,10 +20,11 @@ import type { GatewayEventContext } from './types'
 /** status.update / review.summary / notification.show / notification.clear /
  *  error — the status-and-notice tail of the dispatcher. */
 export function handleStatusEvent(ctx: GatewayEventContext): boolean {
-  const { deps, event, payload, sessionId, isActiveEvent, occurredAt } = ctx
+  const { deps, parsed, sessionId, isActiveEvent, occurredAt } = ctx
   const { compactedTurnRef, failAssistantMessage, flushQueuedDeltas, queryClient, updateSessionState } = deps
 
-  if (event.type === 'status.update') {
+  if (parsed.kind === 'desktop' && parsed.type === 'status.update') {
+    const payload = parsed.payload
     if (sessionId && payload?.kind === 'compacting') {
       setSessionCompacting(sessionId, true)
       compactedTurnRef.current.add(sessionId)
@@ -41,7 +42,8 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'review.summary') {
+  if (parsed.kind === 'desktop' && parsed.type === 'review.summary') {
+    const payload = parsed.payload
     // Self-improvement background review saved something to memory/skills
     // and emitted a persistent summary (Python formats it as
     // "💾 Self-improvement review: …"). The CLI prints this via
@@ -78,14 +80,15 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'notification.show') {
+  if (parsed.kind === 'desktop' && parsed.type === 'notification.show') {
+    const payload = parsed.payload
     // Driver-agnostic agent notice (credits usage/grant/depleted/restored
     // from `agent/credits_tracker.py`). The Ink TUI renders these in its
     // status bar; the desktop renders them as toasts. The notice key doubles
     // as the toast id, so the escalating 50→75→90 credits line replaces in
     // place instead of stacking. Account-wide signal — shown regardless of
     // which session is focused.
-    const notice = event.payload as AgentNoticePayload | undefined
+    const notice = payload as AgentNoticePayload | undefined
 
     showAgentNotice(notice)
 
@@ -108,16 +111,19 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'notification.clear') {
+  if (parsed.kind === 'desktop' && parsed.type === 'notification.clear') {
+    const payload = parsed.payload
     // Key-matched dismissal (e.g. credits restored clears the depleted
     // notice). notify() keys the toast by the notice key, so this maps
     // straight to dismissNotification(key).
-    clearAgentNotice((event.payload as AgentNoticePayload | undefined)?.key)
+    clearAgentNotice((payload as AgentNoticePayload | undefined)?.key)
 
     return true
   }
 
-  if (event.type === 'error') {
+  if (parsed.kind === 'error') {
+    const payload = parsed.payload
+
     const errorMessage = payload?.message || 'Fulilian reported an error'
     const looksLikeProviderSetup = isProviderSetupErrorMessage(errorMessage)
 

@@ -18,9 +18,15 @@ import type { GatewayEventContext } from './types'
 
 /** gateway.ready / skin.changed / change-watcher broadcasts / session.reclaimed. */
 export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
-  const { deps, event, payload, fromActiveSource } = ctx
+  const { deps, parsed, fromActiveSource } = ctx
 
-  if (event.type === 'gateway.ready') {
+  if (parsed.kind !== 'desktop') {
+    return false
+  }
+
+  const payload = parsed.payload as Record<string, unknown> | undefined
+
+  if (parsed.type === 'gateway.ready') {
     // Seed the active skin into the desktop theme registry without applying,
     // so a fresh connect never overrides the user's persisted desktop theme.
     ingestBackendSkin((payload as { skin?: FulilianSkin } | undefined)?.skin, { apply: false })
@@ -31,7 +37,7 @@ export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'skin.changed') {
+  if (parsed.type === 'skin.changed') {
     // A runtime skin switch (Fulilian activating an authored skin, or `/skin`
     // on another surface). Only the active source+profile's change repaints.
     if (fromActiveSource()) {
@@ -42,11 +48,11 @@ export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
   }
 
   if (
-    event.type === 'pet.changed' ||
-    event.type === 'cron.changed' ||
-    event.type === 'sessions.changed' ||
-    event.type === 'platforms.changed' ||
-    event.type === 'pairing.changed'
+    parsed.type === 'pet.changed' ||
+    parsed.type === 'cron.changed' ||
+    parsed.type === 'sessions.changed' ||
+    parsed.type === 'platforms.changed' ||
+    parsed.type === 'pairing.changed'
   ) {
     // Change-watcher broadcasts (server._broadcast_watched_changes): the
     // backend's on-disk signature moved. Route to the live-sync ticks the
@@ -54,13 +60,13 @@ export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
     // changes apply — background profile sockets (and other connections'
     // gateways) watch their own homes.
     if (fromActiveSource()) {
-      if (event.type === 'pet.changed') {
+      if (parsed.type === 'pet.changed') {
         notifyPetChanged(payload as PetChangeMeta | undefined)
-      } else if (event.type === 'cron.changed') {
+      } else if (parsed.type === 'cron.changed') {
         notifyCronChanged()
-      } else if (event.type === 'platforms.changed') {
+      } else if (parsed.type === 'platforms.changed') {
         notifyPlatformsChanged()
-      } else if (event.type === 'pairing.changed') {
+      } else if (parsed.type === 'pairing.changed') {
         notifyPairingChanged()
       } else {
         notifySessionsChanged()
@@ -70,7 +76,7 @@ export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'session.reclaimed') {
+  if (parsed.type === 'session.reclaimed') {
     // The backend reclaimed a live session we may still be holding (idle
     // TTL, LRU cap, or the WS-orphan reap). Without this the runtime id
     // stays cached until something fails against it, which reads as the
