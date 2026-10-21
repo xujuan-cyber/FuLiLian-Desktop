@@ -237,6 +237,12 @@ export class JsonRpcGatewayClient {
         // Fire-and-forget so connect() latency is unaffected; only runs when
         // we actually observed seq'd events before the drop.
         void this.fetchReplay()
+        // P1-3: negotiate the ACP-shaped event vocabulary (v2). The gateway
+        // answers with the effective level; older gateways reject with
+        // -32601 and the client silently stays on the legacy v1 stream —
+        // the desktop parse layer accepts both vocabularies, so the failure
+        // mode is a no-op rather than a degraded connection.
+        this.request('client.hello', { protocol: 2 }).catch(() => undefined)
       }
 
       const onError = () => {
