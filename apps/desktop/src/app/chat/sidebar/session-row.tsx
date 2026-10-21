@@ -222,7 +222,7 @@ function SidebarSessionRowImpl({
     trailing.push({
       key: 'figures',
       node: (
-        <span className="pointer-events-none whitespace-nowrap text-xs leading-none text-(--ui-text-tertiary)">
+        <span className="pointer-events-none whitespace-nowrap text-[11px] leading-none tabular-nums text-(--v3-ink-3)">
           {head}
           {/* The figures own their tail: the separator goes with it. */}
           <span className={cn('inline-block text-right', TAIL_HIDES)}>
@@ -375,10 +375,11 @@ function SidebarSessionRowImpl({
           'group relative cursor-pointer transition-colors duration-100 ease-out hover:bg-(--ui-bg-tertiary) hover:transition-none',
           card && SIDEBAR_ROW_CARD_MIN_H,
           // Density-aware minimum heights for the inline (non-card) row: the
-          // metadata / preview lines below need the extra rows (#68119).
-          !card && 'h-9',
+          // metadata / preview lines below need the extra rows (#68119). The
+          // one-line row is v3's 32px.
+          !card && 'h-8',
           !card && density === 'detailed' && 'min-h-[3.875rem]',
-          isSelected && 'bg-(--ui-bg-secondary)',
+          isSelected && 'bg-(--v3-selected)',
           // Open in another pane: the SAME band, just weaker. Its own mixed
           // token rather than row opacity — dimming the whole row would take
           // the title and the status dot down with it.
@@ -391,6 +392,7 @@ function SidebarSessionRowImpl({
           className
         )}
         data-glass-opaque={dragging ? '' : undefined}
+        data-selected={isSelected ? 'true' : undefined}
         data-working={liveTurn ? 'true' : undefined}
         // The row runs BOTH drags off one press, and each declines outside its
         // own region — so no timing/arbitration rule is needed and neither can
@@ -516,7 +518,7 @@ function SidebarSessionRowImpl({
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5 self-center">
                     <OverflowTip label={title}>
                       <SidebarRowLabel
-                        className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
+                        className="hover-marquee block font-normal group-hover:text-foreground group-data-[selected=true]:font-medium group-data-[working=true]:text-foreground/90"
                         onPointerEnter={armMarquee}
                         onPointerLeave={disarmMarquee}
                       >

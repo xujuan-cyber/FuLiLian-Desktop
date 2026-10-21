@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils'
 import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
-import { ApprovalModePill } from './approval-mode-pill'
 import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-classes'
 import type { ConversationStatus } from './hooks/use-voice-conversation'
 import { ModelPill } from './model-pill'
@@ -109,8 +108,9 @@ export function ComposerControls({
       {minimal ? null : (
         <>
           <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
-          {/* R5: the global approval-mode indicator + Shift+Tab cycle entry. */}
-          <ApprovalModePill disabled={disabled} />
+          {/* The permission chip lives in the control row's LEFT zone (v3 §8.5:
+              `[+] [只读 · 取证]`) — see ChatBar — so it is deliberately absent
+              here. The right zone is model · voice · send. */}
           {voiceControls}
         </>
       )}
@@ -129,11 +129,15 @@ export function ComposerControls({
           </Button>
         </Tip>
       ) : null}
+      {/* v3 §8.5: the mic is a 28px ghost and the send key is a 32px ink
+          circle that is always present — parked at 30% while there is nothing
+          to send. An empty idle composer still offers the voice-conversation
+          entry, just as a peer of the mic rather than occupying the CTA. */}
       {showVoicePrimary ? (
         <Tip label={c.startVoice}>
           <Button
             aria-label={c.startVoice}
-            className={PRIMARY_ICON_BTN}
+            className={GHOST_ICON_BTN}
             disabled={disabled}
             onClick={() => {
               triggerHaptic('open')
@@ -141,34 +145,34 @@ export function ComposerControls({
             }}
             size="icon"
             type="button"
+            variant="ghost"
           >
             <AudioLines className={iconSize.sm} />
           </Button>
         </Tip>
-      ) : (
-        <Tip
-          label={
-            showStop ? (
-              <TipKeybindLabel actionId="composer.send" text={c.stop} />
-            ) : (
-              <TipKeybindLabel actionId="composer.send" text={c.send} />
-            )
-          }
+      ) : null}
+      <Tip
+        label={
+          showStop ? (
+            <TipKeybindLabel actionId="composer.send" text={c.stop} />
+          ) : (
+            <TipKeybindLabel actionId="composer.send" text={c.send} />
+          )
+        }
+      >
+        <Button
+          aria-label={showStop ? c.stop : c.send}
+          className={PRIMARY_ICON_BTN}
+          disabled={disabled || !canSubmit}
+          type="submit"
         >
-          <Button
-            aria-label={showStop ? c.stop : c.send}
-            className={PRIMARY_ICON_BTN}
-            disabled={disabled || !canSubmit}
-            type="submit"
-          >
-            {showStop ? (
-              <span className="block size-2.5 rounded-[0.1875rem] bg-current" />
-            ) : (
-              <Codicon name="arrow-up" size="0.875rem" />
-            )}
-          </Button>
-        </Tip>
-      )}
+          {showStop ? (
+            <span className="block size-2.5 rounded-[0.1875rem] bg-current" />
+          ) : (
+            <Codicon name="arrow-up" size="0.875rem" />
+          )}
+        </Button>
+      </Tip>
       {/* The way out of HUD mode, riding the controls row rather than floating
           above the bar. The old chip lived in a 26px transparent strip reserved
           over the composer (--hud-chip-strip), which under glass is bare

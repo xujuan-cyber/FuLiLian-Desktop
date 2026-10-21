@@ -1,4 +1,5 @@
 import { useStore } from '@nanostores/react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 import { sessionDotClassName } from '@/app/chat/session-status-dot'
 import { Button } from '@/components/ui/button'
@@ -154,10 +155,25 @@ function OptionRadio({ option }: { option: Option }) {
   )
 }
 
-/** The kind chips row (§4.3 wireframe: 全部|取证|CTF|项目). The kind metadata
- *  has no data layer yet, so the two work-mode chips narrow the sidebar to
- *  their (honestly empty) container groups — see container-groups.tsx. Local
- *  state lives in the ChatSidebar; it is a view filter, not a persisted view. */
+/** The v3 `sidebar.*` keys this file reads that W4 lands in the i18n files.
+ *  Optional on purpose: until they exist the control renders without them
+ *  instead of reaching for a literal string. */
+interface WorkspaceCopy {
+  workspace?: string
+  workspaceFilter?: (value: string) => string
+}
+
+/** The workspace segmented control (§8.2 段 D, §10). 28px rail on the sunken
+ *  surface; the selected segment is white with a 1px hairline and 500 weight —
+ *  never an accent, because the sidebar's green belongs to the connection dot.
+ *
+ *  When the four labels can't fit the rail in the current language (ja
+ *  「プロジェクト」, ar, …) the row degrades to a `工作区：全部 ⌄` dropdown
+ *  rather than shrinking type or truncating a label: a segmented control that
+ *  elides its own choices is unreadable, and a shortened word is a wrong word.
+ *
+ *  The filter semantics are unchanged — the same four ids, the same
+ *  `onChange`, the same `kindGroupsVisible` consumer in the sidebar. */
 export function SidebarKindFilterRow({
   onChange,
   value
@@ -167,6 +183,7 @@ export function SidebarKindFilterRow({
 }) {
   const { t } = useI18n()
   const k = t.sidebar.kind
+  const w = t.sidebar as unknown as WorkspaceCopy
 
   const copy: Record<ContainerKindFilter, string> = {
     all: k.all,
@@ -175,30 +192,119 @@ export function SidebarKindFilterRow({
     project: k.project
   }
 
-  return (
-    <div className="flex shrink-0 items-center gap-1 px-0 pb-2" data-testid="sidebar-kind-filter" role="radiogroup">
-      {CONTAINER_KIND_FILTERS.map(id => {
-        const active = value === id
+  // 28px rail. The invisible twin below measures the same labels with the same
+  // type and padding, so "does this fit" is answered by the browser's own text
+  // metrics — no per-locale width table to keep in sync.
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const measureRef = useRef<HTMLDivElement | null>(null)
+  const [degraded, setDegraded] = useState(false)
+  const labelsKey = CONTAINER_KIND_FILTERS.map(id => copy[id]).join('\u0000')
 
-        return (
-          <button
-            aria-checked={active}
-            aria-label={copy[id]}
-            className={cn(
-              'flex h-7 items-center rounded-full px-2.5 text-xs font-medium leading-none transition-colors duration-100 ease-out',
-              active
-                ? 'bg-(--ui-bg-secondary) text-foreground'
-                : 'bg-(--ui-bg-tertiary) text-(--ui-text-tertiary) hover:bg-(--ui-bg-secondary) hover:text-foreground'
-            )}
-            key={id}
-            onClick={() => onChange(id as ContainerKindFilter)}
-            role="radio"
-            type="button"
+  useLayoutEffect(() => {
+    const container = containerRef.current
+    const measure = measureRef.current
+
+    if (!container || !measure) {
+      return
+    }
+
+    const check = () => setDegraded(measure.scrollWidth > container.clientWidth + 1)
+
+    check()
+
+    if (typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    const observer = new ResizeObserver(check)
+
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [labelsKey])
+
+  const selectedLabel = copy[value]
+  const dropdownLabel = w.workspaceFilter ? w.workspaceFilter(selectedLabel) : selectedLabel
+
+  return (
+    <div className="shrink-0" data-workspace-filter="">
+      {w.workspace ? (
+        <div className="px-2.5 pb-1.5">
+          <span className="text-[11px] font-semibold leading-[1.2] text-(--v3-ink-3)">{w.workspace}</span>
+        </div>
+      ) : null}
+
+      {degraded ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label={dropdownLabel}
+              className="h-7 w-full justify-between gap-2 rounded-[7px] bg-(--v3-sunken) px-2 text-[12px] font-medium text-(--v3-ink-2) hover:bg-(--v3-hover) hover:text-(--v3-ink)"
+              data-testid="sidebar-kind-filter"
+              type="button"
+              variant="ghost"
+            >
+              <span className="min-w-0 truncate">{dropdownLabel}</span>
+              <Codicon className="shrink-0 opacity-70" name="chevron-down" size="0.75rem" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-44">
+            <DropdownMenuRadioGroup
+              onValueChange={next => onChange(next as ContainerKindFilter)}
+              value={value}
+            >
+              {CONTAINER_KIND_FILTERS.map(id => (
+                <DropdownMenuRadioItem key={id} value={id}>
+                  {copy[id]}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <div
+          aria-label={w.workspace}
+          className="relative flex h-7 items-center gap-0.5 rounded-[7px] bg-(--v3-sunken) p-0.5"
+          data-testid="sidebar-kind-filter"
+          ref={containerRef}
+          role="radiogroup"
+        >
+          {CONTAINER_KIND_FILTERS.map(id => {
+            const active = value === id
+
+            return (
+              <button
+                aria-checked={active}
+                aria-label={copy[id]}
+                className={cn(
+                  'h-6 min-w-0 flex-1 whitespace-nowrap rounded-[5px] px-1.5 text-[12px] leading-none transition-colors duration-100 ease-out',
+                  active
+                    ? 'bg-(--v3-surface) font-medium text-(--v3-ink) shadow-[inset_0_0_0_1px_var(--v3-line)]'
+                    : 'font-normal text-(--v3-ink-2) hover:text-(--v3-ink)'
+                )}
+                key={id}
+                onClick={() => onChange(id)}
+                role="radio"
+                type="button"
+              >
+                {copy[id]}
+              </button>
+            )
+          })}
+          {/* Measurement twin: same type, same padding, painted off-flow. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none invisible absolute inset-0 flex items-center gap-0.5 p-0.5"
+            ref={measureRef}
           >
-            {copy[id]}
-          </button>
-        )
-      })}
+            {CONTAINER_KIND_FILTERS.map(id => (
+              <span className="whitespace-nowrap px-1.5 text-[12px] font-medium leading-none" key={id}>
+                {copy[id]}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -233,6 +339,7 @@ export function SidebarFilterMenu({ className }: { className?: string }) {
   const projectsCollapsed = projects.length > 0 && projects.every(project => nodeOpen[project.id] === false)
 
   const label = (key: string): string => fm[key] ?? key
+
   const withLabel = <T extends string>(option: Pick<Option<T>, 'icon' | 'id' | 'dot'>): Option<T> => ({
     ...option,
     label: label(option.id)

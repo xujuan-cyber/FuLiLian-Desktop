@@ -1,192 +1,68 @@
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { requestComposerFocus } from '@/app/chat/composer/focus'
 import { useI18n } from '@/i18n'
-import { FileText, GitBranch, Terminal } from '@/lib/icons'
-import { capitalize, normalize } from '@/lib/text'
-
-import introCopyJsonl from './intro-copy.jsonl?raw'
-
-type IntroCopy = {
-  headline: string
-  body: string
-}
-
-type IntroCopyRecord = IntroCopy & {
-  personality: string
-}
+import { ChevronRight, FileText, GitBranch, Terminal } from '@/lib/icons'
 
 export type IntroProps = {
+  /** v3 §8.3: the empty-state composer node, mounted by the caller and
+   *  rendered between the lede and the chips (design order, not after cards). */
+  composer?: ReactNode
+  /** Kept for the `Thread` call site; v3 shows one lede for every personality. */
   personality?: string
   seed?: number
 }
 
-const NEUTRAL_PERSONALITIES = new Set(['', 'default', 'none', 'neutral'])
+const CHIP_CLASS =
+  'inline-flex h-7 items-center rounded-lg bg-(--v3-sunken) px-3 text-xs leading-none text-(--v3-ink-2) transition-colors'
 
-const FALLBACK_COPY: IntroCopy[] = [
-  {
-    headline: 'What are we moving today?',
-    body: "Send a bug, branch, plan, or rough idea. I'll inspect the repo and turn it into the next concrete step."
-  },
-  {
-    headline: "What's on your mind?",
-    body: "Bring the code, question, or stuck part. I'll read the room before making changes."
-  },
-  {
-    headline: 'What should Fulilian look at?',
-    body: "Send the task, failing path, or half-formed plan. I'll help turn it into action."
-  },
-  {
-    headline: 'Where should we start?',
-    body: "Bring the problem, goal, or file. I'll inspect first and keep the next step concrete."
-  },
-  {
-    headline: 'What needs attention?',
-    body: "Send the context you have. I'll help sort it into a plan or a fix."
-  }
-]
-
-function normalizeKey(value?: string): string {
-  return normalize(value)
-}
-
-function titleize(value: string): string {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map(capitalize)
-    .join(' ')
-}
-
-function isIntroCopyRecord(value: unknown): value is IntroCopyRecord {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const record = value as Record<string, unknown>
-
-  return (
-    typeof record.personality === 'string' &&
-    typeof record.headline === 'string' &&
-    typeof record.body === 'string' &&
-    Boolean(record.personality.trim()) &&
-    Boolean(record.headline.trim()) &&
-    Boolean(record.body.trim())
-  )
-}
-
-function parseIntroCopy(raw: string): Record<string, IntroCopy[]> {
-  const byPersonality: Record<string, IntroCopy[]> = {}
-
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim()
-
-    if (!trimmed) {
-      continue
-    }
-
-    try {
-      const parsed: unknown = JSON.parse(trimmed)
-
-      if (!isIntroCopyRecord(parsed)) {
-        continue
-      }
-
-      const key = normalizeKey(parsed.personality)
-      byPersonality[key] ??= []
-      byPersonality[key].push({
-        headline: parsed.headline.trim(),
-        body: parsed.body.trim()
-      })
-    } catch {
-      // Bad generated copy should not break the whole desktop app.
-    }
-  }
-
-  return byPersonality
-}
-
-const INTRO_COPY_BY_PERSONALITY = parseIntroCopy(introCopyJsonl)
-
-function neutralCopy(): IntroCopy[] {
-  return INTRO_COPY_BY_PERSONALITY.none || INTRO_COPY_BY_PERSONALITY.default || FALLBACK_COPY
-}
-
-function fallbackCopyForPersonality(personalityKey: string): IntroCopy[] {
-  if (NEUTRAL_PERSONALITIES.has(personalityKey)) {
-    return neutralCopy()
-  }
-
-  const label = titleize(personalityKey)
-
-  return [
-    {
-      headline: `${label} mode is on. What should we work on?`,
-      body: "Send the task, file, or rough idea. I'll use your configured voice and keep the work grounded in this repo."
-    },
-    {
-      headline: `What does ${label} Fulilian need to see?`,
-      body: "Bring the context or the stuck part. I'll adapt to your configured personality."
-    },
-    {
-      headline: `${label} mode is ready.`,
-      body: "Send the problem, file, or idea. I'll follow the personality you've configured."
-    },
-    {
-      headline: `What should ${label} Fulilian tackle?`,
-      body: "Drop the task here. I'll keep the work grounded in the repo."
-    },
-    {
-      headline: 'Where should we begin?',
-      body: `Give me the context and I'll answer in ${label} mode.`
-    }
-  ]
-}
-
-function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
-  return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
-}
-
-function resolveCopy(personality?: string, seed?: number): IntroCopy {
-  const personalityKey = normalizeKey(personality)
-
-  const copies = NEUTRAL_PERSONALITIES.has(personalityKey)
-    ? INTRO_COPY_BY_PERSONALITY[personalityKey] || neutralCopy()
-    : INTRO_COPY_BY_PERSONALITY[personalityKey] || fallbackCopyForPersonality(personalityKey)
-
-  return pickCopy(copies, seed)
-}
-
-export function Intro({ personality, seed }: IntroProps) {
+export function Intro({ composer }: IntroProps) {
   const { t } = useI18n()
   const h = t.home
-  const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
-  const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
   // §5.1: the greeting tracks the time of day. Computed at mount — the intro
   // only mounts on a fresh draft, so it never goes stale on screen.
   const [hour] = useState(() => new Date().getHours())
   const greeting = hour < 12 ? h.greeting.morning : hour < 18 ? h.greeting.afternoon : h.greeting.evening
 
+  const cards = [
+    { desc: h.modeCards.forensicsDesc, icon: FileText, key: 'forensics' as const, title: h.modeCards.forensics },
+    { desc: h.modeCards.ctfDesc, icon: Terminal, key: 'ctf' as const, title: h.modeCards.ctf },
+    { desc: h.modeCards.projectDesc, icon: GitBranch, key: 'project' as const, title: h.modeCards.project }
+  ]
+
+  const pendingChips = [
+    { key: 'forensics' as const, label: h.chips.forensics },
+    { key: 'ctf' as const, label: h.chips.ctf },
+    { key: 'idle' as const, label: h.chips.idle }
+  ]
+
   return (
+    // v3 empty state: one left axis inside a centred column. The row gap below
+    // the block (28px) is the breathing room the inline composer sits on.
     <div
-      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="pointer-events-none w-full min-w-0 max-h-full overflow-y-auto overscroll-contain px-6 pb-7 pt-6 [line-break:strict]"
       data-slot="aui_intro"
     >
-      <div className="w-full min-w-0">
-        <p className="m-0 text-2xl font-semibold leading-tight tracking-tight text-(--ui-text-primary)">{greeting}</p>
+      <div className="v3-column">
+        <h1 className="v3-display m-0">{greeting}</h1>
 
-        <p className="mx-auto mb-0 mt-3 max-w-[520px] text-sm leading-relaxed text-(--ui-text-secondary)">
-          {copy.body}
-        </p>
+        <p className="v3-lede mt-3 mb-0 max-w-[52ch] text-pretty">{h.lede}</p>
 
-        {/* §5.1 quick chips + mode entry cards. The kind metadata has no data
-            layer this round: the programming chip performs the one real action
-            available (focusing the composer); the forensics/CTF/idle entries
-            are honest placeholders — aria-disabled, never fabricating a
-            creation flow — and say so in the note beneath the row. */}
-        <div className="pointer-events-auto mx-auto mt-5 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+        {/* v3 §8.3: the empty-state composer sits between the lede and the
+            chips — caller mounts it, we only own the 28px breathing room and
+            re-enable pointer events (the intro root is pointer-events-none). */}
+        {composer ? (
+          <div className="pointer-events-auto mt-7" data-slot="intro-composer">
+            {composer}
+          </div>
+        ) : null}
+
+        {/* §5.1 quick chips. Only the first one acts (it focuses the composer);
+            the rest are honest placeholders — aria-disabled, dimmed, explained
+            by their own tooltip, never styled as clickable actions. */}
+        <div className="pointer-events-auto mt-3 flex flex-wrap items-center gap-2" data-testid="intro-chips">
           <button
-            className="h-8 rounded-full bg-(--ui-bg-tertiary) px-3.5 text-[13px] text-(--ui-text-secondary) transition-colors hover:bg-(--ui-bg-secondary) hover:text-foreground"
+            className={`${CHIP_CLASS} cursor-pointer hover:bg-(--v3-hover) hover:text-(--v3-ink) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--v3-ink-3)`}
             data-testid="intro-chip-programming"
             onClick={() => requestComposerFocus('active')}
             title={h.chips.programmingTip}
@@ -194,14 +70,10 @@ export function Intro({ personality, seed }: IntroProps) {
           >
             {h.chips.programming}
           </button>
-          {[
-            { key: 'forensics' as const, label: h.chips.forensics },
-            { key: 'ctf' as const, label: h.chips.ctf },
-            { key: 'idle' as const, label: h.chips.idle }
-          ].map(chip => (
+          {pendingChips.map(chip => (
             <span
               aria-disabled="true"
-              className="inline-flex h-8 items-center rounded-full bg-(--ui-bg-tertiary) px-3.5 text-[13px] text-(--ui-text-tertiary)"
+              className={`${CHIP_CLASS} opacity-60`}
               data-testid={`intro-chip-placeholder-${chip.key}`}
               key={chip.key}
               title={h.chips.placeholderTip}
@@ -210,27 +82,29 @@ export function Intro({ personality, seed }: IntroProps) {
             </span>
           ))}
         </div>
-        <p className="mt-2 text-xs text-(--ui-text-quaternary)">{h.chipsNote}</p>
 
-        <div className="mx-auto mt-5 grid max-w-2xl gap-2 sm:grid-cols-3">
-          {[
-            {
-              desc: h.modeCards.forensicsDesc,
-              icon: FileText,
-              key: 'forensics' as const,
-              title: h.modeCards.forensics
-            },
-            { desc: h.modeCards.ctfDesc, icon: Terminal, key: 'ctf' as const, title: h.modeCards.ctf },
-            { desc: h.modeCards.projectDesc, icon: GitBranch, key: 'project' as const, title: h.modeCards.project }
-          ].map(card => (
+        <div className="mt-10 flex items-baseline justify-between gap-3">
+          <span className="v3-label">{h.section.title}</span>
+          {/* Not clickable yet — the template library lands with the data
+              layer, so this stays plain text rather than a dead link. */}
+          <span className="v3-meta inline-flex items-center gap-1" data-testid="intro-more">
+            {h.section.more}
+            <ChevronRight aria-hidden className="size-3 text-(--v3-ink-3) rtl:-scale-x-100" />
+          </span>
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          {cards.map(card => (
             <div
-              className="rounded-xl border border-(--ui-stroke-secondary) bg-card p-4 text-left"
+              className="flex min-h-28 flex-col rounded-xl border border-(--v3-line) bg-(--v3-surface) p-4"
               data-testid={`intro-mode-card-${card.key}`}
               key={card.key}
             >
-              <card.icon aria-hidden className="size-4 text-(--ui-text-tertiary)" />
-              <div className="mt-2 text-sm font-semibold text-foreground">{card.title}</div>
-              <div className="mt-1 text-xs leading-relaxed text-(--ui-text-tertiary)">{card.desc}</div>
+              <card.icon aria-hidden className="size-4 shrink-0 text-(--v3-ink-3)" />
+              <div className="mt-3 text-[13px] font-semibold leading-[1.45] text-(--v3-ink)">{card.title}</div>
+              <div className="mt-1.5 line-clamp-3 text-xs leading-[1.6] text-(--v3-ink-2) text-pretty [:lang(ja)_&]:leading-[1.75]">
+                {card.desc}
+              </div>
             </div>
           ))}
         </div>

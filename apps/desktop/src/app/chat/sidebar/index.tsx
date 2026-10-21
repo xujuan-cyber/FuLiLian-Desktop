@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
-import { BrandMark } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -30,6 +29,7 @@ import { resolveProfileColor } from '@/lib/profile-color'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
 import { $desktopBoot } from '@/store/boot'
+import { toggleCommandPalette } from '@/store/command-palette'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
 import { $bindings } from '@/store/keybinds'
@@ -108,7 +108,6 @@ import {
   refreshPullRequests,
   sessionPrKey
 } from '@/store/pull-requests'
-import { toggleCommandPalette } from '@/store/command-palette'
 import { openRouteTile } from '@/store/route-tiles'
 import {
   $cronSessions,
@@ -133,12 +132,20 @@ import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
-import { type AppView, CRON_ROUTE, SIDEBAR_NAV_AREA, type SidebarNavContribution, SKILLS_ROUTE } from '../../routes'
+import {
+  type AppView,
+  CRON_ROUTE,
+  MESSAGING_ROUTE,
+  SETTINGS_ROUTE,
+  SIDEBAR_NAV_AREA,
+  type SidebarNavContribution,
+  SKILLS_ROUTE
+} from '../../routes'
 import type { SidebarNavItem } from '../../types'
 
-import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarKindGroups } from './container-groups'
-import { kindGroupsVisible, type ContainerKindFilter } from './container-kind'
+import { type ContainerKindFilter, kindGroupsVisible } from './container-kind'
+import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarFilterMenu, SidebarKindFilterRow } from './filter-menu'
 import { SidebarGatewayStatusRow } from './gateway-status-row'
 import { SidebarLoadMoreRow } from './load-more-row'
@@ -165,7 +172,7 @@ import {
   useRepoWorktreeMap
 } from './projects'
 import { WorktreeDialog } from './projects/worktree-dialog'
-import { SidebarBlankState, SidebarPinnedEmptyState, SidebarSessionSkeletons } from './section-states'
+import { SidebarBlankState, SidebarSessionSkeletons } from './section-states'
 import { buildSessionByAnyId, resolvePinnedSessions } from './session-index'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 import { CONTEXT_SPLIT_KIT, SplitSubmenu } from './split-submenu'
@@ -181,27 +188,22 @@ const NON_SESSION_LOAD_STEP = 10
 // screen — has the connection to itself first.
 const PROJECT_TREE_WARM_MS = 2_000
 
-// The §4.3 wireframe flattens the old five-entry nav into a primary「新建任务」
-// button (rendered separately, below) plus two flat rows: 自动化 (/cron — its
-// icon is one of the four accentBright whitelist positions) and 工具箱
-// (/skills). Messaging/artifacts keep their routes (§4.3: 一级路由全部不动)
-// but their entries live in the command palette now, not the sidebar.
-const SIDEBAR_NAV: SidebarNavItem[] = [
-  {
-    id: 'cron',
-    label: '',
-    icon: props => <Codicon name="watch" {...props} />,
-    route: CRON_ROUTE,
-    keybindActionId: 'nav.cron'
-  },
-  {
-    id: 'skills',
-    label: '',
-    icon: props => <Codicon name="symbol-misc" {...props} />,
-    route: SKILLS_ROUTE,
-    keybindActionId: 'nav.skills'
-  }
-]
+// The §8.2 nav rows: 定时任务 / 技能与工具 / 消息 / 设置. Every row is a plain
+// destination — the three work surfaces plus Settings. Labels resolve through
+// `sidebar.nav.*` (settings borrows the command center's title until W4 lands
+// the sidebar key) so no user-visible word is written in this file.
+//
+// Bots/消息 is a ROW, not a toolbar icon: the messaging platform list is a
+// first-class page (/messaging) and has to stay one click away.
+const SIDEBAR_NAV_ICONS = {
+  cron: 'watch',
+  messaging: 'comment-discussion',
+  settings: 'settings-gear',
+  skills: 'symbol-misc'
+} as const
+
+const icon = (name: string) => (props: { className?: string }) => <Codicon name={name} {...props} />
+
 
 // The primary「新建任务」button forwards this nav item, so the parent's
 // onNavigate contract (action: 'new-session') is unchanged.
@@ -313,6 +315,39 @@ export function ChatSidebar({
     [navContributions]
   )
 
+  // Built-in rows, translated at render time. Settings has no `sidebar.nav`
+  // key yet (W4 request pending) — it borrows the command center's title rather
+  // than printing a literal.
+  const navItems = useMemo<SidebarNavItem[]>(() => {
+    const settingsLabel =
+      (s.nav as Record<string, string | undefined>).settings ?? t.commandCenter.nav.settings.title
+
+    return [
+      { id: 'cron', icon: icon(SIDEBAR_NAV_ICONS.cron), keybindActionId: 'nav.cron', label: s.nav.cron, route: CRON_ROUTE },
+      {
+        id: 'skills',
+        icon: icon(SIDEBAR_NAV_ICONS.skills),
+        keybindActionId: 'nav.skills',
+        label: s.nav.skills,
+        route: SKILLS_ROUTE
+      },
+      {
+        id: 'messaging',
+        icon: icon(SIDEBAR_NAV_ICONS.messaging),
+        keybindActionId: 'nav.messaging',
+        label: s.nav.messaging,
+        route: MESSAGING_ROUTE
+      },
+      {
+        id: 'settings',
+        icon: icon(SIDEBAR_NAV_ICONS.settings),
+        keybindActionId: 'nav.settings',
+        label: settingsLabel,
+        route: SETTINGS_ROUTE
+      }
+    ]
+  }, [s, t])
+
   const panesFlipped = useStore($panesFlipped)
   const grouping = useStore($sidebarGrouping)
   const ordering = useStore($sidebarOrdering)
@@ -392,6 +427,8 @@ export function ChatSidebar({
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
+  const paletteCombo = useStore($bindings)['nav.commandPalette']?.[0]
+  const paletteKbd = paletteCombo ? comboTokens(paletteCombo) : []
   // §4.3 kind chips (全部|取证|CTF|项目). View-local state on purpose: the
   // kind metadata has no store this round (src/store/ is out of scope), and a
   // filter over an empty data layer has nothing worth persisting.
@@ -1367,73 +1404,72 @@ export function ChatSidebar({
       data-tip-region=""
       data-tour="sessions-sidebar"
     >
-      <SidebarContent className="gap-3 overflow-hidden bg-transparent px-2.5">
-        <SidebarGroup className="shrink-0 p-0 pb-2 pt-[var(--titlebar-height)]">
+      <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5 pt-3">
+        <SidebarGroup className="shrink-0 p-0">
           <SidebarGroupContent>
-            {/* §4.3 brand row: mark + wordmark. The layout lives HERE so the
-                brand-mark component itself stays untouched (it is outside this
-                step's file set). The row keeps the titlebar's drag region —
-                the app drags by its brand, like every native window. */}
-            <div className="flex items-center gap-2 px-2 pb-2 pt-1">
-              <BrandMark className="size-5 rounded-[4px]" />
-              <span className="truncate text-[13px] font-semibold text-(--ui-text-primary)">{s.brandWordmark}</span>
-            </div>
-            {/* [＋新建任务] [搜索]: one deep-ink primary and the command
-                palette (§4.3 — the palette carries the session deep-search the
-                old inline field used to own). */}
-            <div className="flex shrink-0 items-center gap-1 px-2 pb-1">
-              <ContextMenu>
-                <ContextMenuTrigger asChild>
-                  <SidebarMenuButton
-                    aria-label={s.newTask}
-                    className="flex h-8 w-full justify-start gap-2 rounded-lg bg-primary px-2.5 text-left text-[13px] font-medium text-primary-foreground transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-primary/90 hover:text-primary-foreground hover:transition-none"
-                    data-tip-region=""
-                    data-tour="sidebar-nav-new-session"
-                    onClick={() => {
-                      // A plain new session lands in whatever profile the live
-                      // gateway is on (= the active switcher context). null →
-                      // no swap. The switcher header is the single place to
-                      // change which profile that is.
-                      $newChatProfile.set(null)
-                      onNavigate(NEW_SESSION_NAV_ITEM)
-                    }}
-                    tooltip={<TipKeybindLabel actionId="session.new" text={s.newTask} />}
-                    type="button"
-                  >
-                    <Codicon className="size-4 shrink-0 text-primary-foreground/70" name="add" />
-                    <span className="min-w-0 truncate" data-tip-arrow-only="">
-                      {s.newTask}
-                    </span>
-                    <KbdGroup
-                      className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
-                      keys={newSessionKbd}
-                      size="sm"
-                    />
-                  </SidebarMenuButton>
-                </ContextMenuTrigger>
-                <ContextMenuContent aria-label={s.newTask}>
-                  <SplitSubmenu kit={CONTEXT_SPLIT_KIT} label={s.row.openInSplit} onSplit={onNewSessionSplit} />
-                </ContextMenuContent>
-              </ContextMenu>
-              <Tip label={s.searchCommandPalette}>
-                <Button
-                  aria-label={s.searchCommandPalette}
-                  className="size-8 shrink-0 rounded-lg text-(--ui-text-secondary) hover:bg-(--ui-bg-tertiary) hover:text-foreground"
-                  onClick={toggleCommandPalette}
-                  size="icon"
-                  variant="ghost"
+            {/* §8.2 A 主操作 — the sidebar's only solid button, 36px, ink on
+                canvas. Context menu keeps "open in split" on the same target. */}
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <SidebarMenuButton
+                  aria-label={s.newTask}
+                  className="flex h-9 w-full justify-start gap-2 rounded-[7px] bg-(--v3-ink) px-2.5 text-left text-[13px] font-medium text-(--v3-canvas) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-ink) hover:text-(--v3-canvas) hover:opacity-90 hover:transition-none"
+                  data-tip-region=""
+                  data-tour="sidebar-nav-new-session"
+                  onClick={() => {
+                    // A plain new session lands in whatever profile the live
+                    // gateway is on (= the active switcher context). null →
+                    // no swap. The switcher header is the single place to
+                    // change which profile that is.
+                    $newChatProfile.set(null)
+                    onNavigate(NEW_SESSION_NAV_ITEM)
+                  }}
+                  tooltip={<TipKeybindLabel actionId="session.new" text={s.newTask} />}
+                  type="button"
                 >
-                  <Codicon name="search" size="0.875rem" />
-                </Button>
-              </Tip>
-            </div>
-            <SidebarMenu className="gap-0.5 pb-1">
-              {[...SIDEBAR_NAV, ...contributedNav].map(item => {
+                  <Codicon className="size-4 shrink-0 opacity-80" name="add" />
+                  <span className="min-w-0 truncate" data-tip-arrow-only="">
+                    {s.newTask}
+                  </span>
+                  <KbdGroup
+                    className={cn('ms-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
+                    keys={newSessionKbd}
+                    size="sm"
+                  />
+                </SidebarMenuButton>
+              </ContextMenuTrigger>
+              <ContextMenuContent aria-label={s.newTask}>
+                <SplitSubmenu kit={CONTEXT_SPLIT_KIT} label={s.row.openInSplit} onSplit={onNewSessionSplit} />
+              </ContextMenuContent>
+            </ContextMenu>
+
+            {/* §8.2 B 检索 — a 32px field-shaped button: white surface, one
+                hairline, the palette's own shortcut. It is a field in form and
+                a door in behavior; no rule under it. */}
+            <Tip label={s.searchCommandPalette}>
+              <button
+                aria-label={s.searchAria}
+                className="mt-2 flex h-8 w-full items-center gap-2 rounded-[7px] border border-(--v3-line-strong) bg-(--v3-surface) px-2.5 text-[12px] text-(--v3-ink-3) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:border-(--v3-line) hover:text-(--v3-ink-2) hover:transition-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--v3-line-strong)"
+                data-tip-region=""
+                onClick={toggleCommandPalette}
+                type="button"
+              >
+                <Codicon className="shrink-0 opacity-70" name="search" size="0.875rem" />
+                <span className="min-w-0 flex-1 truncate text-start">{s.searchPlaceholder}</span>
+                <KbdGroup className="shrink-0 opacity-70" keys={paletteKbd} size="sm" />
+              </button>
+            </Tip>
+
+            {/* §8.2 C 导航 — 30px rows, 16px glyph, 8px gap. Bots/消息 is one of
+                them. */}
+            <SidebarMenu className="mt-3 gap-0.5">
+              {[...navItems, ...contributedNav].map(item => {
                 const isInteractive = Boolean(item.action) || Boolean(item.route)
 
                 const active =
                   (item.id === 'skills' && currentView === 'skills') ||
                   (item.id === 'messaging' && currentView === 'messaging') ||
+                  (item.id === 'settings' && currentView === 'settings') ||
                   (item.id === 'artifacts' && currentView === 'artifacts') ||
                   (item.id === 'cron' && currentView === 'cron') ||
                   // Contributed rows light up at their own route.
@@ -1450,8 +1486,8 @@ export function ChatSidebar({
                       // resolved region has been observed to swallow clicks on the
                       // top rows. Same carve-out as USER_BUBBLE_BASE_CLASS in
                       // thread.tsx.
-                      'flex h-8 w-full justify-start gap-2 rounded-lg px-2.5 text-left text-[13px] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-bg-tertiary) hover:text-foreground hover:transition-none',
-                      active && 'bg-(--ui-bg-secondary) text-foreground',
+                      'flex h-[30px] w-full justify-start gap-2 rounded-[6px] px-2.5 text-left text-[13px] font-normal text-(--v3-ink-2) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-hover) hover:text-(--v3-ink) hover:transition-none',
+                      active && 'bg-(--v3-selected) font-medium text-(--v3-ink)',
                       !isInteractive && 'cursor-default hover:bg-transparent hover:text-inherit'
                     )}
                     // A tip anchored to the label points at the end of the
@@ -1459,13 +1495,11 @@ export function ChatSidebar({
                     data-tip-region=""
                     onClick={() => onNavigate(item)}
                     tooltip={
-                      item.keybindActionId
-                        ? {
-                            children: (
-                              <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
-                            )
-                          }
-                        : (s.nav[item.id] ?? item.label)
+                      item.keybindActionId ? (
+                        { children: <TipKeybindLabel actionId={item.keybindActionId} text={item.label} /> }
+                      ) : (
+                        item.label
+                      )
                     }
                     type="button"
                   >
@@ -1474,13 +1508,11 @@ export function ChatSidebar({
                         `data-tour` handle, and anything anchored to it should
                         land at the end of the WORD, not out at the sidebar's
                         edge. Still truncates — `min-w-0` lets it shrink past
-                        its content when the rail is narrow — and the trailing
-                        chip's `ml-auto` was already doing the pushing that
-                        `flex-1` looked like it was for.
+                        its content when the rail is narrow.
                         Its own `sidebar-nav-` namespace: the overlay nav owns
                         `nav-<id>`, and both are on screen with Settings open. */}
                     <span className="min-w-0 truncate" data-tip-arrow-only="" data-tour={`sidebar-nav-${item.id}`}>
-                      {s.nav[item.id] ?? item.label}
+                      {item.label}
                     </span>
                   </SidebarMenuButton>
                 )
@@ -1492,7 +1524,7 @@ export function ChatSidebar({
                     {item.route ? (
                       <ContextMenu>
                         <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
-                        <ContextMenuContent aria-label={s.nav[item.id] ?? item.label}>
+                        <ContextMenuContent aria-label={item.label}>
                           <SplitSubmenu
                             kit={CONTEXT_SPLIT_KIT}
                             label={s.row.openInSplit}
@@ -1514,12 +1546,19 @@ export function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* §8.2 D 工作区 — a group title (20px above, 6px below) over the 28px
+            segmented control. The control degrades to a dropdown when the four
+            labels can't fit; its filter semantics are untouched. */}
+        <div className="mt-5 shrink-0">
+          <SidebarKindFilterRow onChange={setKindFilter} value={kindFilter} />
+        </div>
+
         {/* §4.3 kind chips + forensics/CTF container groups are SIDEBAR
             STRUCTURE, not session-area content: they render even when the
             gateway is offline and the session area collapses to its blank
             state — an honestly empty group IS the body there. */}
-        <SidebarKindFilterRow onChange={setKindFilter} value={kindFilter} />
         <SidebarKindGroups filter={kindFilter} />
+
 
         {showSessionSections && (
           <div
@@ -1527,12 +1566,12 @@ export function ChatSidebar({
             data-sessions-mode={sessionsMode}
             data-sessions-project={inProject ? (enteredProjectId ?? undefined) : undefined}
           >
-            {kindVisible.project && (
+            {kindVisible.project && pinnedSessions.length > 0 && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
-                contentClassName="flex flex-col gap-0.5 rounded-lg pb-2 pt-1"
+                contentClassName="flex flex-col gap-0.5 pb-2"
                 dndSensors={dndSensors}
-                emptyState={<SidebarPinnedEmptyState />}
+                emptyState={null}
                 label={s.pinned}
                 onArchiveSession={onArchiveSession}
                 onBranchSession={onBranchSession}
@@ -1801,10 +1840,18 @@ export function ChatSidebar({
 
         {!showSessionSections && kindVisible.project && <SidebarBlankState onNewProject={openProjectCreate} />}
 
-        <div className="shrink-0 px-0.5 pb-1 pt-0.5">
-          {/* §4.3 bottom status lines: gateway state, then the profile rail. */}
-          <SidebarGatewayStatusRow />
+        {/* Profile / Fleet strip: kept as a standing shortcut above the dock —
+            switching a profile is a per-session decision, not a settings
+            errand. Its management doors also live in the dock's ⋯ menu. */}
+        <div className="shrink-0 pb-1 pt-1">
           <ProfileRail refreshEnabled={bootSettled} />
+        </div>
+
+        {/* §8.2 E 状态坞 — 36px, the sidebar's only hairline (12px inset on its
+            top edge). Full-bleed: the hairline is measured from the sidebar's
+            own edge, not from the content gutter. */}
+        <div className="-mx-2.5">
+          <SidebarGatewayStatusRow />
         </div>
       </SidebarContent>
       <ProjectDialog />

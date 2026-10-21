@@ -6,6 +6,7 @@ import { useCallback, useMemo } from 'react'
 import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { SidebarGroup, SidebarGroupContent } from '@/components/ui/sidebar'
+import { Tip } from '@/components/ui/tooltip'
 import type { SessionInfo } from '@/fulilian'
 import type { FulilianGitWorktree } from '@/global'
 import { useI18n } from '@/i18n'
@@ -59,12 +60,13 @@ function SidebarSectionHeader({
   action,
   meta,
   icon,
-  collapsible = true
-}: SidebarSectionHeaderProps) {
+  collapsible = true,
+  hint
+}: SidebarSectionHeaderProps & { hint?: string }) {
   const labelBody = (
     <>
       {icon}
-      <SidebarPanelLabel className="gap-1.5 pl-0 text-xs font-medium normal-case tracking-normal text-(--ui-text-tertiary)">
+      <SidebarPanelLabel className="gap-1.5 pl-0 text-[11px] font-semibold normal-case tracking-normal text-(--v3-ink-3)">
         {label}
       </SidebarPanelLabel>
       {meta && <SidebarSectionMeta>{meta}</SidebarSectionMeta>}
@@ -72,7 +74,10 @@ function SidebarSectionHeader({
   )
 
   return (
-    <div className="group/section flex h-7 shrink-0 items-center justify-between gap-1">
+    // Same rhythm as every other group title: 20px above, 6px below, zero
+    // rules. The hint (drag / shift-click) rides the label as a tooltip
+    // instead of a standing sentence under the list.
+    <div className="group/section mb-1.5 mt-5 flex h-6 shrink-0 items-center justify-between gap-1">
       {collapsible ? (
         <button
           // min-w-0 lets the label truncate at narrow sidebar widths instead of
@@ -81,9 +86,9 @@ function SidebarSectionHeader({
           onClick={onToggle}
           type="button"
         >
-          {labelBody}
+          {hint ? <Tip label={hint}>{labelBody}</Tip> : labelBody}
           <DisclosureCaret
-            className="text-(--ui-text-tertiary) opacity-0 transition group-hover/section-label:opacity-100"
+            className="text-(--v3-ink-3) opacity-0 transition group-hover/section-label:opacity-100"
             open={open}
           />
         </button>
@@ -507,6 +512,7 @@ export function SidebarSessionsSection({
       <SidebarSectionHeader
         action={headerAction}
         collapsible={collapsible}
+        hint={!pinned && sessionsDraggable ? t.sidebar.shiftClickHint : undefined}
         icon={labelIcon}
         label={label}
         meta={labelMeta}

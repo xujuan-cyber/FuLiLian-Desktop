@@ -589,22 +589,27 @@ export const zhHant = defineLocale({
       afternoon: '午安',
       evening: '晚安'
     },
+    lede: '把目標、證據，或是一段還沒想清楚的思路丟進來。我先看清脈絡，再給出下一步。',
     chips: {
-      programming: '繼續程式設計任務',
-      programmingTip: '聚焦輸入框，繼續手邊的工作',
-      forensics: '新建取證案件',
+      programming: '繼續案件',
+      programmingTip: '聚焦輸入框，接著往下說',
+      forensics: '新增證據',
       ctf: '接手 CTF 賽題',
       idle: '閒時任務',
-      placeholderTip: 'kind 資料層落地前暫不可用'
+      placeholderTip: '取證資料接入後可用'
     },
     chipsNote: '取證、CTF 與閒時任務入口為靜態佔位，隨 kind 資料層落地啟用。',
+    section: {
+      title: '從這裡開始',
+      more: '模板庫'
+    },
     modeCards: {
       forensics: '取證案件',
-      forensicsDesc: '證據完整性校驗、審計留痕與報告草稿。',
+      forensicsDesc: '證據完整性校驗、審計與報告。',
       ctf: 'CTF 賽題',
-      ctfDesc: '單題的 flag 保管庫、提交歷史與倒數。',
+      ctfDesc: 'flag 保管庫、提交歷史與計時。',
       project: '程式設計專案',
-      projectDesc: '完整工作區：儲存庫、終端機、預覽與 git 變更。'
+      projectDesc: '儲存庫、終端機、預覽與程式碼變更。'
     }
   },
 

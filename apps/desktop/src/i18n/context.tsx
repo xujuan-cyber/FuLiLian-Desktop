@@ -3,11 +3,11 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { type FulilianConfigRecord, getFulilianConfigRecord, saveFulilianConfig } from '@/fulilian'
 
 import { getTranslations, hasTranslations, loadTranslations } from './catalog'
-import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
+import { DEFAULT_LOCALE, localeConfigValue, localeDir, normalizeLocale } from './languages'
 import { setRuntimeI18nLocale } from './runtime'
 import type { Locale, Translations } from './types'
 
-export { LOCALE_META } from './languages'
+export { LOCALE_META, localeDir } from './languages'
 
 export interface I18nConfigClient {
   getConfig: () => Promise<FulilianConfigRecord>
@@ -55,15 +55,15 @@ function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
 }
 
-const RTL_LOCALES = new Set<Locale>(['ar'])
-
+// Direction is declared per locale in `languages.ts` (`localeDir`) so the
+// picker, the document and any future per-locale surface read one source.
 function applyDocumentLocale(locale: Locale) {
   if (typeof document === 'undefined') {
     return
   }
 
   document.documentElement.lang = locale
-  document.documentElement.dir = RTL_LOCALES.has(locale) ? 'rtl' : 'ltr'
+  document.documentElement.dir = localeDir(locale)
 }
 
 export interface I18nContextValue {

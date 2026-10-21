@@ -592,22 +592,27 @@ export const zh: Translations = {
       afternoon: '下午好',
       evening: '晚上好'
     },
+    lede: '把目标、证据，或者一段还没想清楚的思路丢进来。我先看清上下文，再给出下一步。',
     chips: {
-      programming: '继续编程任务',
-      programmingTip: '聚焦输入框，继续手头的工作',
-      forensics: '新建取证案件',
+      programming: '继续案件',
+      programmingTip: '聚焦输入框，接着往下说',
+      forensics: '新建证据',
       ctf: '接手 CTF 赛题',
       idle: '闲时任务',
-      placeholderTip: 'kind 数据层落地前暂不可用'
+      placeholderTip: '取证数据接入后可用'
     },
     chipsNote: '取证、CTF 与闲时任务入口为静态占位，随 kind 数据层落地启用。',
+    section: {
+      title: '从这里开始',
+      more: '模板库'
+    },
     modeCards: {
       forensics: '取证案件',
-      forensicsDesc: '证据完整性校验、审计留痕与报告草稿。',
+      forensicsDesc: '证据完整性校验、审计与报告。',
       ctf: 'CTF 赛题',
-      ctfDesc: '单题的 flag 保管库、提交历史与倒计时。',
+      ctfDesc: 'flag 保管库、提交历史与计时。',
       project: '编程项目',
-      projectDesc: '完整工作区：仓库、终端、预览与 git 变更。'
+      projectDesc: '仓库、终端、预览与代码变更。'
     }
   },
 

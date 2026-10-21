@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   MACOS_TAHOE_DARWIN_MAJOR,
+  TITLEBAR_BRAND_GAP,
+  TITLEBAR_BRAND_WIDTH,
   TITLEBAR_CONTROL_OFFSET_X,
   TITLEBAR_CONTROL_SIZE,
   TITLEBAR_EDGE_INSET,
@@ -28,20 +30,29 @@ describe('titlebar sizing', () => {
 })
 
 describe('titlebarControlsPosition', () => {
-  it('offsets controls from visible traffic lights', () => {
-    expect(titlebarControlsPosition({ x: 24, y: 10 }).left).toBe(24 + TITLEBAR_CONTROL_OFFSET_X)
+  // v3: the brand lane owns the window's leading sidebar-width, so every
+  // cluster starts AFTER it — the lane edge is the floor, traffic lights and
+  // fallbacks only push it further right.
+  const BRAND_EDGE = TITLEBAR_BRAND_WIDTH + TITLEBAR_BRAND_GAP
+
+  it('offsets controls from visible traffic lights, never into the brand lane', () => {
+    expect(titlebarControlsPosition({ x: 24, y: 10 }).left).toBe(
+      Math.max(BRAND_EDGE, 24 + TITLEBAR_CONTROL_OFFSET_X)
+    )
   })
 
-  it('pins to the edge when macOS fullscreen hides traffic lights', () => {
-    expect(titlebarControlsPosition({ x: 24, y: 10 }, true).left).toBe(TITLEBAR_EDGE_INSET)
+  it('pins past the brand lane when macOS fullscreen hides traffic lights', () => {
+    expect(titlebarControlsPosition({ x: 24, y: 10 }, true).left).toBe(BRAND_EDGE)
   })
 
-  it('pins to the edge on Windows/Linux where native controls render on the right', () => {
-    expect(titlebarControlsPosition(null).left).toBe(TITLEBAR_EDGE_INSET)
+  it('pins past the brand lane on Windows/Linux where native controls render on the right', () => {
+    expect(titlebarControlsPosition(null).left).toBe(BRAND_EDGE)
   })
 
   it('uses the macOS fallback while the initial window state is unknown', () => {
-    expect(titlebarControlsPosition(undefined).left).toBe(TITLEBAR_FALLBACK_WINDOW_BUTTON_X + TITLEBAR_CONTROL_OFFSET_X)
+    expect(titlebarControlsPosition(undefined).left).toBe(
+      Math.max(BRAND_EDGE, TITLEBAR_FALLBACK_WINDOW_BUTTON_X + TITLEBAR_CONTROL_OFFSET_X)
+    )
   })
 })
 

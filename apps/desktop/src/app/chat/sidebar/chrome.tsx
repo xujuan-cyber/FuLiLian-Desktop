@@ -64,8 +64,10 @@ export function SidebarRowNest({ className, ...props }: React.ComponentProps<'di
 
 /**
  * Chronological date-bucket separator ("Yesterday" / "Last week" / "June") for
- * the session list. A plain caption row — no rule, no letter-spaced caps — so
- * the buckets read as quiet group titles rather than as terminal chrome.
+ * the session list. A plain caption row — no rule, no letter-spaced caps, and
+ * no uppercase — so the buckets read as quiet group titles rather than as
+ * terminal chrome. v3 gives every group the same rhythm: 20px above, 6px
+ * below, 11px/600 label.
  */
 export function SidebarDateDivider({
   action,
@@ -78,7 +80,7 @@ export function SidebarDateDivider({
     // so it borrows the header's hover-revealed "+" verbatim.
     <div
       className={cn(
-        'group/workspace mt-4 mb-1.5 flex select-none items-center gap-2 px-2.5 text-xs text-(--ui-text-tertiary)',
+        'group/workspace mb-1.5 mt-5 flex select-none items-center gap-2 px-2.5 text-[11px] font-semibold leading-[1.2] text-(--v3-ink-3)',
         className
       )}
       {...props}

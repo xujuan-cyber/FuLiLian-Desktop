@@ -1,8 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_LOCALE, isLocale, isSupportedLocaleValue, localeConfigValue, normalizeLocale } from './languages'
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  isSupportedLocaleValue,
+  LOCALE_META,
+  localeConfigValue,
+  localeDir,
+  normalizeLocale
+} from './languages'
 
 describe('desktop i18n languages', () => {
+  it('ships Chinese-first: the default locale is Simplified Chinese', () => {
+    expect(DEFAULT_LOCALE).toBe('zh')
+  })
+
+  it('declares a writing direction for every locale', () => {
+    expect(localeDir('ar')).toBe('rtl')
+    for (const locale of ['zh', 'zh-hant', 'en', 'ja'] as const) {
+      expect(localeDir(locale)).toBe('ltr')
+    }
+
+    expect(LOCALE_META.ar.dir).toBe('rtl')
+    expect(LOCALE_META['zh-hant'].dir).toBe('ltr')
+  })
   it('normalizes supported locale aliases', () => {
     expect(normalizeLocale('en')).toBe('en')
     expect(normalizeLocale('EN-US')).toBe('en')

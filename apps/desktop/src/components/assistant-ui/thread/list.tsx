@@ -769,7 +769,7 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
       >
         {renderEmpty ? (
           <div
-            className="mx-auto grid h-full w-full max-w-[min(820px,var(--composer-width))] min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-(--conversation-turn-gap) px-6 py-8"
+            className="mx-auto grid h-full w-full max-w-[min(var(--v3-content-width),var(--composer-width))] min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-(--conversation-turn-gap) px-6 py-8"
             data-slot="aui_thread-content"
           >
             {emptyPlaceholder}
@@ -777,7 +777,7 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
         ) : (
           <div
             className={cn(
-              'mx-auto flex w-full max-w-[min(820px,var(--composer-width))] min-w-0 flex-col px-6',
+              'mx-auto flex w-full max-w-[min(var(--v3-content-width),var(--composer-width))] min-w-0 flex-col px-6',
               threadContentTopPad
             )}
             data-slot="aui_thread-content"

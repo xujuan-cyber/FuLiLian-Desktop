@@ -1774,28 +1774,13 @@ body.guest-pointer-lock :is(webview, iframe) {
 }
 
 [data-slot='aui_thread-content'] {
-  max-width: var(--composer-width);
+  /* Column is 760 of CONTENT; the 1.5rem inline padding is the gutter,
+     so the box must be 760 + 3rem to keep the left axis shared with the
+     composer (which has no inner padding of its own). */
+  max-width: calc(var(--v3-content-width) + 3rem);
   padding-inline: 1.5rem;
 }
 
-[data-slot='aui_intro'] {
-  align-items: center;
-  justify-content: center;
-  padding-bottom: var(--composer-measured-height);
-  text-align: center;
-}
-
-[data-slot='aui_intro'] > div {
-  max-width: var(--composer-width);
-}
-
-[data-slot='aui_intro'] p:last-child {
-  max-width: 34rem;
-  margin-inline: auto;
-  color: var(--ui-text-tertiary);
-  font-size: 0.875rem;
-  line-height: 1.45;
-}
 
 .fit-text {
   --fit-captured-length: initial;
@@ -3683,4 +3668,135 @@ html:has([data-hud-shell]) [data-slot='popover-content'] {
 
 [data-hud-shell] [data-slot='composer-bounds'] *::-webkit-scrollbar {
   display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   v3「操作台」semantic layer (step 20)
+   Single source for the UI refresh. Components consume these
+   tokens/utilities; no new raw hex outside this block.
+   Mapping keeps every existing skin working: values resolve to
+   the live --ui-* / --dt-* tokens, only the accent is literal.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --v3-canvas: var(--ui-bg-editor);
+  --v3-surface: var(--dt-card);
+  --v3-panel: var(--ui-bg-sidebar);
+  --v3-panel-2: color-mix(in srgb, var(--ui-bg-sidebar) 72%, var(--ui-bg-tertiary));
+  --v3-sunken: var(--ui-bg-tertiary);
+  --v3-hover: var(--ui-bg-quaternary);
+  --v3-selected: var(--ui-bg-secondary);
+
+  --v3-ink: var(--ui-text-primary);
+  --v3-ink-2: var(--ui-text-secondary);
+  --v3-ink-3: var(--ui-text-tertiary);
+  --v3-ink-4: var(--ui-text-quaternary);
+
+  --v3-line: var(--ui-stroke-secondary);
+  --v3-line-strong: var(--ui-stroke-primary);
+
+  --v3-accent: #1d6b4f;
+  --v3-accent-soft: color-mix(in srgb, var(--v3-accent) 10%, transparent);
+  --v3-warn: var(--dt-warning);
+  --v3-warn-soft: color-mix(in srgb, var(--v3-warn) 10%, transparent);
+
+  --v3-chrome-height: 44px;
+  --v3-content-width: 760px;
+  --v3-sidebar-width: 252px;
+}
+
+.dark {
+  --v3-accent: #35a277;
+  --v3-accent-soft: color-mix(in srgb, var(--v3-accent) 16%, transparent);
+}
+
+/* Content column: centered box, left-aligned contents. */
+.v3-column {
+  width: 100%;
+  max-width: var(--v3-content-width);
+  margin-inline: auto;
+}
+
+/* Type scale. Locale line-heights live here, not in components. */
+.v3-display {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--v3-ink);
+}
+:lang(en) .v3-display {
+  letter-spacing: -0.01em;
+}
+
+.v3-lede {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--v3-ink-2);
+  text-wrap: balance;
+}
+:lang(en) .v3-lede {
+  line-height: 1.6;
+}
+:lang(ja) .v3-lede {
+  line-height: 1.75;
+  word-break: auto-phrase;
+}
+:lang(ar) .v3-lede {
+  line-height: 1.7;
+  text-align: start;
+}
+
+.v3-body {
+  font-size: 14px;
+  line-height: 1.7;
+}
+:lang(en) .v3-body {
+  line-height: 1.6;
+}
+:lang(ja) .v3-body {
+  line-height: 1.75;
+}
+
+.v3-ui {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.v3-meta {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--v3-ink-2);
+}
+
+.v3-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: var(--v3-ink-3);
+}
+
+.v3-mono {
+  font-family: var(--dt-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairlines: two shapes only — full-bleed bottom, and inset top. */
+.v3-hairline-b {
+  box-shadow: inset 0 -1px 0 var(--v3-line);
+}
+.v3-hairline-t {
+  position: relative;
+}
+.v3-hairline-t::before {
+  content: '';
+  position: absolute;
+  inset-inline: 12px;
+  top: 0;
+  height: 1px;
+  background: var(--v3-line);
+  pointer-events: none;
 }

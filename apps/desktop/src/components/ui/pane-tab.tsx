@@ -244,10 +244,12 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
 ) {
   return (
     <div
-      // 36px bar on the sidebar surface with a single bottom hairline — the
-      // strip is the only seam, tabs never paint their own rules.
+      // v3 chrome: 30px strip (34px title row above it = one 64px band, one
+      // bottom hairline — the strip is the only seam, tabs never paint their
+      // own rules). Height reads the shell-published var; windows without the
+      // shell (popouts) fall back to the same 30px.
       className={cn(
-        'group/pane-header relative flex h-9 shrink-0 select-none border-b border-(--ui-stroke-secondary) bg-(--ui-sidebar-surface-background) [-webkit-app-region:no-drag] [--pane-tab-active-bg:var(--ui-bg-editor)]',
+        'group/pane-header relative flex h-[var(--v3-tab-strip-height,1.875rem)] shrink-0 select-none border-b border-(--ui-stroke-secondary) bg-(--ui-sidebar-surface-background) [-webkit-app-region:no-drag] [--pane-tab-active-bg:var(--ui-bg-editor)]',
         className
       )}
       ref={ref}

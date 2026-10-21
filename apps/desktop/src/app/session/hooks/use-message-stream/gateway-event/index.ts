@@ -2,7 +2,7 @@ import { registryBackendScopeKey } from '@fulilian/shared'
 import { useCallback, useEffect, useRef } from 'react'
 
 import type { GatewayEventPayload } from '@/lib/chat-messages'
-import { parseGatewayEvent, type ParsedGatewayEvent } from '@/lib/chat-messages/gateway-event-schema'
+import { parseGatewayEvent } from '@/lib/chat-messages/gateway-event-schema'
 import {
   approvalReplaySessionId,
   resolveGatewayEventSessionId,
@@ -222,6 +222,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
       // instead of the raw type/payload pair. Events without a type can't be
       // routed or normalized — drop them here, at the only entry point.
       const parsed = parseGatewayEvent(event)
+
       if (!parsed) {
         return
       }

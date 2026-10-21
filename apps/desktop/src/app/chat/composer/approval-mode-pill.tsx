@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
-import { Zap, ZapFilled } from '@/lib/icons'
+import { ShieldCheck } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import {
   $approvalModes,
@@ -15,11 +15,12 @@ import { $gateway } from '@/store/gateway'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 
 /**
- * The composer status-area's approval-mode indicator (R5): the current GLOBAL
- * `approvals.mode` for the active profile, rendered as a pill in the controls
- * row beside the model picker. Click cycles manual → smart → off; Shift+Tab
- * cycles through the shared keybind layer — the pill's tooltip surfaces that
- * chord via TipKeybindLabel so the two doors read as one control.
+ * The composer's permission chip (R5): the current GLOBAL `approvals.mode` for
+ * the active profile, rendered in the control row's LEFT zone beside the attach
+ * (`+`) button — v3 §8.5's `[+] [只读 · 取证]` slot. Click cycles
+ * manual → smart → off; Shift+Tab cycles through the shared keybind layer — the
+ * chip's tooltip surfaces that chord via TipKeybindLabel so the two doors read
+ * as one control.
  *
  * SCOPE HONESTY (B13): the mode is a profile-level config key that every
  * session, the CLI, and cron obey. Every label and aria-string here comes from
@@ -72,17 +73,21 @@ export function ApprovalModePill({ disabled = false }: { disabled?: boolean }) {
     >
       <button
         aria-label={copy.ariaLabel(label)}
+        // v3 §8.5 left zone: the permission chip — 26px, radius 6, shield 13 +
+        // label 12. It stays a plain toggle: click cycles, Shift+Tab cycles
+        // through the shared keybind layer, and the tooltip carries both.
         className={cn(
-          'flex h-(--composer-control-size) shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 text-[0.6875rem] font-medium transition-colors',
+          'flex h-[26px] shrink-0 cursor-pointer items-center gap-1 rounded-md border border-transparent px-1.5 text-xs font-medium transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--v3-line-strong)',
           mode === 'off'
-            ? 'bg-(--chrome-action-hover) text-foreground'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            ? 'bg-(--v3-hover) text-(--v3-ink)'
+            : 'text-(--v3-ink-2) hover:bg-(--v3-hover) hover:text-(--v3-ink)'
         )}
         disabled={disabled || !gateway}
         onClick={cycle}
         type="button"
       >
-        {mode === 'off' ? <ZapFilled className="size-3" /> : <Zap className="size-3 opacity-70" />}
+        <ShieldCheck className="size-[13px] shrink-0" />
         <span className="max-w-16 truncate">{label}</span>
       </button>
     </Tip>

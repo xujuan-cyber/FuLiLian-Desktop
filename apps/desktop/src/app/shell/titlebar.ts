@@ -1,6 +1,34 @@
 import type { FulilianConnection } from '@/global'
 
 export const TITLEBAR_HEIGHT = 34
+
+/**
+ * The zone tab strip's row height (v3). The chrome is TWO rows that read as
+ * one: this 34px title row plus a 30px tab row, sharing one surface and one
+ * hairline at the bottom — never a rule between them (design §8.1 / §4.3).
+ *
+ * A single 44px row (design's ideal) would require hoisting every zone's tab
+ * strip out of the pane tree: strips are per-zone (split tiles each own one,
+ * each independently hideable, each a drag/drop target). Merging them into the
+ * window row is a pane-shell re-architecture, not a restyle — so the shipped
+ * shape is the 34+30 = 64px fallback the plan authorises.
+ */
+export const TITLEBAR_TAB_STRIP_HEIGHT = 30
+
+/** Total chrome height — the value `--v3-chrome-height` publishes. */
+export const TITLEBAR_CHROME_HEIGHT = TITLEBAR_HEIGHT + TITLEBAR_TAB_STRIP_HEIGHT
+
+/**
+ * Brand lane: the sidebar column, so brand and sidebar rows share one axis.
+ * MUST match the CSS `--sidebar-width` (14.8125rem = 237px) — the lane is the
+ * window's leading sidebar-width, and the tool clusters start after it. If the
+ * sidebar ever widens (v3 target 252), change both together.
+ */
+export const TITLEBAR_BRAND_WIDTH = 237
+
+/** Gap between the brand lane and the first left-cluster tool. */
+export const TITLEBAR_BRAND_GAP = 8
+
 export const MACOS_TRAFFIC_LIGHTS_HEIGHT = 14
 /** Titlebar tool hit target (both axes). */
 export const TITLEBAR_CONTROL_SIZE = 24
@@ -93,17 +121,23 @@ export function titlebarControlsPosition(
   isFullscreen = false
 ) {
   const top = Math.max(0, TITLEBAR_CONTROLS_TOP)
+  // The brand lane owns the window's leading 252px (design §8.1), so the tool
+  // cluster starts after it on every platform — otherwise the two overlap.
+  const brandEdge = TITLEBAR_BRAND_WIDTH + TITLEBAR_BRAND_GAP
 
   // No left-side native controls to dodge:
   //   - Windows/Linux: native min/max/close render on the right via titleBarOverlay.
   //   - macOS fullscreen: traffic lights are hidden.
-  // In both cases, pin the cluster to the edge with a small inset.
+  // In both cases, pin the cluster to the brand lane's trailing edge.
   if (windowButtonPosition === null || isFullscreen) {
-    return { left: TITLEBAR_EDGE_INSET, top }
+    return { left: brandEdge, top }
   }
 
   return {
-    left: (windowButtonPosition?.x ?? TITLEBAR_FALLBACK_WINDOW_BUTTON_X) + TITLEBAR_CONTROL_OFFSET_X,
+    left: Math.max(
+      brandEdge,
+      (windowButtonPosition?.x ?? TITLEBAR_FALLBACK_WINDOW_BUTTON_X) + TITLEBAR_CONTROL_OFFSET_X
+    ),
     top
   }
 }

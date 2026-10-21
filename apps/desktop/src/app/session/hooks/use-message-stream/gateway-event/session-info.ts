@@ -408,6 +408,7 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
 
   if (parsed.kind === 'usage_update') {
     const payload = parsed.payload
+
     // Live usage tick emitted while a turn is mid-flight (see tui_gateway
     // _start_usage_ticker) so the status-bar context window tracks growth
     // during the turn instead of only jumping at message.complete.

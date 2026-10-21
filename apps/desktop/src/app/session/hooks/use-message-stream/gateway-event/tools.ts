@@ -1,3 +1,4 @@
+import type { GatewayEventPayload } from '@/lib/chat-messages'
 import { invalidateSlashCompletions } from '@/lib/slash-completion-cache'
 import { refreshBackgroundProcesses } from '@/store/composer-status'
 import { flashPetActivity, setPetActivity } from '@/store/pet'
@@ -10,7 +11,6 @@ import { notifyWorkspaceChanged, toolChangedPath, toolMayMutateFiles } from '@/s
 
 import { SUBAGENT_EVENT_TYPES, toTodoPayload } from '../utils'
 
-import type { GatewayEventPayload } from '@/lib/chat-messages'
 import type { GatewayEventContext } from './types'
 
 /** tool.generating / tool.start / tool.progress / tool.complete / subagent.*. */
@@ -70,6 +70,7 @@ export function handleToolEvent(ctx: GatewayEventContext): boolean {
 
   if (parsed.kind === 'tool_call_update' && parsed.type === 'tool.complete') {
     const toolPayload = parsed.payload
+
     if (sessionId) {
       flushQueuedDeltas(sessionId)
       upsertToolCall(

@@ -25,6 +25,7 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
 
   if (parsed.kind === 'desktop' && parsed.type === 'status.update') {
     const payload = parsed.payload
+
     if (sessionId && payload?.kind === 'compacting') {
       setSessionCompacting(sessionId, true)
       compactedTurnRef.current.add(sessionId)
@@ -44,6 +45,7 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
 
   if (parsed.kind === 'desktop' && parsed.type === 'review.summary') {
     const payload = parsed.payload
+
     // Self-improvement background review saved something to memory/skills
     // and emitted a persistent summary (Python formats it as
     // "💾 Self-improvement review: …"). The CLI prints this via

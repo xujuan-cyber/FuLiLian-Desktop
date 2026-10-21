@@ -325,7 +325,11 @@ export function useStatusbarItems({
     return {
       className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
       detail: status.detail,
-      hidden: status.unknown,
+      // v3 §1.5: the version hash never parks on the canvas — About owns it.
+      // The item only surfaces while there is something to act on (an update
+      // available or an apply in flight); the rest of the time it is hidden
+      // outright, which beats a toggle the user has to find.
+      hidden: status.unknown || !(status.hasUpdate || applying),
       icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
       id: 'version-client',
       label: status.label,
@@ -371,7 +375,7 @@ export function useStatusbarItems({
 
     return {
       className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
-      hidden: status.unknown,
+      hidden: status.unknown || !(status.hasUpdate || applying),
       icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
       id: 'version-backend',
       label: status.label,

@@ -4,10 +4,10 @@ import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useCallback, u
 import { useNavigate } from 'react-router'
 
 import { composerFloatingStrip } from '@/app/chat/composer/composer-dock'
-import { useTourMarker } from '@/app/chat/tour-marker'
-import { openSession } from '@/app/open-session'
-import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { sessionContainerKind } from '@/app/chat/sidebar/container-kind'
+import { useTourMarker } from '@/app/chat/tour-marker'
+import { useHudComposerDrag } from '@/app/hud/composer-drag'
+import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
 import { useI18n } from '@/i18n'
@@ -31,6 +31,7 @@ import { $threadScrolledUp } from '@/store/thread-scroll'
 import { $autoSpeakReplies } from '@/store/voice-prefs'
 import { useTheme } from '@/themes'
 
+import { ApprovalModePill } from './approval-mode-pill'
 import { AttachmentList } from './attachments'
 import {
   acceptsTriggerCompletion,
@@ -39,6 +40,7 @@ import {
   type QueueEditState,
   slashArgStage
 } from './composer-utils'
+import { ContainerPills } from './container-pills'
 import { ContextMenu } from './context-menu'
 import { COMPOSER_AREAS, runComposerMiddleware } from './contrib'
 import { ComposerControls } from './controls'
@@ -47,8 +49,6 @@ import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-aff
 import { markActiveComposer, onComposerAttachImagesRequest } from './focus'
 import { HelpHint } from './help-hint'
 import { useAtCompletions } from './hooks/use-at-completions'
-import { useDollarCompletions } from './hooks/use-dollar-completions'
-import { useHashCompletions } from './hooks/use-hash-completions'
 import { useComposerBranch } from './hooks/use-composer-branch'
 import { useComposerDraft } from './hooks/use-composer-draft'
 import { useComposerDrop } from './hooks/use-composer-drop'
@@ -62,7 +62,9 @@ import { triggerKeyUpHandler, useComposerTrigger } from './hooks/use-composer-tr
 import { useComposerUndo } from './hooks/use-composer-undo'
 import { useComposerUrlDialog } from './hooks/use-composer-url-dialog'
 import { useComposerVoice } from './hooks/use-composer-voice'
+import { useDollarCompletions } from './hooks/use-dollar-completions'
 import { useEmojiCompletions } from './hooks/use-emoji-completions'
+import { useHashCompletions } from './hooks/use-hash-completions'
 import { useComposerMicroActions } from './hooks/use-micro-actions'
 import { useSlashCompletions } from './hooks/use-slash-completions'
 import { useSessionStatusPresence } from './hooks/use-status-presence'
@@ -81,7 +83,6 @@ import {
 import { useComposerScope } from './scope'
 import { ComposerStatusStack } from './status-stack'
 import { CodingStatusRow } from './status-stack/coding-row'
-import { ContainerPills } from './container-pills'
 import { SuggestionPills } from './suggestion-pills'
 import { extractClipboardImageBlobs, openDirectiveScope } from './text-utils'
 import { ComposerTriggerPopover } from './trigger-popover'
@@ -113,8 +114,13 @@ export function ChatBar({
   onRemoveAttachment,
   onSteer,
   onSubmit: onSubmitProp,
-  onTranscribeAudio
+  onTranscribeAudio,
+  variant = 'docked'
 }: ChatBarProps) {
+  // Where this bar lives (v3 §8.3/§8.5). `inline` is the empty-state card in the
+  // intro flow: static, column-width, no bottom mask, no scroll clearance.
+  // Everything below the presentation layer is identical in both variants.
+  const inline = variant === 'inline'
   const hudMode = useStore($hudMode)
   const hudWindowing = window.fulilianDesktop?.hud?.windowing
   const hudNativeDrag = hudMode && hudWindowing?.nativeDrag === true
@@ -353,8 +359,16 @@ export function ChatBar({
     composerRef,
     composerSurfaceRef,
     editorRef,
+    inline,
     poppedOut
   })
+
+  // v3 §8.5: the card is two rows — the text on top, a 32px control row beneath
+  // (left: attach + permission · right: model · voice · send). The HUD is a
+  // ~470px Spotlight bar where a second row would eat the whole window, so it
+  // keeps the compact single-row arrangement (and its `stacked` fallback).
+  const twoRow = !hudMode
+  const inputOwnsRow = twoRow || stacked
 
   const hasComposerPayload = hasText || attachments.length > 0
   const canSubmit = busy || hasComposerPayload
@@ -411,6 +425,7 @@ export function ChatBar({
   // active chat; an already-open tile is fronted instead (open-session.ts owns
   // the intent table).
   const navigate = useNavigate()
+
   const openDraftSessionJumper = useCallback(
     (jumpSessionId: string) => openSession(jumpSessionId, navigate, 'stack'),
     [navigate]
@@ -1073,18 +1088,40 @@ export function ChatBar({
     />
   )
 
+  // v3 §8.5 zones. Left: attach (`+`) · contributed leading actions ·
+  // permission chip. Right: contributed actions · model · voice · send.
+  // The permission chip keeps the R5 approval control's exact behaviour —
+  // only its home and skin changed.
+  const leftZone = (
+    <>
+      {contextMenu}
+      <ContribSlot area={COMPOSER_AREAS.leading} />
+      {minimal ? null : <ApprovalModePill disabled={disabled} />}
+    </>
+  )
+
+  const rightZone = (
+    <>
+      <ContribSlot area={COMPOSER_AREAS.actions} />
+      {controls}
+    </>
+  )
+
   const input = (
-    <div className={cn('relative', stacked ? 'w-full' : 'min-w-(--composer-input-inline-min-width) flex-1')}>
+    <div className={cn('relative', inputOwnsRow ? 'w-full' : 'min-w-(--composer-input-inline-min-width) flex-1')}>
       <div
         aria-disabled={inputDisabled ? true : undefined}
         aria-label={t.composer.message}
         autoCapitalize="off"
         autoCorrect="off"
         className={cn(
-          'min-h-[1.625rem] min-h-(--composer-input-min-height) max-h-(--composer-input-max-height) cursor-text overflow-y-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] bg-transparent pb-1 pr-1 pt-1 text-sm leading-[1.6] text-foreground outline-none disabled:cursor-not-allowed',
+          // v3 §8.5: 14/1.6 text, 42px floor, internal scroll past 8 lines
+          // (8 × 22.4px + 8px padding ≈ 187px, so 12rem holds exactly eight).
+          'cursor-text overflow-y-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere] bg-transparent px-0 pb-1 pt-1 text-sm leading-[1.6] text-foreground outline-none disabled:cursor-not-allowed',
           '**:data-ref-text:cursor-default',
-          stacked && 'pl-3',
-          stacked ? 'w-full' : 'min-w-(--composer-input-inline-min-width) flex-1',
+          inputOwnsRow
+            ? 'min-h-[42px] max-h-[12rem] w-full'
+            : 'min-h-(--composer-input-min-height) max-h-(--composer-input-max-height) min-w-(--composer-input-inline-min-width) flex-1',
           // Inside the native Wayland HUD drag region: a drag region swallows
           // the page's mouse input whole, so the input must opt back out or it
           // becomes unclickable. Buttons use the global no-drag rule.
@@ -1203,12 +1240,20 @@ export function ChatBar({
             'z-30 flex flex-col',
             poppedOut
               ? 'fixed max-w-[calc(100vw-1.5rem)]'
-              : // Docked cap: 830 = the 820px reading column + the 10px grab margin the dock adds.
-                'absolute bottom-0 left-1/2 max-w-[830px] -translate-x-1/2'
+              : inline
+                ? // v3 §8.3: the empty-state card is IN FLOW under the greeting —
+                  // static, full column width, nothing to clear and nothing to
+                  // mask. Centred by the intro's own column, so no translate.
+                  'relative w-full max-w-[var(--v3-content-width)]'
+                : // Docked cap: 760 reading column + the 10px grab margin the dock adds.
+                  // `--composer-width` is overridden locally so the dock's own
+                  // width rule (styles.css) resolves against the v3 measure.
+                  'absolute bottom-0 left-1/2 max-w-[calc(var(--v3-content-width)+10px)] -translate-x-1/2 [--composer-width:var(--v3-content-width)]'
           )}
           data-popped-out={poppedOut ? '' : undefined}
           data-slot="composer-dock"
           data-thread-scrolled-up={scrolledUp ? '' : undefined}
+          data-variant={variant}
           // Measured for the thread's bottom clearance: the dock is the box
           // that contains the strips, the status stack, AND the composer, so
           // one measurement covers everything the thread must clear.
@@ -1221,13 +1266,18 @@ export function ChatBar({
                   // A compact one-sentence width when floating.
                   ['--composer-popout-width' as string]: `${POPOUT_WIDTH_REM}rem`
                 }
-              : undefined
+              : inline
+                ? // Overrides the dock's styles.css width (that rule is the
+                  // docked measurement contract) and drops the bottom mask pad:
+                  // an in-flow card owns no clearance band.
+                  { paddingBottom: 0, width: '100%' }
+                : undefined
           }
         >
           {/* Aligned to the composer SURFACE, which sits inside the composer's
               5px transparent grab margin — so both strips carry the same inset
               and share one left edge with it. */}
-          <div className={cn(composerFloatingStrip, 'px-[5px] pb-1.5 empty:hidden')}>
+          <div className={cn(composerFloatingStrip, inline ? 'px-0' : 'px-[5px]', 'pb-1.5 empty:hidden')}>
             <ActionBadges sessionId={statusSessionId} />
             <SuggestionPills sessionId={statusSessionId} />
             {/* Work-mode metadata pills (§7 映射行) — static placeholders that
@@ -1292,7 +1342,7 @@ export function ChatBar({
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            onPointerDown={!hudMode && popoutAllowed ? onComposerGesturePointerDown : undefined}
+            onPointerDown={!hudMode && !inline && popoutAllowed ? onComposerGesturePointerDown : undefined}
             onPointerDownCapture={hudMode ? onHudDragPointerDown : undefined}
             onSubmit={e => {
               e.preventDefault()
@@ -1304,6 +1354,10 @@ export function ChatBar({
               submitDraft()
             }}
             ref={composerRef}
+            // Inline: the 5px transparent grab margin exists for the peel-out
+            // gesture, which an in-flow card doesn't offer — dropping it keeps
+            // the visible card exactly at the column measure.
+            style={inline ? { paddingInline: 0 } : undefined}
           >
             {isHelpHint && <HelpHint />}
             {trigger && !argStageEmpty && (
@@ -1323,7 +1377,7 @@ export function ChatBar({
                 scope={trigger.scope}
               />
             )}
-            {!poppedOut && (
+            {!poppedOut && !inline && (
               <div
                 className="pointer-events-none absolute inset-0 rounded-[inherit]"
                 style={{ background: COMPOSER_FADE_BACKGROUND }}
@@ -1334,7 +1388,7 @@ export function ChatBar({
               element's hover/cursor — grab cursor + a diagonal hatch (/////)
               appear when you hover the draggable margin, never over the input.
               The hatch pattern + opacity ladder live in styles.css. */}
-            {popoutAllowed && (
+            {popoutAllowed && !inline && (
               <div
                 aria-hidden
                 className={cn('pointer-events-auto absolute inset-0', dragging ? 'cursor-grabbing' : 'cursor-grab')}
@@ -1353,7 +1407,7 @@ export function ChatBar({
                   // track past the surface — and every `w-full` child (the fade,
                   // the input/controls row) laid out against that phantom width
                   // and got clipped by overflow-hidden, send button first.
-                  'group/composer-surface relative z-4 isolate grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden rounded-[inherit] border border-(--dt-composer-ring) shadow-signature',
+                  'group/composer-surface relative z-4 isolate grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden rounded-[inherit] border border-(--v3-line-strong) shadow-signature',
                   COMPOSER_DROP_FADE_CLASS,
                   dragActive && COMPOSER_DROP_ACTIVE_CLASS
                 )}
@@ -1375,7 +1429,10 @@ export function ChatBar({
                 />
                 <div
                   className={cn(
-                    'relative z-1 flex min-h-0 w-full flex-col gap-(--composer-row-gap) overflow-hidden rounded-[inherit] px-3.5 py-3 transition-opacity duration-200 ease-out',
+                    // v3 §3.2 card padding 14/14/10. The HUD keeps its tighter
+                    // 12px block padding — it is a 320px-tall window.
+                    'relative z-1 flex min-h-0 w-full flex-col gap-(--composer-row-gap) overflow-hidden rounded-[inherit] px-3.5 transition-opacity duration-200 ease-out',
+                    twoRow ? 'pb-2.5 pt-3.5' : 'py-3',
                     scrolledUp
                       ? 'opacity-30 group-hover/composer:opacity-100 group-focus-within/composer-surface:opacity-100'
                       : 'opacity-100'
@@ -1415,21 +1472,33 @@ export function ChatBar({
                   {attachments.length > 0 && <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />}
                   <div
                     className={cn(
-                      'grid min-h-8 w-full',
-                      stacked
-                        ? 'grid-cols-[auto_1fr] gap-(--composer-row-gap) [grid-template-areas:"input_input"_"menu_controls"]'
-                        : 'grid-cols-[auto_1fr_auto] items-center gap-1.5 [grid-template-areas:"menu_input_controls"]'
+                      'grid w-full',
+                      twoRow
+                        ? 'min-h-8 grid-cols-[minmax(0,1fr)] gap-x-1.5 gap-y-2 [grid-template-areas:"input"_"footer"]'
+                        : stacked
+                          ? 'min-h-8 grid-cols-[auto_1fr] gap-(--composer-row-gap) [grid-template-areas:"input_input"_"menu_controls"]'
+                          : 'min-h-8 grid-cols-[auto_1fr_auto] items-center gap-1.5 [grid-template-areas:"menu_input_controls"]'
                     )}
                   >
-                    <div className="flex translate-y-[3px] items-start gap-1.5 self-start [grid-area:menu]">
-                      {contextMenu}
-                      <ContribSlot area={COMPOSER_AREAS.leading} />
-                    </div>
+                    {!twoRow && (
+                      <div className="flex translate-y-[3px] items-start gap-1.5 self-start [grid-area:menu]">
+                        {leftZone}
+                      </div>
+                    )}
                     <div className="min-w-0 [grid-area:input]">{input}</div>
-                    <div className="flex min-w-0 items-center justify-end gap-1.5 [grid-area:controls]">
-                      <ContribSlot area={COMPOSER_AREAS.actions} />
-                      {controls}
-                    </div>
+                    {twoRow ? (
+                      // Three zones on one 32px line: attach + permission on the
+                      // left, an elastic gap, model · voice · send on the right.
+                      // Wraps instead of overflowing under 720px.
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 [grid-area:footer]">
+                        <div className="flex min-w-0 items-center gap-1.5">{leftZone}</div>
+                        <div className="flex min-w-0 items-center justify-end gap-1.5">{rightZone}</div>
+                      </div>
+                    ) : (
+                      <div className="flex min-w-0 items-center justify-end gap-1.5 [grid-area:controls]">
+                        {rightZone}
+                      </div>
+                    )}
                   </div>
                   <ContribSlot area={COMPOSER_AREAS.bottom} />
                 </div>
@@ -1440,7 +1509,7 @@ export function ChatBar({
               for the same reason as the micro actions — it must not fall inside
               the pop-out drag region. Same px as the strip above, so the two
               bracket the composer on one vertical line. */}
-          <div className={cn(composerFloatingStrip, 'px-[5px] pt-1.5 empty:hidden')}>
+          <div className={cn(composerFloatingStrip, inline ? 'px-0' : 'px-[5px]', 'pt-1.5 empty:hidden')}>
             <ContribSlot area={COMPOSER_AREAS.underside} />
           </div>
         </div>
@@ -1462,7 +1531,7 @@ export function ChatBarFallback() {
   return (
     <div
       className={cn(
-        'group/composer absolute bottom-0 left-1/2 z-30 w-[min(var(--composer-width),calc(100%-2rem))] max-w-[820px] -translate-x-1/2 rounded-[var(--radius-input)] pt-2 pb-[var(--composer-shell-pad-block-end)]',
+        'group/composer absolute bottom-0 left-1/2 z-30 w-[min(var(--composer-width),calc(100%-2rem))] max-w-[var(--v3-content-width)] -translate-x-1/2 rounded-[var(--radius-input)] pt-2 pb-[var(--composer-shell-pad-block-end)]',
         'bg-linear-to-b from-transparent to-background/55'
       )}
       data-slot="composer-root"

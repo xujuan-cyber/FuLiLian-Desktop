@@ -1,49 +1,61 @@
 import { normalize } from '@/lib/text'
 
-import type { Locale } from './types'
+import type { Locale, TextDirection } from './types'
 
-export const DEFAULT_LOCALE: Locale = 'en'
+// Fulilian ships Chinese-first: the default UI language is Simplified Chinese,
+// and the picker still allows switching to any other locale.
+export const DEFAULT_LOCALE: Locale = 'zh'
 
 export const LOCALE_OPTIONS = [
   {
     id: 'en',
+    dir: 'ltr',
     name: 'English',
     englishName: 'English',
     configValue: 'en'
   },
   {
     id: 'zh',
+    dir: 'ltr',
     name: '简体中文',
     englishName: 'Simplified Chinese',
     configValue: 'zh'
   },
   {
     id: 'zh-hant',
+    dir: 'ltr',
     name: '繁體中文',
     englishName: 'Traditional Chinese',
     configValue: 'zh-hant'
   },
   {
     id: 'ja',
+    dir: 'ltr',
     name: '日本語',
     englishName: 'Japanese',
     configValue: 'ja'
   },
   {
     id: 'ar',
+    dir: 'rtl',
     name: 'العربية',
     englishName: 'Arabic',
     configValue: 'ar'
   }
-] as const satisfies readonly { configValue: string; englishName: string; id: Locale; name: string }[]
+] as const satisfies readonly { configValue: string; dir: TextDirection; englishName: string; id: Locale; name: string }[]
 
 // `name` is the endonym (native name) shown in the picker so users recognize
 // their language regardless of the current UI language. No country flags:
 // languages are not countries. `englishName` is search-only (not shown) so an
 // English speaker can type "japanese"/"traditional" to filter the list.
-export const LOCALE_META: Record<Locale, { name: string; englishName: string }> = Object.fromEntries(
-  LOCALE_OPTIONS.map(locale => [locale.id, { name: locale.name, englishName: locale.englishName }])
-) as Record<Locale, { name: string; englishName: string }>
+export const LOCALE_META: Record<Locale, { dir: TextDirection; name: string; englishName: string }> = Object.fromEntries(
+  LOCALE_OPTIONS.map(locale => [locale.id, { dir: locale.dir, name: locale.name, englishName: locale.englishName }])
+) as Record<Locale, { dir: TextDirection; name: string; englishName: string }>
+
+/** Writing direction of a locale. Arabic is the only RTL language we ship. */
+export function localeDir(locale: Locale): TextDirection {
+  return LOCALE_META[locale]?.dir ?? 'ltr'
+}
 
 const LOCALE_ALIASES: Record<string, Locale> = {
   en: 'en',

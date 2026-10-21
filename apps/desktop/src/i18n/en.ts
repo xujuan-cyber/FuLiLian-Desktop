@@ -602,22 +602,27 @@ export const en: Translations = {
       afternoon: 'Good afternoon',
       evening: 'Good evening'
     },
+    lede: 'A goal, a piece of evidence, or a half-formed idea. I read the context first, then take the next step.',
     chips: {
-      programming: 'Continue coding',
-      programmingTip: 'Focus the composer and keep working',
-      forensics: 'New forensics case',
-      ctf: 'Take on a CTF challenge',
-      idle: 'Idle-time task',
-      placeholderTip: 'Unavailable until the kind data layer lands'
+      programming: 'Continue case',
+      programmingTip: 'Focus the composer and pick up where you left off',
+      forensics: 'New evidence',
+      ctf: 'Take a CTF',
+      idle: 'Idle task',
+      placeholderTip: 'Available once evidence data is connected'
     },
     chipsNote: 'Forensics, CTF and idle entries are placeholders until the kind data layer lands.',
+    section: {
+      title: 'Start from',
+      more: 'Templates'
+    },
     modeCards: {
-      forensics: 'Forensics case',
-      forensicsDesc: 'Evidence with integrity checks, audit trail and report drafts.',
-      ctf: 'CTF challenge',
-      ctfDesc: 'Flag vault, submissions and countdown for one challenge.',
-      project: 'Coding project',
-      projectDesc: 'The full workspace: repo, terminal, preview and git changes.'
+      forensics: 'Evidence cases',
+      forensicsDesc: 'Integrity checks, audit trail, and report drafts in one chain.',
+      ctf: 'CTF challenges',
+      ctfDesc: 'Flag vault, submission history, and a timer per challenge.',
+      project: 'Code projects',
+      projectDesc: 'One workspace: repo, terminal, preview, and git changes.'
     }
   },
 

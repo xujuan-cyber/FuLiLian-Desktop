@@ -23,6 +23,8 @@ interface UseComposerMetricsArgs {
   composerRef: RefObject<HTMLFormElement | null>
   composerSurfaceRef: RefObject<HTMLDivElement | null>
   editorRef: RefObject<HTMLDivElement | null>
+  /** The empty-state card: in the flow, so it owns no bottom clearance. */
+  inline?: boolean
   poppedOut: boolean
 }
 
@@ -62,6 +64,7 @@ export function useComposerMetrics({
   composerRef,
   composerSurfaceRef,
   editorRef,
+  inline = false,
   poppedOut
 }: UseComposerMetricsArgs): UseComposerMetricsResult {
   const [expanded, setExpanded] = useState(false)
@@ -111,9 +114,11 @@ export function useComposerMetrics({
   const lastFitRef = useRef(ROOMY)
   // Mirrored into a ref so `syncComposerMetrics` stays referentially stable —
   // it's the shared ResizeObserver's handler, and a new identity every render
-  // would re-register the observation.
-  const poppedOutRef = useRef(poppedOut)
-  poppedOutRef.current = poppedOut
+  // would re-register the observation. `inline` joins `poppedOut` because an
+  // in-flow card must not reserve clearance either: the flow already holds its
+  // space, so publishing a height would double-count it.
+  const floatingRef = useRef(poppedOut || inline)
+  floatingRef.current = poppedOut || inline
 
   const syncComposerMetrics = useCallback(() => {
     const composer = composerRef.current
@@ -125,12 +130,12 @@ export function useComposerMetrics({
       return
     }
 
-    // Floating composer is out of the thread's flow — it must not reserve any
-    // bottom clearance. Zero the measured vars so the thread reclaims the space.
-    // Read through a ref so the callback stays stable, and read THIS surface's
-    // own state: pop-out is per layout zone, so a float in the left split must
-    // not zero the right split's clearance.
-    if (poppedOutRef.current) {
+    // Floating / in-flow composer is out of the thread's anchored flow — it must
+    // not reserve any bottom clearance. Zero the measured vars so the thread
+    // reclaims the space. Read through a ref so the callback stays stable, and
+    // read THIS surface's own state: pop-out is per layout zone, so a float in
+    // the left split must not zero the right split's clearance.
+    if (floatingRef.current) {
       lastBucketedHeightRef.current = 0
       lastBucketedSurfaceHeightRef.current = 0
       setSurfaceVar(composer, COMPOSER_HEIGHT_VAR, '0px')
@@ -191,7 +196,7 @@ export function useComposerMetrics({
   // it so the thread reclaims the bottom space.
   useEffect(() => {
     syncComposerMetrics()
-  }, [poppedOut, syncComposerMetrics])
+  }, [inline, poppedOut, syncComposerMetrics])
 
   useEffect(() => {
     // Resolve the owning surface while the composer is still attached; the

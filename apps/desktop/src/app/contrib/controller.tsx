@@ -6,7 +6,13 @@ import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
+import {
+  TITLEBAR_CHROME_HEIGHT,
+  TITLEBAR_HEIGHT,
+  TITLEBAR_TAB_STRIP_HEIGHT
+} from '@/app/shell/titlebar'
 import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
+import { BrandMark } from '@/components/brand-mark'
 import { IdleMount } from '@/components/idle-mount'
 import { $layoutEditMode, toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { allPaneIds, group, groupLeafIds, split } from '@/components/pane-shell/tree/model'
@@ -40,7 +46,7 @@ import { Slot } from '@/contrib/react/slot'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { registry } from '@/contrib/registry'
 import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
-import { translateNow } from '@/i18n'
+import { translateNow, useI18n } from '@/i18n'
 import { NEW_SESSION_TITLE, sessionTitle as storedSessionTitle } from '@/lib/chat-runtime'
 import { Download, FileText, LayoutDashboard, PanelBottom, PanelTop, Terminal, Upload, Zap } from '@/lib/icons'
 import { type KeybindContribution, KEYBINDS_AREA } from '@/lib/keybinds/actions'
@@ -109,6 +115,7 @@ import { ContribWiring, WiredPane } from './wiring'
 const BrowserPopoutShell = lazy(async () => ({
   default: (await import('../chat/browser-popout-shell')).BrowserPopoutShell
 }))
+
 const SessionChangesPanel = lazy(async () => ({
   default: (await import('../chat/right-rail/session-changes')).SessionChangesPanel
 }))
@@ -852,6 +859,7 @@ function TitlebarSlot({ area, className, style }: TitlebarSlotProps) {
 }
 
 export function ContribController() {
+  const { t } = useI18n()
   const sidebarOpen = useStore($sidebarOpen)
   const statusbarVisible = useStore($statusbarVisible)
 
@@ -894,7 +902,18 @@ export function ContribController() {
           // painted by <body> is the only thing between the page and the
           // vibrancy material.
           data-contrib-shell=""
-          style={{ '--titlebar-height': '0px' } as CSSProperties}
+          style={
+            {
+              '--titlebar-height': '0px',
+              // v3 chrome (design §3.1 / §8.1): the title row and the zone tab
+              // row are ONE 64px band — same surface, one hairline at its
+              // bottom, no rule between the rows. Published as vars so nothing
+              // downstream hardcodes 34/44/64.
+              '--v3-chrome-height': `${TITLEBAR_CHROME_HEIGHT}px`,
+              '--v3-tab-strip-height': `${TITLEBAR_TAB_STRIP_HEIGHT}px`,
+              '--v3-titlebar-row-height': `${TITLEBAR_HEIGHT}px`
+            } as CSSProperties
+          }
         >
           {/* Title bar: fixed chrome outside the grid, composable via slots.
               Layout contract (no contribution can break it):
@@ -908,6 +927,18 @@ export function ContribController() {
                   threading), clamped to clear the REAL TitlebarControls
                   clusters (fixed, z-(--z-titlebar-chrome)); center is truly window-centered. */}
           <div className="relative flex h-[34px] shrink-0 items-center bg-background text-xs">
+            {/* v3 §8.1 brand lane: the window's leading 252px belongs to the
+                mark + wordmark. It sits INSIDE the leading drag strip, so the
+                row still drags by the brand like every native window. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 flex w-[var(--sidebar-width,14.8125rem)] items-center gap-2 px-3"
+            >
+              <BrandMark className="size-4 shrink-0 rounded-[4px]" />
+              <span className="truncate text-[12px] font-semibold text-(--ui-text-primary)">
+                {t.sidebar.brandWordmark}
+              </span>
+            </div>
             {/* Drag strips, AppShell-style: cut to AVOID the fixed control
                 clusters instead of overlapping them — Electron's no-drag
                 carve-out of fixed/transformed elements is unreliable, so a

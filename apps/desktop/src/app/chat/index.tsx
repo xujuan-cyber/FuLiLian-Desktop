@@ -55,9 +55,6 @@ import type { ModelOptionsResponse } from '@/types/fulilian'
 import { primaryRouteSelectedSessionId, routeSessionId } from '../routes'
 import { titlebarHeaderBaseClass, titlebarHeaderShadowClass, titlebarHeaderTitleClass } from '../shell/titlebar'
 
-import { GoalPanel } from './goal-panel'
-import { PresetChip } from './preset-chip'
-
 import { ChatDropOverlay } from './chat-drop-overlay'
 import { ChatSwapOverlay, ChatSyncBadge } from './chat-swap-overlay'
 import { ChatBar, ChatBarFallback } from './composer'
@@ -66,9 +63,11 @@ import { droppedFileInlineRefs } from './composer/inline-refs'
 import { ComposerSurfaceProvider, useComposerScope, useComposerSurfaceId } from './composer/scope'
 import type { ChatBarState } from './composer/types'
 import { ContainerMeta } from './container-meta'
+import { GoalPanel } from './goal-panel'
 import { type DroppedFile, partitionDroppedFiles } from './hooks/use-composer-actions'
 import { type DragKind, useFileDropZone } from './hooks/use-file-drop-zone'
 import { shouldShowIntro } from './intro-visibility'
+import { PresetChip } from './preset-chip'
 import { ProfileTag } from './profile-tag'
 import { isRouteSessionMismatch } from './route-session-state'
 import { useRuntimeMessageRepository } from './runtime-repository'
@@ -613,6 +612,43 @@ const ChatViewContent = memo(function ChatViewContent({
 
   const overlayKind: DragKind = dragKind === 'files' ? 'files' : sessionDragging && !sessionEdgeHover ? 'session' : null
 
+  // v3 §8.3: ONE composer node, two homes. On the empty state it lives INSIDE
+  // the intro (inline, between the lede and the chips) so greeting/lede/input
+  // share one left axis; on a session it stays a sibling of the contain[]
+  // wrapper (docked) because the popped-out floating composer is position:fixed
+  // and would be clipped by that wrapper. The variant switch is what keeps the
+  // fixed-descendant rule intact — inline never renders fixed descendants.
+  const chatBar = showChatBar ? (
+    <Suspense fallback={<ChatBarFallback />}>
+      <ChatBar
+        busy={busy}
+        cwd={currentCwd}
+        disabled={!gatewayOpen}
+        focusKey={activeSessionId}
+        gateway={gateway}
+        maxRecordingSeconds={maxVoiceRecordingSeconds}
+        onAddContextRef={onAddContextRef}
+        onAddUrl={onAddUrl}
+        onAttachDroppedItems={onAttachDroppedItems}
+        onAttachImageBlob={onAttachImageBlob}
+        onAttachPrCommentUrl={onAttachPrCommentUrl}
+        onCancel={onCancel}
+        onPasteClipboardImage={onPasteClipboardImage}
+        onPickFiles={onPickFiles}
+        onPickFolders={onPickFolders}
+        onPickImages={onPickImages}
+        onRemoveAttachment={onRemoveAttachment}
+        onSteer={onSteer}
+        onSubmit={onSubmit}
+        onTranscribeAudio={onTranscribeAudio}
+        queueSessionKey={queueSessionKey}
+        sessionId={activeSessionId}
+        state={chatBarState}
+        variant={showIntro ? 'inline' : 'docked'}
+      />
+    </Suspense>
+  ) : null
+
   return (
     <div
       className={cn(
@@ -660,7 +696,9 @@ const ChatViewContent = memo(function ChatViewContent({
             clampToComposer={showChatBar}
             cwd={currentCwd}
             gateway={gateway}
-            intro={showIntro ? { personality: introPersonality, seed: introSeed } : undefined}
+            intro={
+              showIntro ? { personality: introPersonality, seed: introSeed, composer: chatBar } : undefined
+            }
             loading={threadLoading}
             onBranchInNewChat={onBranchInNewChat}
             onCancel={haltRun}
@@ -713,35 +751,9 @@ const ChatViewContent = memo(function ChatViewContent({
             anchors to the outer relative container instead: docked is absolute
             (identical placement), floating resolves against the viewport. Both
             states stay mounted here, so dock⇄float never remounts the editor. */}
-        {showChatBar && (
-          <Suspense fallback={<ChatBarFallback />}>
-            <ChatBar
-              busy={busy}
-              cwd={currentCwd}
-              disabled={!gatewayOpen}
-              focusKey={activeSessionId}
-              gateway={gateway}
-              maxRecordingSeconds={maxVoiceRecordingSeconds}
-              onAddContextRef={onAddContextRef}
-              onAddUrl={onAddUrl}
-              onAttachDroppedItems={onAttachDroppedItems}
-              onAttachImageBlob={onAttachImageBlob}
-              onAttachPrCommentUrl={onAttachPrCommentUrl}
-              onCancel={onCancel}
-              onPasteClipboardImage={onPasteClipboardImage}
-              onPickFiles={onPickFiles}
-              onPickFolders={onPickFolders}
-              onPickImages={onPickImages}
-              onRemoveAttachment={onRemoveAttachment}
-              onSteer={onSteer}
-              onSubmit={onSubmit}
-              onTranscribeAudio={onTranscribeAudio}
-              queueSessionKey={queueSessionKey}
-              sessionId={activeSessionId}
-              state={chatBarState}
-            />
-          </Suspense>
-        )}
+        {/* Docked home: only when the intro is NOT showing — on the empty
+            state the very same node renders inside the intro (see chatBar). */}
+        {!showIntro && chatBar}
       </ChatRuntimeBoundary>
     </div>
   )

@@ -9,6 +9,9 @@ import type { TipId } from '@/lib/tips/catalog'
 
 export type Locale = 'en' | 'zh' | 'zh-hant' | 'ja' | 'ar'
 
+/** Writing direction applied to `<html dir>`. Arabic is the only RTL locale. */
+export type TextDirection = 'ltr' | 'rtl'
+
 export type ToolTitleKey =
   | 'browser_click'
   | 'browser_fill'
@@ -565,6 +568,7 @@ export interface Translations {
       afternoon: string
       evening: string
     }
+    lede: string
     chips: {
       programming: string
       programmingTip: string
@@ -574,6 +578,10 @@ export interface Translations {
       placeholderTip: string
     }
     chipsNote: string
+    section: {
+      title: string
+      more: string
+    }
     modeCards: {
       forensics: string
       forensicsDesc: string

@@ -35,6 +35,14 @@ export interface ChatBarProps {
   busy: boolean
   disabled: boolean
   focusKey?: string | null
+  /** Where this bar lives (step 20 · v3 §8.3/§8.5).
+   *  - `docked` (default): the session composer — absolutely positioned at the
+   *    bottom of the chat column, reserving scroll clearance via the measured
+   *    height vars.
+   *  - `inline`: the empty-state card in the intro flow — static, full column
+   *    width, no bottom mask, no measured clearance. Mounting is the caller's
+   *    job; the bar itself changes nothing but presentation. */
+  variant?: 'docked' | 'inline'
   maxRecordingSeconds?: number
   state: ChatBarState
   gateway?: FulilianGateway | null

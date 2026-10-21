@@ -598,22 +598,27 @@ export const ja = defineLocale({
       afternoon: 'こんにちは',
       evening: 'こんばんは'
     },
+    lede: '目的でも、証拠でも、まとまっていない考えでも。まず文脈を読み、次の一歩を提案します。',
     chips: {
-      programming: 'プログラミングを続ける',
-      programmingTip: 'コンポーザーにフォーカスして作業を続けます',
-      forensics: '取証案件を新規作成',
-      ctf: 'CTF 問題に取り組む',
-      idle: 'アイドル時タスク',
-      placeholderTip: 'kind データ層の提供まで利用できません'
+      programming: '案件を続ける',
+      programmingTip: '入力欄にフォーカスして続きを入力します',
+      forensics: '証拠を追加',
+      ctf: 'CTF に挑戦',
+      idle: 'すきま作業',
+      placeholderTip: 'データ連携後に利用できます'
     },
     chipsNote: '取証・CTF・アイドル時タスクの入口はプレースホルダーです——kind データ層と共に有効化されます。',
+    section: {
+      title: 'ここから始める',
+      more: 'テンプレート'
+    },
     modeCards: {
-      forensics: '取証案件',
-      forensicsDesc: '証拠の完全性検証、監査ログ、報告書ドラフト。',
+      forensics: '証拠案件',
+      forensicsDesc: '証拠の完全性検証、監査ログ、レポート草案まで一続き。',
       ctf: 'CTF 問題',
-      ctfDesc: '1 問の flag 保管庫・提出履歴・カウントダウン。',
-      project: 'プログラミングプロジェクト',
-      projectDesc: '完全なワークスペース：リポジトリ、ターミナル、プレビュー、git 変更。'
+      ctfDesc: 'flag 保管庫、提出履歴、問題ごとのタイマー。',
+      project: 'コードプロジェクト',
+      projectDesc: 'リポジトリ、ターミナル、プレビュー、git 差分を一画面に。'
     }
   },
 

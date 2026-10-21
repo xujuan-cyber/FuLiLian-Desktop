@@ -26,6 +26,7 @@ export function handleInputRequestEvent(ctx: GatewayEventContext): boolean {
 
   if (parsed.kind === 'elicitation' && parsed.type === 'clarify.request') {
     const payload = parsed.payload
+
     // Surface the clarify tool's overlay. The Python side is blocked on
     // `clarify.respond`, so without this handler the agent would hang
     // forever (see tools/clarify_tool.py + tui_gateway/server.py:_block).
@@ -160,6 +161,7 @@ export function handleInputRequestEvent(ctx: GatewayEventContext): boolean {
 
   if (parsed.kind === 'desktop' && parsed.type === 'clarify.expire') {
     const payload = parsed.payload
+
     if (!sessionId) {
       return true
     }
