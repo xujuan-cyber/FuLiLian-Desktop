@@ -82,7 +82,10 @@ function sessionInfoDescribesSelectedSession(storedSessionId: string | undefined
  * (overlap window during a manual switch) refuses the adoption.
  */
 function maybeRebindPaneToRebuiltRuntime(ctx: GatewayEventContext): boolean {
-  const { deps, explicitSid, isActiveEvent, payload } = ctx
+  // Called only from the `session.info` branch, where the parsed event is
+  // already narrowed to the desktop channel.
+  const { deps, explicitSid, isActiveEvent } = ctx
+  const payload = ctx.parsed.payload as Record<string, unknown> | undefined
 
   if (!explicitSid || isActiveEvent || typeof payload?.stored_session_id !== 'string') {
     return false
@@ -111,7 +114,7 @@ function maybeRebindPaneToRebuiltRuntime(ctx: GatewayEventContext): boolean {
 
 /** session.info / session.usage / session.title. */
 export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
-  const { deps, event, payload, sessionId, explicitSid, isActiveEvent, occurredAt, fromActiveSource } = ctx
+  const { deps, parsed, sessionId, explicitSid, isActiveEvent, occurredAt, fromActiveSource } = ctx
 
   const {
     activeGatewayProfile,
@@ -124,7 +127,8 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
     updateSessionState
   } = deps
 
-  if (event.type === 'session.info') {
+  if (parsed.kind === 'desktop' && parsed.type === 'session.info') {
+    const payload = parsed.payload
     // A rebuilt runtime (mid-conversation model/provider switch) speaks under
     // a NEW session_id. Before scoping anything by isActiveEvent, check
     // whether this event is the rebuilt runtime announcing itself for the
@@ -159,8 +163,8 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
     // gateway may reconcile the foreground cache. Requiring the renderer's
     // source tag prevents an event queued before a profile swap from being
     // attributed to the newly active profile.
-    if (isActiveEvent && typeof payload?.approval_mode === 'string' && event.profile && fromActiveSource()) {
-      reconcileApprovalModeForProfile(event.profile, payload.approval_mode)
+    if (isActiveEvent && typeof payload?.approval_mode === 'string' && parsed.profile && fromActiveSource()) {
+      reconcileApprovalModeForProfile(parsed.profile, payload.approval_mode)
     }
 
     if (apply) {
@@ -171,7 +175,7 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
       // Active-session model/provider still flows through the session state
       // cache via updateSessionState → syncRuntimeMetadataToView below.
 
-      if (typeof payload?.cwd === 'string' && sessionInfoDescribesSelectedSession(payload.stored_session_id)) {
+      if (typeof payload?.cwd === 'string' && typeof payload.stored_session_id === 'string' && sessionInfoDescribesSelectedSession(payload.stored_session_id)) {
         // The active session's agent can relocate itself (new repo/worktree
         // via the terminal). When the SAME active session's cwd actually
         // moves, follow it — refresh the project tree + scope so the sidebar
@@ -234,7 +238,7 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
           branch: statePatch.branch ?? state.branch,
           cwd: statePatch.cwd ?? state.cwd
         }),
-        payload?.stored_session_id || undefined
+        typeof payload?.stored_session_id === 'string' ? payload.stored_session_id : undefined
       )
     }
 
@@ -353,7 +357,7 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
             turnLive: false
           }
         },
-        payload?.stored_session_id || undefined
+        typeof payload?.stored_session_id === 'string' ? payload.stored_session_id : undefined
       )
 
       if (recoveredWithoutPayload) {
@@ -377,13 +381,15 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
     }
 
     if (payload?.usage && (!explicitSid || isActiveEvent)) {
-      setCurrentUsage(current => ({ ...current, ...payload.usage }))
+      setCurrentUsage(current => ({ ...current, ...(payload.usage ?? {}) }))
     }
 
-    requestDesktopOnboardingForCredentialWarning(payload?.credential_warning)
+    requestDesktopOnboardingForCredentialWarning(
+      typeof payload?.credential_warning === 'string' ? payload.credential_warning : undefined
+    )
 
     if (apply) {
-      reportInstallMethodWarning(payload?.install_warning)
+      reportInstallMethodWarning(typeof payload?.install_warning === 'string' ? payload.install_warning : undefined)
       // Config refetch is only meaningful for the foreground context —
       // everything refreshFulilianConfig applies is either active-session
       // guarded or a composer/global pref. Background sessions' heartbeats
@@ -400,7 +406,8 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'session.usage') {
+  if (parsed.kind === 'usage_update') {
+    const payload = parsed.payload
     // Live usage tick emitted while a turn is mid-flight (see tui_gateway
     // _start_usage_ticker) so the status-bar context window tracks growth
     // during the turn instead of only jumping at message.complete.
@@ -420,7 +427,8 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'session.title') {
+  if (parsed.kind === 'desktop' && parsed.type === 'session.title') {
+    const payload = parsed.payload
     // Live auto-title push (titler runs async, after the turn's refresh).
     const storedId = typeof payload?.session_id === 'string' ? payload.session_id : ''
     const nextTitle = typeof payload?.title === 'string' ? payload.title.trim() : ''
