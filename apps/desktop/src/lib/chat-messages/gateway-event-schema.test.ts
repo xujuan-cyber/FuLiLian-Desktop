@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   AGENT_PROCESS_EVENT_TYPES,
   DESKTOP_EVENT_TYPES,
+  isV2EventName,
   type GatewayEventType,
-  type ToolUpdatePayload,
-  parseGatewayEvent
+  type ParsedGatewayEvent,
+  parseGatewayEvent,
+  type ToolUpdatePayload
 } from './gateway-event-schema'
 
 /** A raw wire event as the gateway emits it (RpcEvent subset + payload). */
@@ -20,10 +22,12 @@ describe('parseGatewayEvent — agent-process events', () => {
     expect(event).not.toBeNull()
     expect(event?.kind).toBe('message_chunk')
     expect(event?.v).toBe(1)
+
     if (event?.kind === 'message_chunk') {
       expect(event.interim).toBe(false)
       expect(event.payload.text).toBe('你好')
     }
+
     expect(event?.timestamp).toBe(1730000000)
     expect(event?.session_id).toBe('sess-1')
     expect(event?.profile).toBe('main')
@@ -33,6 +37,7 @@ describe('parseGatewayEvent — agent-process events', () => {
     const event = parseGatewayEvent(raw('message.interim', { text: 'partial', rendered: '<p>partial</p>' }))
 
     expect(event?.kind).toBe('message_chunk')
+
     if (event?.kind === 'message_chunk') {
       expect(event.interim).toBe(true)
       expect(event.payload.rendered).toBe('<p>partial</p>')
@@ -43,6 +48,7 @@ describe('parseGatewayEvent — agent-process events', () => {
     const start = parseGatewayEvent(
       raw('message.start', { model: 'gpt-5', provider: 'openai', reasoning_effort: 'high', fast: true })
     )
+
     expect(start?.kind).toBe('message_start')
 
     const complete = parseGatewayEvent(
@@ -55,7 +61,9 @@ describe('parseGatewayEvent — agent-process events', () => {
         duration_s: 12.5
       })
     )
+
     expect(complete?.kind).toBe('message_complete')
+
     if (complete?.kind === 'message_complete') {
       expect(complete.payload.status).toBe('error')
       expect(complete.payload.partial).toBe(true)
@@ -75,6 +83,7 @@ describe('parseGatewayEvent — agent-process events', () => {
     )
 
     expect(start?.kind).toBe('tool_call')
+
     if (start?.kind === 'tool_call') {
       expect(start.payload.tool_call_id).toBe('t-1')
       expect(start.payload.args).toEqual({ path: '/a', mode: 'replace' })
@@ -85,7 +94,9 @@ describe('parseGatewayEvent — agent-process events', () => {
     const complete = parseGatewayEvent(
       raw('tool.complete', { tool_call_id: 't-1', result: 'ok', inline_diff: '--- a\n+++ b' })
     )
+
     expect(complete?.kind).toBe('tool_call_update')
+
     if (complete?.kind === 'tool_call_update') {
       const payload = complete.payload as ToolUpdatePayload
       expect(payload.result).toBe('ok')
@@ -112,6 +123,7 @@ describe('parseGatewayEvent — approval and elicitation events', () => {
     )
 
     expect(event?.kind).toBe('permission_request')
+
     if (event?.kind === 'permission_request') {
       expect(event.payload.command).toBe('rm -rf /tmp/x')
       // tirith may forbid a permanent allow — the client renders this as a
@@ -124,6 +136,7 @@ describe('parseGatewayEvent — approval and elicitation events', () => {
     const clarify = parseGatewayEvent(
       raw('clarify.request', { request_id: 'r1', question: '哪个？', choices: ['a', 'b'], multi_select: false })
     )
+
     expect(clarify?.kind).toBe('elicitation')
 
     const secret = parseGatewayEvent(raw('secret.request', { env_var: 'API_KEY', prompt: '输入密钥' }))
@@ -139,9 +152,11 @@ describe('parseGatewayEvent — desktop namespace and unknown types', () => {
     const event = parseGatewayEvent(raw('pane.reveal', { pane: 'terminal' }))
 
     expect(event?.kind).toBe('desktop')
+
     if (event?.kind === 'desktop') {
       expect(event.payload.pane).toBe('terminal')
     }
+
     expect(parseGatewayEvent(raw('moa.phase', { phase: 'aggregate' }))?.kind).toBe('desktop')
     expect(parseGatewayEvent(raw('brand.new.event.tomorrow', { x: 1 }))?.kind).toBe('desktop')
   })
@@ -154,6 +169,7 @@ describe('parseGatewayEvent — desktop namespace and unknown types', () => {
   it('treats a missing payload as an empty record, never a throw', () => {
     const event = parseGatewayEvent({ type: 'message.delta' })
     expect(event?.kind).toBe('message_chunk')
+
     if (event?.kind === 'message_chunk') {
       expect(event.payload.text).toBeUndefined()
     }
@@ -189,9 +205,68 @@ describe('schema constants stay in sync with the routing sets', () => {
 
   it('classifies every registered type as agent-process or desktop, never both', () => {
     const seen = new Set<string>()
+
     for (const type of [...AGENT_PROCESS_EVENT_TYPES, ...DESKTOP_EVENT_TYPES] as GatewayEventType[]) {
       expect(seen.has(type), `duplicate registration: ${type}`).toBe(false)
       seen.add(type)
     }
+  })
+})
+
+describe('parseGatewayEvent — v2 (ACP-shaped) wire names', () => {
+  it('maps each v2 name onto the same kind as its v1 predecessor and stamps v:2', () => {
+    const pairs: Array<[string, string, ParsedGatewayEvent['kind']]> = [
+      ['agent_message_chunk', 'message.delta', 'message_chunk'],
+      ['agent_thought_chunk', 'thinking.delta', 'thought_chunk'],
+      ['tool_call', 'tool.start', 'tool_call'],
+      ['tool_call_update', 'tool.progress', 'tool_call_update'],
+      ['usage_update', 'session.usage', 'usage_update'],
+      ['permission_request', 'approval.request', 'permission_request'],
+      ['elicitation', 'clarify.request', 'elicitation']
+    ]
+
+    for (const [v2, v1, kind] of pairs) {
+      const viaV2 = parseGatewayEvent(raw(v2, { text: 'x' }))
+      const viaV1 = parseGatewayEvent(raw(v1, { text: 'x' }))
+
+      expect(viaV2?.kind, v2).toBe(kind)
+      expect(viaV2?.kind, `${v2} vs ${v1}`).toBe(viaV1?.kind)
+      expect(viaV2?.v).toBe(2)
+      expect(viaV1?.v).toBe(1)
+    }
+  })
+
+  it('carries the interim flag on the v2 agent_message_chunk payload', () => {
+    const event = parseGatewayEvent(raw('agent_message_chunk', { text: 'preview', interim: true }))
+
+    expect(event?.kind).toBe('message_chunk')
+    if (event?.kind === 'message_chunk') {
+      expect(event.interim).toBe(true)
+      expect(event.v).toBe(2)
+    }
+  })
+
+  it('keeps desktop-namespace names on v1 regardless of negotiation', () => {
+    const event = parseGatewayEvent(raw('status.update', { kind: 'compacting' }))
+
+    expect(event?.v).toBe(1)
+    expect(event?.kind).toBe('desktop')
+  })
+
+  it('normalizes the legacy tool aliases on v2 tool_call_update too', () => {
+    const event = parseGatewayEvent(raw('tool_call_update', { tool_id: 't-9', arguments: { path: '/x' } }))
+
+    expect(event?.kind).toBe('tool_call_update')
+    expect(event?.v).toBe(2)
+    if (event?.kind === 'tool_call_update') {
+      expect(event.payload.tool_call_id).toBe('t-9')
+      expect(event.payload.args).toEqual({ path: '/x' })
+    }
+  })
+
+  it('exposes the v2 name predicate for negotiation-aware consumers', () => {
+    expect(isV2EventName('agent_message_chunk')).toBe(true)
+    expect(isV2EventName('message.delta')).toBe(false)
+    expect(isV2EventName('status.update')).toBe(false)
   })
 })

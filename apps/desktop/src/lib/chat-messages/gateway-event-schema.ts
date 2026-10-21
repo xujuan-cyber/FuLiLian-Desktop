@@ -302,12 +302,39 @@ function str(value: unknown): string | undefined {
 }
 
 /**
+ * v2 event names (Phase 3) — the ACP-shaped vocabulary the gateway emits once
+ * a client negotiates protocol v2. Each maps onto the same parsed `kind` as
+ * its v1 predecessor; only the wire name (and `envelope.v`) changes. Desktop
+ * private events keep their v1 names by design (§2.4 of the design doc), so
+ * the mapping covers exactly the agent-process family.
+ *
+ * `message.interim` collapses into `agent_message_chunk` with an `interim`
+ * payload flag; `reasoning.available` keeps its distinct name because the
+ * snapshot/full-segment semantics differ from streamed deltas.
+ */
+const V2_TO_V1_EVENT: Record<string, string> = {
+  agent_message_chunk: 'message.delta',
+  agent_thought_chunk: 'thinking.delta',
+  tool_call: 'tool.start',
+  tool_call_update: 'tool.progress',
+  usage_update: 'session.usage',
+  permission_request: 'approval.request',
+  elicitation: 'clarify.request'
+}
+
+/** True when the event name is the v2 (ACP-shaped) vocabulary. */
+export function isV2EventName(type: string): boolean {
+  return Object.hasOwn(V2_TO_V1_EVENT, type)
+}
+
+/**
  * Normalize one raw gateway event into the typed union. Returns `null` for
  * event types outside the schema (caller decides whether to log or ignore) —
  * unknown types must never throw: the gateway is an older process than the
  * renderer and both evolve independently.
  *
  * Normalization performed here (and nowhere else):
+ *  - v2 (ACP-shaped) event names → their v1 equivalents, `envelope.v = 2`
  *  - `tool_id` → `tool_call_id` (legacy alias retired at the type boundary)
  *  - `arguments` → `args` on tool payloads (same)
  *  - `message.interim` → `message_chunk` with `interim: true`
@@ -318,16 +345,28 @@ export function parseGatewayEvent(raw: {
   session_id?: string
   type?: string
 }): ParsedGatewayEvent | null {
-  const type = raw.type
+  const wireType = raw.type
 
-  if (!type) {
+  if (!wireType) {
     return null
   }
 
   const payload = asRecord(raw.payload)
+  const isV2 = isV2EventName(wireType)
+
+  // Name normalization: v2 ACP names map onto their v1 equivalents, and the
+  // v1 interim variant folds into `message.delta` (the interim flag rides
+  // the payload in both protocols — only the wire name differs).
+  const type =
+    wireType === 'message.interim' ? 'message.delta' : isV2 ? V2_TO_V1_EVENT[wireType] : wireType
+
+  // v2 collapses `message.interim` into `agent_message_chunk`; the interim
+  // flag rides the payload instead of the event name.
+  const interim =
+    wireType === 'message.interim' || (wireType === 'agent_message_chunk' && payload.interim === true)
 
   const envelope: GatewayEventEnvelope = {
-    v: 1,
+    v: isV2 ? 2 : 1,
     type: type as GatewayEventType,
     timestamp: typeof payload.timestamp === 'number' ? payload.timestamp : undefined,
     session_id: raw.session_id ?? str(payload.session_id),
@@ -339,10 +378,7 @@ export function parseGatewayEvent(raw: {
       return { ...envelope, kind: 'message_start', payload: payload as MessageStartPayload }
 
     case 'message.delta':
-      return { ...envelope, kind: 'message_chunk', interim: false, payload: payload as MessageChunkPayload }
-
-    case 'message.interim':
-      return { ...envelope, kind: 'message_chunk', interim: true, payload: payload as MessageChunkPayload }
+      return { ...envelope, kind: 'message_chunk', interim, payload: payload as MessageChunkPayload }
 
     case 'message.complete':
       return { ...envelope, kind: 'message_complete', payload: payload as MessageCompletePayload }
