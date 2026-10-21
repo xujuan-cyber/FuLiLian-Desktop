@@ -27,6 +27,34 @@ describe('subagent store', () => {
     expect(item?.summary).toBe('done')
   })
 
+  it('carries the step-21 submodel dispatch fields and keeps them on later events', () => {
+    upsertSubagent('s1', {
+      goal: '审查代码',
+      status: 'running',
+      subagent_id: 'a1',
+      submodel_id: 'code-reviewer',
+      reason: '改动面横跨多模块',
+      task_index: 0
+    })
+
+    const item = listFor('s1')[0]
+    expect(item?.submodelId).toBe('code-reviewer')
+    expect(item?.reason).toBe('改动面横跨多模块')
+
+    // Later events in the family may omit the keys — the first report wins.
+    upsertSubagent('s1', { goal: '审查代码', status: 'completed', subagent_id: 'a1', summary: 'done', task_index: 0 })
+    expect(listFor('s1')[0]?.submodelId).toBe('code-reviewer')
+    expect(listFor('s1')[0]?.reason).toBe('改动面横跨多模块')
+  })
+
+  it('leaves the submodel fields undefined on plain delegations', () => {
+    upsertSubagent('s1', { goal: 'plain', status: 'running', subagent_id: 'a1', task_index: 0 })
+
+    const item = listFor('s1')[0]
+    expect(item?.submodelId).toBeUndefined()
+    expect(item?.reason).toBeUndefined()
+  })
+
   it('builds parent/child trees', () => {
     upsertSubagent('s1', { goal: 'parent', status: 'running', subagent_id: 'p', task_index: 0 })
     upsertSubagent('s1', { goal: 'child', parent_id: 'p', status: 'queued', subagent_id: 'c', task_index: 1 })

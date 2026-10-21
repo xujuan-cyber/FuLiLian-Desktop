@@ -674,6 +674,7 @@ export interface Translations {
       billing: string
       notifications: string
       plugins: string
+      submodels: string
     }
     plugins: {
       title: string
@@ -732,6 +733,73 @@ export interface Translations {
         desktopFailed: string
         missingEnv: (vars: string) => string
       }
+    }
+    submodels: {
+      title: string
+      intro: string
+      newViaChat: string
+      newFromTemplate: string
+      newBlank: string
+      refineWithAi: string
+      edit: string
+      deleteTitle: (name: string) => string
+      deleteFailed: string
+      fieldEnabledOn: string
+      fieldEnabledOff: string
+      invalidPill: string
+      invalidHint: string
+      inheritModel: string
+      emptyTitle: string
+      emptyDesc: string
+      exportLabel: string
+      exportFailed: string
+      importLabel: string
+      importTitle: string
+      importDesc: string
+      importApply: string
+      importInvalid: string
+      importDone: (n: number) => string
+      loadFailed: string
+      templatesTitle: string
+      templatesUnavailable: string
+      editorTitleNew: string
+      editorTitleEdit: (name: string) => string
+      fieldId: string
+      fieldIdHint: string
+      fieldName: string
+      fieldDescription: string
+      fieldDescriptionHint: string
+      fieldToolsets: string
+      fieldToolsetsHint: string
+      toolsetAdd: string
+      toolsetRemove: string
+      fieldModel: string
+      fieldModelHint: string
+      providerHeading: string
+      fieldBaseUrl: string
+      fieldApiKey: string
+      fieldApiKeyHint: string
+      fieldApiMode: string
+      fieldMaxIterations: string
+      fieldTemperature: string
+      fieldSystemPromptExtra: string
+      fieldEnabled: string
+      saved: string
+      saveFailed: string
+      providerKeyLostTitle: string
+      providerKeyLostDesc: string
+      maskedKeyWarning: string
+      wizardTitle: string
+      wizardTitleEdit: (name: string) => string
+      wizardIntro: string
+      wizardPlaceholder: string
+      wizardSend: string
+      wizardWorking: string
+      wizardDraftReady: string
+      wizardBackToChat: string
+      wizardSave: string
+      wizardEditContext: string
+      wizardError: string
     }
     notifications: {
       title: string
@@ -3456,6 +3524,11 @@ export interface Translations {
         runningTool: (action: string) => string
       }
       titles: Record<ToolTitleKey, ToolTitleCopy>
+      delegate: {
+        dispatchReason: string
+        profileBadge: string
+        degradedNote: string
+      }
     }
   }
 

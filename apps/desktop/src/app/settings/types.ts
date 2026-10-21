@@ -24,6 +24,7 @@ export type SettingsView =
   | 'quick-entry'
   | 'sensitive-info'
   | 'sessions'
+  | 'submodels'
   | 'tray'
   | `config:${string}`
 

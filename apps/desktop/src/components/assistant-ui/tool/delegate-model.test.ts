@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { SubagentProgress } from '@/store/subagents'
 
-import { delegateGoals, delegateRowsFromCall, mergeDelegateRows } from './delegate-model'
+import { delegateGoals, delegateReason, delegateRowsFromCall, mergeDelegateRows } from './delegate-model'
 
 const subagent = (overrides: Partial<SubagentProgress>): SubagentProgress => ({
   filesRead: [],
@@ -24,6 +24,15 @@ describe('delegateGoals', () => {
     expect(delegateGoals({ tasks: [{ goal: 'A' }, { goal: 'B' }] })).toEqual(['A', 'B'])
     expect(delegateGoals({ goal: 'Solo' })).toEqual(['Solo'])
     expect(delegateGoals('{"goal":"Serialized"}')).toEqual(['Serialized'])
+  })
+})
+
+describe('delegateReason (step 21 named-submodel dispatch)', () => {
+  it('reads the reason from live or serialized args and stays empty on legacy calls', () => {
+    expect(delegateReason({ reason: '多模块改动' })).toBe('多模块改动')
+    expect(delegateReason('{"reason":"serialized"}')).toBe('serialized')
+    expect(delegateReason({ tasks: [{ goal: 'A' }] })).toBe('')
+    expect(delegateReason(undefined)).toBe('')
   })
 })
 

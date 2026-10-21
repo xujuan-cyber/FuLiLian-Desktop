@@ -804,7 +804,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   { id: 'work-mode', views: ['forensics', 'ctf', 'config:workspace'] },
   {
     id: 'model-capabilities',
-    views: ['config:model', 'providers', 'config:memory', 'config:voice', 'config:browser', 'config:advanced']
+    views: ['config:model', 'providers', 'submodels', 'config:memory', 'config:voice', 'config:browser', 'config:advanced']
   },
   {
     id: 'security-compliance',

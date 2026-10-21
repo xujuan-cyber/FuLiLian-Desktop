@@ -255,6 +255,22 @@ export interface ErrorPayload {
 /** Any desktop-namespace event not yet individually typed. */
 export type DesktopEventPayload = Record<string, unknown>
 
+/**
+ * `subagent.*` family — the named-submodel provenance fields (step 21 custom
+ * submodel dispatch). These events route through the wide desktop payload
+ * (`kind: 'desktop'`); this interface types only the optional increment the
+ * delegate card reads. Both fields are absent on non-profile delegations —
+ * the gateway never synthesizes an empty key. The field is `submodel_id`,
+ * NOT `profile`: the event envelope's `profile` means work-configuration
+ * profile, a different concept.
+ */
+export interface SubagentEventPayload {
+  /** Id of the custom submodel profile the child was dispatched to. */
+  submodel_id?: string
+  /** The parent agent's stated reason for dispatching this child. */
+  reason?: string
+}
+
 // ---------------------------------------------------------------------------
 // Parsed union
 // ---------------------------------------------------------------------------

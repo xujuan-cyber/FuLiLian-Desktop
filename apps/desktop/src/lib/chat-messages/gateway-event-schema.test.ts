@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   AGENT_PROCESS_EVENT_TYPES,
   DESKTOP_EVENT_TYPES,
-  isV2EventName,
   type GatewayEventType,
+  isV2EventName,
   type ParsedGatewayEvent,
   parseGatewayEvent,
   type ToolUpdatePayload
@@ -176,6 +176,41 @@ describe('parseGatewayEvent — desktop namespace and unknown types', () => {
   })
 })
 
+describe('parseGatewayEvent — subagent.* submodel dispatch fields (step 21)', () => {
+  // Subagent events keep routing through the wide desktop payload; the
+  // schema increment registers the optional named-submodel fields so the
+  // delegate card can read them off the passthrough record.
+  it('passes submodel_id and reason through on a subagent.spawn_requested payload', () => {
+    const event = parseGatewayEvent(
+      raw('subagent.spawn_requested', {
+        goal: '审查代码变更',
+        subagent_id: 'sa-1',
+        submodel_id: 'code-reviewer',
+        reason: '改动面横跨多模块，交给专职审查子模型'
+      })
+    )
+
+    expect(event?.kind).toBe('desktop')
+    expect(event?.type).toBe('subagent.spawn_requested')
+
+    if (event?.kind === 'desktop') {
+      expect(event.payload.submodel_id).toBe('code-reviewer')
+      expect(event.payload.reason).toBe('改动面横跨多模块，交给专职审查子模型')
+    }
+  })
+
+  it('leaves the fields undefined on legacy delegations that carry no key', () => {
+    const event = parseGatewayEvent(raw('subagent.start', { goal: 'plain delegation' }))
+
+    expect(event?.kind).toBe('desktop')
+
+    if (event?.kind === 'desktop') {
+      expect(event.payload.submodel_id).toBeUndefined()
+      expect(event.payload.reason).toBeUndefined()
+    }
+  })
+})
+
 describe('schema constants stay in sync with the routing sets', () => {
   // The routing sets in lib/gateway-events.ts and gateway-event/index.ts are
   // hand-maintained string arrays. This guard fails when a new event type is
@@ -240,6 +275,7 @@ describe('parseGatewayEvent — v2 (ACP-shaped) wire names', () => {
     const event = parseGatewayEvent(raw('agent_message_chunk', { text: 'preview', interim: true }))
 
     expect(event?.kind).toBe('message_chunk')
+
     if (event?.kind === 'message_chunk') {
       expect(event.interim).toBe(true)
       expect(event.v).toBe(2)
@@ -258,6 +294,7 @@ describe('parseGatewayEvent — v2 (ACP-shaped) wire names', () => {
 
     expect(event?.kind).toBe('tool_call_update')
     expect(event?.v).toBe(2)
+
     if (event?.kind === 'tool_call_update') {
       expect(event.payload.tool_call_id).toBe('t-9')
       expect(event.payload.args).toEqual({ path: '/x' })

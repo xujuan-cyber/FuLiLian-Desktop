@@ -1,12 +1,12 @@
 'use client'
 
 import { useStore } from '@nanostores/react'
-import { type FC, type ReactNode, useMemo } from 'react'
+import { type FC, type ReactNode, useMemo, useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
 import { useElapsedSeconds } from '@/components/assistant-ui/activity-timer'
 import { ActivityTimerText } from '@/components/assistant-ui/activity-timer-text'
-import { SCAFFOLD_LABEL_CLASS, SCAFFOLD_META_CLASS } from '@/components/assistant-ui/scaffold-row'
+import { SCAFFOLD_LABEL_CLASS, SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/assistant-ui/scaffold-row'
 import { FadeText } from '@/components/ui/fade-text'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { useI18n } from '@/i18n'
@@ -18,6 +18,7 @@ import { $subagentsBySession } from '@/store/subagents'
 import { openSessionInNewWindow } from '@/store/windows'
 
 import {
+  delegateReason,
   type DelegateRow,
   delegateRowsFromCall,
   type DelegateRowStatus,
@@ -66,6 +67,7 @@ function statusGlyph(status: DelegateRowStatus, label: string): ReactNode {
 function DelegateRowView({ row }: { row: DelegateRow }) {
   const { t } = useI18n()
   const copy = t.assistant.tool
+  const cardText = copy.delegate
   const { sessionId } = row
   const live = isDelegateRowLive(row.status)
   const elapsed = useElapsedSeconds(live, `delegate:${row.id}`)
@@ -101,6 +103,17 @@ function DelegateRowView({ row }: { row: DelegateRow }) {
         >
           {row.goal}
         </button>
+        {row.submodelId && (
+          <span
+            className={cn(
+              SCAFFOLD_META_CLASS,
+              'rounded-sm border border-(--ui-stroke-tertiary) px-1 leading-relaxed'
+            )}
+            title={cardText.profileBadge}
+          >
+            {row.submodelId}
+          </span>
+        )}
         {meta.length > 0 && <span className={SCAFFOLD_META_CLASS}>{meta.join(' · ')}</span>}
         {live && <ActivityTimerText className={cn(SCAFFOLD_META_CLASS, 'ml-auto')} seconds={elapsed} />}
       </div>
@@ -116,6 +129,36 @@ function DelegateRowView({ row }: { row: DelegateRow }) {
               </FadeText>
             ))}
           </ToolRunTicker>
+        </div>
+      )}
+      {row.status === 'failed' && (
+        <div className="min-w-0 max-w-full pl-5">
+          <span className={SCAFFOLD_LABEL_CLASS}>{cardText.degradedNote}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The dispatch reason behind a fan-out, collapsed to a single quiet line so a
+ * delegation without one costs nothing and one with it costs one row until
+ * asked for (step 21 named-submodel dispatch). Absent reasons never mount
+ * this row at all — a legacy transcript renders byte-identical to before.
+ */
+function DelegateReasonRow({ reason }: { reason: string }) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="min-w-0 max-w-full" data-conversation-scaffold="">
+      <ScaffoldRow onToggle={() => setOpen(!open)} open={open}>
+        <span className={SCAFFOLD_META_CLASS}>{t.assistant.tool.delegate.dispatchReason}</span>
+        <span className={cn(SCAFFOLD_LABEL_CLASS, 'min-w-0 truncate')}>{reason}</span>
+      </ScaffoldRow>
+      {open && (
+        <div className="wrap-anywhere min-w-0 max-w-full pb-0.5">
+          <span className={SCAFFOLD_LABEL_CLASS}>{reason}</span>
         </div>
       )}
     </div>
@@ -144,12 +187,18 @@ export const DelegateTool: FC<Pick<ToolPart, 'args' | 'result' | 'toolCallId'>> 
     [args, live, result, toolCallId]
   )
 
+  // One reason per fan-out: the call's own `reason` argument first, falling
+  // back to whatever the first live subagent relayed (spawn_requested carries
+  // it before the call args may have been rehydrated).
+  const reason = useMemo(() => delegateReason(args) || live.find(entry => entry.reason)?.reason, [args, live])
+
   if (rows.length === 0) {
     return null
   }
 
   return (
     <div className="grid min-w-0 gap-(--tool-row-gap)" data-delegate-card="" data-slot="tool-block">
+      {reason && <DelegateReasonRow reason={reason} />}
       {rows.map(row => (
         <DelegateRowView key={row.id} row={row} />
       ))}

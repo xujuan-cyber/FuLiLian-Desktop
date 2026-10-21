@@ -719,7 +719,8 @@ export const en: Translations = {
       about: 'About',
       billing: 'Billing',
       notifications: 'Notifications',
-      plugins: 'Plugins'
+      plugins: 'Plugins',
+      submodels: 'Submodels'
     },
     plugins: {
       title: 'Desktop plugins',
@@ -780,6 +781,78 @@ export const en: Translations = {
         desktopFailed: 'Desktop plugin install failed',
         missingEnv: vars => `Missing env vars: ${vars}. Add them in Settings → Keys.`
       }
+    },
+    submodels: {
+      title: 'Submodels',
+      intro:
+        'Named profiles the agent can dispatch work to as delegated sub-agents. Changes apply to the next dispatch immediately.',
+      newViaChat: 'Set up with AI',
+      newFromTemplate: 'From template',
+      newBlank: 'New submodel',
+      refineWithAi: 'Refine with AI',
+      edit: 'Edit',
+      deleteTitle: name => `Delete ${name}?`,
+      deleteFailed: 'Delete failed',
+      fieldEnabledOn: 'Enabled',
+      fieldEnabledOff: 'Disabled',
+      invalidPill: 'Invalid',
+      invalidHint: 'Skipped at dispatch until fixed:',
+      inheritModel: 'Inherits the main model',
+      emptyTitle: 'No submodels yet',
+      emptyDesc: 'Create one from a template, from scratch, or chat with the setup wizard.',
+      exportLabel: 'Export submodels',
+      exportFailed: 'Export failed',
+      importLabel: 'Import submodels',
+      importTitle: 'Import submodels',
+      importDesc: 'Paste a JSON array (or a single object) of submodel profiles. Entries are validated on save.',
+      importApply: 'Import',
+      importInvalid: 'Nothing to import — the text is not valid profile JSON.',
+      importDone: n => `Imported ${n} profile(s)`,
+      loadFailed: 'Could not load submodels.',
+      templatesTitle: 'Start from a template',
+      templatesUnavailable: 'Templates are unavailable right now.',
+      editorTitleNew: 'New submodel',
+      editorTitleEdit: name => `Edit ${name}`,
+      fieldId: 'ID',
+      fieldIdHint: 'Stable identifier the main agent dispatches against.',
+      fieldName: 'Name',
+      fieldDescription: 'Responsibility',
+      fieldDescriptionHint:
+        'What it handles, a concrete example and its boundaries — the agent matches dispatches against this text.',
+      fieldToolsets: 'Toolsets',
+      fieldToolsetsHint: "Subset of the agent's tools. Type a name and press Enter — custom (e.g. MCP) toolsets are allowed.",
+      toolsetAdd: 'Add toolset…',
+      toolsetRemove: 'Remove toolset',
+      fieldModel: 'Model',
+      fieldModelHint: 'Format provider:model. Leave blank to inherit the delegation model.',
+      providerHeading: 'Provider override (optional)',
+      fieldBaseUrl: 'Base URL',
+      fieldApiKey: 'API key',
+      fieldApiKeyHint: 'Stored keys cannot be read back — re-enter to change.',
+      fieldApiMode: 'API mode',
+      fieldMaxIterations: 'Max turns',
+      fieldTemperature: 'Temperature',
+      fieldSystemPromptExtra: 'Extra role instructions',
+      fieldEnabled: 'Enabled',
+      saved: 'Submodel saved.',
+      saveFailed: 'Save failed',
+      providerKeyLostTitle: 'Provider API key will be dropped',
+      providerKeyLostDesc:
+        'The stored key cannot be read back, so saving without re-entering it removes the provider auth. Continue?',
+      maskedKeyWarning:
+        'The stored API key cannot be read back; it was left out of this update. Re-enter it in the editor if needed.',
+      wizardTitle: 'Set up a submodel with AI',
+      wizardTitleEdit: name => `Refine ${name} with AI`,
+      wizardIntro:
+        'Describe what this submodel should do. The assistant asks a few questions, then proposes a draft you can fine-tune before saving. Nothing is saved until you confirm.',
+      wizardPlaceholder: 'Describe the tasks this submodel should handle…',
+      wizardSend: 'Send',
+      wizardWorking: 'Thinking…',
+      wizardDraftReady: 'The assistant proposed a draft — review and fine-tune it below.',
+      wizardBackToChat: 'Back to chat',
+      wizardSave: 'Save submodel',
+      wizardEditContext: 'I want to adjust an existing submodel profile. Here is its current JSON:',
+      wizardError: 'The assistant call failed. Try again.'
     },
     notifications: {
       title: 'Notifications',
@@ -3976,6 +4049,11 @@ export const en: Translations = {
         web_extract: { done: 'Read webpage', pending: 'Reading webpage', pendingAction: 'Reading' },
         web_search: { done: 'Searched web', pending: 'Searching web', pendingAction: 'Searching' },
         write_file: { done: 'Edited file', pending: 'Editing file', pendingAction: 'Editing' }
+      },
+      delegate: {
+        dispatchReason: 'Dispatch reason',
+        profileBadge: 'Dispatched to custom submodel',
+        degradedNote: 'This subtask failed — the main agent takes it over from here.'
       }
     }
   },

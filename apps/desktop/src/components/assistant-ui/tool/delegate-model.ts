@@ -16,6 +16,8 @@ export interface DelegateRow {
   goal: string
   id: string
   model?: string
+  /** Named-submodel profile the child was dispatched to (step 21). */
+  submodelId?: string
   /** The child's own session id, when it reported one — opens its window. */
   sessionId?: string
   status: DelegateRowStatus
@@ -43,6 +45,15 @@ export function delegateGoals(args: unknown): string[] {
   const goal = field(record, 'goal')
 
   return goal ? [goal] : []
+}
+
+/**
+ * The dispatch reason a `delegate_task` call carries (step 21 named-submodel
+ * dispatch) — one line of intent for the whole fan-out. Empty when the call
+ * predates the field; the card must then render exactly as before.
+ */
+export function delegateReason(args: unknown): string {
+  return field(parseMaybeObject(args), 'reason')
 }
 
 function resultRows(result: unknown): Record<string, unknown>[] {
@@ -107,6 +118,7 @@ function fromSubagent(live: SubagentProgress, fallbackId: string, fallbackGoal: 
     goal: live.goal || fallbackGoal,
     id: live.id || fallbackId,
     model: live.model,
+    submodelId: live.submodelId,
     sessionId: live.sessionId,
     status: live.status
   }

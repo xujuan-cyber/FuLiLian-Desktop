@@ -35,6 +35,11 @@ export interface SubagentProgress {
   summary?: string
   /** Active tool while running — cleared on terminal status. */
   currentTool?: string
+  /** Named-submodel profile the child was dispatched to (step 21), absent on
+   *  plain delegations — the gateway omits the key rather than emptying it. */
+  submodelId?: string
+  /** The parent agent's stated dispatch reason (step 21), same absence rule. */
+  reason?: string
 }
 
 export interface SubagentNode extends SubagentProgress {
@@ -204,6 +209,8 @@ function toProgress(payload: SubagentPayload, prev: SubagentProgress | undefined
     filesWritten: filesWritten.length ? filesWritten : (prev?.filesWritten ?? []),
     stream,
     summary: str(payload.summary) || timeoutSummary(payload) || prev?.summary || undefined,
+    submodelId: str(payload.submodel_id) || prev?.submodelId,
+    reason: str(payload.reason) || prev?.reason || undefined,
     currentTool: TERMINAL.has(status) ? undefined : tool || prev?.currentTool
   }
 }
