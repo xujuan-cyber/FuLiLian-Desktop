@@ -390,9 +390,14 @@ async def handle_ws(
                 },
             }
         )
+        print("DBG_READY_OK:", ready_ok)
         if ready_ok:
+            print("DBG_BEFORE_WATCHER")
             # Live-apply skins Fulilian activates mid-conversation.
             server._ensure_skin_watcher()
+            print("DBG_AFTER_WATCHER")
+            print("DBG_SERVER_ID:", id(server), server.__name__ if hasattr(server, "__name__") else type(server))
+            print("DBG_FN_ID:", id(server.register_live_transport), "| SYSMOD_ID:", id(sys.modules.get("tui_gateway.server")), "| SAME:", sys.modules.get("tui_gateway.server") is server)
             # Track this peer for session-less global broadcasts (skin.changed
             # from the background watcher) — write_json can't route those.
             server.register_live_transport(transport)
