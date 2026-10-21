@@ -202,3 +202,9 @@ website/static/api/skills-meta.json
 
 # mimosa security-scan local state
 .mimosa/
+
+# Desktop installer scripts are source, not build output.
+!apps/desktop/build/
+apps/desktop/build/*
+!apps/desktop/build/installer.nsh
+!apps/desktop/build/cli-launcher.cmd

@@ -46,8 +46,8 @@ const SYSTEM_MONO = 'Menlo, Monaco, "SF Mono", "Courier Prime", monospace, ' + E
  * so two hand-maintained copies would drift and silently undo the other.
  */
 export const FULILIAN_SANS =
-  `"Fulilian Sans", "Sarasa Gothic SC", "HarmonyOS Sans SC", "Microsoft YaHei", ` +
-  `"PingFang SC", "Noto Sans SC", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif, ` +
+  `"Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", ` +
+  `"Fulilian Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif, ` +
   EMOJI_FALLBACK
 
 export const FULILIAN_MONO =

@@ -222,6 +222,10 @@
       {
         "from": "assets/icon.ico",
         "to": "icon.ico"
+      },
+      {
+        "from": "build/cli-launcher.cmd",
+        "to": "cli-launcher.cmd"
       }
     ],
     "asar": true,
@@ -303,7 +307,8 @@
       "perMachine": false,
       "shortcutName": "Fulilian",
       "uninstallDisplayName": "Fulilian",
-      "warningsAsErrors": false
+      "warningsAsErrors": false,
+      "include": "build/installer.nsh"
     }
   }
 }
