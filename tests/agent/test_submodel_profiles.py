@@ -233,6 +233,21 @@ class TestMaskAndDraft:
         assert sp.extract_wizard_draft(reply)["name"] == "new"
 
 
+class TestWizardPrompt:
+    def test_prompt_covers_edit_scenario(self):
+        """Edit mode instruction: an existing profile JSON in the
+        conversation means incremental clarification on top of the current
+        state, and the draft is the COMPLETE modified profile (not a
+        diff) — otherwise an edit round-trip would drop untouched fields
+        (provider.api_key included) on save."""
+        prompt = sp.WIZARD_SYSTEM_PROMPT.lower()
+        assert "edit mode" in prompt
+        assert "existing" in prompt and "profile" in prompt
+        assert "incremental" in prompt
+        assert "complete modified profile" in prompt
+        assert "never a diff" in prompt
+
+
 class TestTemplates:
     def test_builtin_templates_shape(self):
         assert len(sp.SUBMODEL_TEMPLATES) >= 3

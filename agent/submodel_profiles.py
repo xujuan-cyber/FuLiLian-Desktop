@@ -323,6 +323,23 @@ def mask_api_key(key: Any) -> str:
     return text[:4] + "…" + text[-4:]
 
 
+def is_masked_api_key(key: Any) -> bool:
+    """True when ``key`` matches :func:`mask_api_key`'s output shapes.
+
+    Save-path echo-back guard: ``submodels.list`` hands the client a
+    masked key, so an edit round-trip may carry the mask back. Two mask
+    shapes exist — all-asterisks (keys of length <= 8) and
+    ``first4 + '…' + last4`` (U+2026 ellipsis, longer keys). A real key
+    matches neither. Empty string is NOT a mask ("no key" is legitimate).
+    """
+    text = str(key or "")
+    if not text:
+        return False
+    if "\u2026" in text:
+        return True
+    return set(text) == {"*"}
+
+
 def sanitize_for_client(entry: Dict[str, Any]) -> Dict[str, Any]:
     """Deep-copy a profile with its provider.api_key masked for RPC output."""
     out = copy.deepcopy(entry)
@@ -441,7 +458,12 @@ WIZARD_SYSTEM_PROMPT = (
     "场景 + 示例 + 边界 in one paragraph; omit model to inherit the parent "
     "model; never invent toolset names outside the user's mentioned "
     "capabilities; keep the reply conversational (the JSON draft is "
-    "additive, not a replacement for the answer)."
+    "additive, not a replacement for the answer).\n"
+    "Edit mode: when the conversation already carries an existing "
+    "profile's JSON, treat it as the current state — ask only incremental "
+    "clarifying questions about what the user wants to change, and the "
+    "final draft MUST be the complete modified profile (all fields, "
+    "unchanged ones included), never a diff."
 )
 
 

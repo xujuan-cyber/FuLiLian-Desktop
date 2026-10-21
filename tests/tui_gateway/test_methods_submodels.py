@@ -119,6 +119,52 @@ class TestSubmodelsSave:
         env = _err_code(srv._methods["submodels.save"](1, {}))
         assert "entry" in env["message"]
 
+    def test_save_masked_api_key_restores_stored_plaintext(self, home):
+        """Edit round-trip: the client echoes back the masked key from
+        submodels.list — the on-disk plaintext must survive untouched
+        while the other fields update."""
+        _result(srv._methods["submodels.save"](1, {"entry": dict(VALID)}))
+        masked = "sk-a…7890"
+        edited = dict(
+            VALID,
+            name="改名后",
+            provider={
+                "base_url": "https://new.example.com",
+                "api_key": masked,
+                "api_mode": "openai",
+            },
+        )
+        _result(srv._methods["submodels.save"](2, {"entry": edited}))
+        saved = _config()["submodels"]
+        assert len(saved) == 1
+        assert saved[0]["provider"]["api_key"] == "sk-abcdef1234567890"
+        assert saved[0]["provider"]["base_url"] == "https://new.example.com"
+        assert saved[0]["provider"]["api_mode"] == "openai"
+        assert saved[0]["name"] == "改名后"
+
+    def test_save_all_asterisk_mask_restores_stored_plaintext(self, home):
+        """Short keys mask to all-asterisks — same restore path."""
+        _result(srv._methods["submodels.save"](1, {"entry": dict(VALID)}))
+        edited = dict(
+            VALID, provider={"base_url": "", "api_key": "*****", "api_mode": ""}
+        )
+        _result(srv._methods["submodels.save"](2, {"entry": edited}))
+        saved = _config()["submodels"]
+        assert saved[0]["provider"]["api_key"] == "sk-abcdef1234567890"
+
+    def test_save_masked_api_key_on_new_id_is_rejected(self, home):
+        """A mask with no stored original to restore (new profile, or an
+        id that never had a key) must not reach the config."""
+        for mask in ("sk-a…7890", "****"):
+            bad = dict(
+                VALID,
+                id="fresh",
+                provider={"base_url": "", "api_key": mask, "api_mode": ""},
+            )
+            env = _err_code(srv._methods["submodels.save"](1, {"entry": bad}))
+            assert "mask" in env["message"]
+            assert (_config().get("submodels") or []) == []
+
 
 class TestSubmodelsList:
     def test_list_masks_api_key_and_reports_validation(self, home):

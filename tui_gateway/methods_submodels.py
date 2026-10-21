@@ -58,7 +58,11 @@ def _(rid, params: dict) -> dict:
 @method("submodels.save")
 def _(rid, params: dict) -> dict:
     try:
-        from agent.submodel_profiles import SUBMODEL_WRITABLE_FIELDS, validate_submodel
+        from agent.submodel_profiles import (
+            SUBMODEL_WRITABLE_FIELDS,
+            is_masked_api_key,
+            validate_submodel,
+        )
 
         entry = params.get("entry")
         if not isinstance(entry, dict):
@@ -77,6 +81,35 @@ def _(rid, params: dict) -> dict:
         existing = cfg.get("submodels")
         if not isinstance(existing, list):
             existing = []
+
+        # submodels.list masks provider.api_key, so an edit round-trip can
+        # echo the MASK back. Never persist a mask: restore the stored
+        # plaintext for an existing profile; a mask on a NEW id (or where
+        # nothing is stored to restore) is rejected — a mask would brick
+        # the profile's credentials.
+        provider = clean.get("provider")
+        if (
+            isinstance(provider, dict)
+            and provider.get("api_key")
+            and is_masked_api_key(provider["api_key"])
+        ):
+            stored_key = None
+            for e in existing:
+                if isinstance(e, dict) and str(e.get("id") or "") == pid:
+                    ep = e.get("provider")
+                    if isinstance(ep, dict):
+                        stored_key = ep.get("api_key")
+                    break
+            if stored_key:
+                provider["api_key"] = stored_key
+            else:
+                return _err(
+                    rid,
+                    5102,
+                    "provider.api_key looks masked; send the plaintext key "
+                    f"(no stored key to restore for id '{pid}')",
+                )
+
         other_ids = [
             str(e.get("id") or "")
             for e in existing
