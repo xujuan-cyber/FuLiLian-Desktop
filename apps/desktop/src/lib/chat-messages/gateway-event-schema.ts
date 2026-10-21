@@ -18,7 +18,6 @@
 
 import type { BillingBlock } from '@fulilian/shared'
 
-import type { ErrorSurface } from '@/lib/error-surface'
 import type { UsageStats } from '@/types/fulilian'
 
 // ---------------------------------------------------------------------------
@@ -86,6 +85,15 @@ export const DESKTOP_EVENT_TYPES = [
   'preview.act.request',
   'preview.read.request',
   'browser.progress',
+  'voice.transcript',
+  'voice.status',
+  'voice.interrupted',
+  'wake.detected',
+  'tool.output_risk',
+  'preview.restart.progress',
+  'preview.restart.complete',
+  'pet.hatch.progress',
+  'pet.generate.progress',
   'terminal.cwd',
   'terminal.backend',
   'terminal.read.request',
@@ -311,11 +319,13 @@ export function parseGatewayEvent(raw: {
   type?: string
 }): ParsedGatewayEvent | null {
   const type = raw.type
+
   if (!type) {
     return null
   }
 
   const payload = asRecord(raw.payload)
+
   const envelope: GatewayEventEnvelope = {
     v: 1,
     type: type as GatewayEventType,
@@ -327,42 +337,60 @@ export function parseGatewayEvent(raw: {
   switch (type) {
     case 'message.start':
       return { ...envelope, kind: 'message_start', payload: payload as MessageStartPayload }
+
     case 'message.delta':
       return { ...envelope, kind: 'message_chunk', interim: false, payload: payload as MessageChunkPayload }
+
     case 'message.interim':
       return { ...envelope, kind: 'message_chunk', interim: true, payload: payload as MessageChunkPayload }
+
     case 'message.complete':
       return { ...envelope, kind: 'message_complete', payload: payload as MessageCompletePayload }
+
     case 'thinking.delta':
+
     case 'reasoning.delta':
       return { ...envelope, kind: 'thought_chunk', payload: payload as ThoughtChunkPayload }
+
     case 'reasoning.available':
       return { ...envelope, kind: 'thought_snapshot', payload: payload as ThoughtSnapshotPayload }
+
     case 'tool.start':
       return { ...envelope, kind: 'tool_call', payload: normalizeToolPayload(payload) as ToolStartPayload }
+
     case 'tool.progress':
+
     case 'tool.generating':
+
     case 'tool.complete':
       return {
         ...envelope,
         kind: 'tool_call_update',
         payload: normalizeToolPayload(payload) as ToolUpdatePayload
       }
+
     case 'session.usage':
+
     case 'session.context_breakdown':
       return { ...envelope, kind: 'usage_update', payload: payload as UsageUpdatePayload }
+
     case 'approval.request':
       return { ...envelope, kind: 'permission_request', payload: payload as ApprovalRequestPayload }
+
     case 'clarify.request':
+
     case 'secret.request':
+
     case 'mcp.setup.request':
       return {
         ...envelope,
         kind: 'elicitation',
         payload: payload as ElicitationPayload
       }
+
     case 'error':
       return { ...envelope, kind: 'error', payload: payload as ErrorPayload }
+
     default:
       // Desktop-namespace and unknown types: passed through wide, never dropped
       // here — routing/pinning decisions stay in lib/gateway-events.ts.
@@ -376,6 +404,7 @@ function normalizeToolPayload(payload: Record<string, unknown>): Record<string, 
   if (normalized.tool_call_id === undefined && typeof normalized.tool_id === 'string') {
     normalized.tool_call_id = normalized.tool_id
   }
+
   if (normalized.args === undefined && normalized.arguments !== undefined) {
     normalized.args = normalized.arguments
   }
