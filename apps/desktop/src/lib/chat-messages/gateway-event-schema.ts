@@ -48,6 +48,7 @@ export const DESKTOP_EVENT_TYPES = [
   'approval.received',
   'approval.pending',
   'clarify.request',
+  'clarify.expire',
   'secret.request',
   'sudo.request',
   'mcp.setup.request',
@@ -189,32 +190,35 @@ export interface UsageUpdatePayload {
 
 /** `approval.request` — dangerous command / execute_code gate. */
 export interface ApprovalRequestPayload {
+  request_id?: string
   command?: string
   description?: string
+  /** Optional answer buttons the backend offers alongside approve/reject. */
+  choices?: unknown
   /** False when a tirith content-security warning forbids a permanent allow. */
   allow_permanent?: boolean
   smart_denied?: boolean
 }
 
-/** `clarify.request` — question form (single or batch). */
-export interface ClarifyRequestPayload {
+/**
+ * Blocking-input requests share one flat wire shape (request_id + a
+ * family-specific tail); consumers branch on the event `type`. Fields absent
+ * on a given family are simply undefined.
+ */
+export interface ElicitationPayload {
   request_id?: string
+  /** `clarify.request` — single-question form. */
   question?: string
   choices?: string[] | null
   multi_select?: boolean
-  /** Batch form: replaces question/choices; `answers` rides reconnect replay. */
+  /** `clarify.request` — batch form replaces question/choices; `answers`
+   *  rides reconnect replay carrying per-question locks. */
   questions?: unknown
   answers?: Record<string, unknown>
-}
-
-/** `secret.request` — skill credential capture. */
-export interface SecretRequestPayload {
+  /** `secret.request` — skill credential capture. */
   env_var?: string
   prompt?: string
-}
-
-/** `mcp.setup.request` — inline MCP consent card (setup_mcp tool). */
-export interface McpSetupRequestPayload {
+  /** `mcp.setup.request` — inline MCP consent card (setup_mcp tool). */
   server?: string
   action?: string
   reason?: string
@@ -258,7 +262,7 @@ export type ParsedGatewayEvent = GatewayEventEnvelope &
     | { kind: 'tool_call_update'; payload: ToolUpdatePayload }
     | { kind: 'usage_update'; payload: UsageUpdatePayload }
     | { kind: 'permission_request'; payload: ApprovalRequestPayload }
-    | { kind: 'elicitation'; payload: ClarifyRequestPayload | SecretRequestPayload | McpSetupRequestPayload }
+    | { kind: 'elicitation'; payload: ElicitationPayload }
     | { kind: 'error'; payload: ErrorPayload }
     | { kind: 'desktop'; payload: DesktopEventPayload }
   )
@@ -341,7 +345,7 @@ export function parseGatewayEvent(raw: {
       return {
         ...envelope,
         kind: 'elicitation',
-        payload: payload as ClarifyRequestPayload | SecretRequestPayload | McpSetupRequestPayload
+        payload: payload as ElicitationPayload
       }
     case 'error':
       return { ...envelope, kind: 'error', payload: payload as ErrorPayload }
