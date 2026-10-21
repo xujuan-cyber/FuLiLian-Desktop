@@ -152,23 +152,22 @@ export interface ToolIdentity {
 /** `tool.start` — a tool call opened. */
 export interface ToolStartPayload extends ToolIdentity {
   args?: unknown
-  /** Legacy alias for `args` — normalizes to `raw_input`. */
+  /** Legacy alias for `args` — normalizes to `args`. */
   arguments?: unknown
   preview?: string
 }
 
-/** `tool.progress` / `tool.generating` — in-flight tool output. */
-export interface ToolProgressPayload extends ToolIdentity {
+/**
+ * `tool.progress` / `tool.generating` / `tool.complete` — one flat wire shape
+ * shared by the in-flight and settling variants (the gateway does not
+ * discriminate them; consumers branch on the event `type`). Fields absent at
+ * each stage are simply undefined.
+ */
+export interface ToolUpdatePayload extends ToolIdentity {
   args?: unknown
+  /** Legacy alias for `args` — normalizes to `args`. */
   arguments?: unknown
   preview?: string
-  result?: unknown
-}
-
-/** `tool.complete` — a tool call settled. */
-export interface ToolCompletePayload extends ToolIdentity {
-  args?: unknown
-  arguments?: unknown
   result?: unknown
   summary?: string
   /** Unified-diff text for file edits (ACP `tool_call` diff content shape). */
@@ -254,7 +253,7 @@ export type ParsedGatewayEvent = GatewayEventEnvelope &
     | { kind: 'thought_chunk'; payload: ThoughtChunkPayload }
     | { kind: 'thought_snapshot'; payload: ThoughtSnapshotPayload }
     | { kind: 'tool_call'; payload: ToolStartPayload }
-    | { kind: 'tool_call_update'; payload: ToolProgressPayload | ToolCompletePayload }
+    | { kind: 'tool_call_update'; payload: ToolUpdatePayload }
     | { kind: 'usage_update'; payload: UsageUpdatePayload }
     | { kind: 'permission_request'; payload: ApprovalRequestPayload }
     | { kind: 'elicitation'; payload: ClarifyRequestPayload | SecretRequestPayload | McpSetupRequestPayload }
@@ -327,7 +326,7 @@ export function parseGatewayEvent(raw: {
       return {
         ...envelope,
         kind: 'tool_call_update',
-        payload: normalizeToolPayload(payload) as ToolProgressPayload | ToolCompletePayload
+        payload: normalizeToolPayload(payload) as ToolUpdatePayload
       }
     case 'session.usage':
     case 'session.context_breakdown':

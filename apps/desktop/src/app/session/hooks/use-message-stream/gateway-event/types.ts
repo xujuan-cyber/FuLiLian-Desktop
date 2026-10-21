@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { MutableRefObject } from 'react'
 
 import type { GatewayEventPayload } from '@/lib/chat-messages'
+import type { ParsedGatewayEvent } from '@/lib/chat-messages/gateway-event-schema'
 import type { RpcEvent } from '@/types/fulilian'
 
 import type { ClientSessionState } from '../../../../types'
@@ -56,6 +57,10 @@ export interface GatewayEventDeps {
 export interface GatewayEventContext {
   deps: GatewayEventDeps
   event: RpcEvent
+  /** Typed view of the event (P1-1 Phase 2). Handlers should read this
+   *  instead of the `event`/`payload` pair; those stay until every family
+   *  handler has migrated, then retire together. */
+  parsed: ParsedGatewayEvent
   payload: GatewayEventPayload | undefined
   /** Routed session id (explicit, pinned unscoped stream, or active fallback). */
   sessionId: null | string

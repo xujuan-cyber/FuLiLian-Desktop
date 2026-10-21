@@ -4,7 +4,7 @@ import {
   AGENT_PROCESS_EVENT_TYPES,
   DESKTOP_EVENT_TYPES,
   type GatewayEventType,
-  type ToolCompletePayload,
+  type ToolUpdatePayload,
   parseGatewayEvent
 } from './gateway-event-schema'
 
@@ -87,10 +87,11 @@ describe('parseGatewayEvent — agent-process events', () => {
     )
     expect(complete?.kind).toBe('tool_call_update')
     if (complete?.kind === 'tool_call_update') {
-      // tool.complete payloads are the ToolCompletePayload arm of the union.
-      const payload = complete.payload as ToolCompletePayload
+      const payload = complete.payload as ToolUpdatePayload
       expect(payload.result).toBe('ok')
       expect(payload.inline_diff).toBe('--- a\n+++ b')
+      // The legacy alias was normalized onto the canonical name.
+      expect(payload.tool_call_id).toBe('t-1')
     }
 
     expect(parseGatewayEvent(raw('tool.progress', { preview: 'running…' }))?.kind).toBe('tool_call_update')
