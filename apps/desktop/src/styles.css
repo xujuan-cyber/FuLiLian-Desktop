@@ -576,7 +576,7 @@
     --dt-warning: #9a6700;
 
     --dt-font-sans:
-      'Fulilian Sans', 'Sarasa Gothic SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC',
+      'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'HarmonyOS Sans SC', 'Noto Sans SC', 'Fulilian Sans',
       'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
       'Segoe UI Symbol', 'Noto Color Emoji', emoji;
     /* Key caps always use the native UI face — never theme typography overrides. */
@@ -925,6 +925,17 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* CJK × Latin spacing. `normal` expands to ideograph-alpha + ideograph-numeric,
+     i.e. it only widens the gap between han and Latin/digits and leaves
+     punctuation alone (that is `text-spacing-trim`'s job, deliberately not
+     applied here). Progressive enhancement: engines without the property
+     render byte-identically to before, so no fallback path is needed. */
+  @supports (text-autospace: normal) {
+    body {
+      text-autospace: normal;
+    }
   }
 
   button,
