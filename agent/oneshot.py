@@ -114,12 +114,16 @@ def run_oneshot(
     temperature: Optional[float] = 0.3,
     timeout: float = 60.0,
     main_runtime: Optional[Dict[str, Any]] = None,
+    messages: Optional[list] = None,
 ) -> str:
     """Run a single stateless LLM request and return its text.
 
-    Provide either a registered ``template`` (+ ``variables``) or an explicit
-    ``instructions`` / ``user_input`` pair. Returns the model's text answer,
-    stripped of surrounding whitespace and any wrapping code fence.
+    Provide either a registered ``template`` (+ ``variables``), an explicit
+    ``instructions`` / ``user_input`` pair, or a full ``messages`` list
+    (direct passthrough — the caller owns the exact turn shape, e.g. the
+    submodels setup wizard where the frontend holds the whole history).
+    Returns the model's text answer, stripped of surrounding whitespace
+    and any wrapping code fence.
 
     Raises RuntimeError when no LLM provider is configured (surfaced from
     :func:`call_llm`) and KeyError for an unknown template name.
@@ -127,17 +131,20 @@ def run_oneshot(
     if template:
         instructions, user_input = render_template(template, variables)
 
-    if not (instructions or "").strip() and not (user_input or "").strip():
-        raise ValueError("run_oneshot requires a template or instructions/user_input")
+    if messages is not None:
+        call_messages = list(messages)
+    else:
+        if not (instructions or "").strip() and not (user_input or "").strip():
+            raise ValueError("run_oneshot requires a template or instructions/user_input")
 
-    messages = []
-    if (instructions or "").strip():
-        messages.append({"role": "system", "content": instructions})
-    messages.append({"role": "user", "content": user_input or ""})
+        call_messages = []
+        if (instructions or "").strip():
+            call_messages.append({"role": "system", "content": instructions})
+        call_messages.append({"role": "user", "content": user_input or ""})
 
     response = call_llm(
         task=task,
-        messages=messages,
+        messages=call_messages,
         max_tokens=max_tokens,
         temperature=temperature,
         timeout=timeout,

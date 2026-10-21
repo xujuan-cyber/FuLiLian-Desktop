@@ -7700,6 +7700,15 @@ def _on_tool_progress(
             payload["tool_count"] = int(_kwargs["tool_count"])
         if _kwargs.get("toolsets"):
             payload["toolsets"] = [str(t) for t in _kwargs["toolsets"]]
+        # Named-submodel attribution (step 21): present only when the task
+        # was dispatched via a submodels profile. Absent otherwise — never
+        # synthesized empty. NOTE: the field is `submodel_id`, NOT
+        # `profile` (the event envelope's `profile` means work-configuration
+        # profile — a different concept).
+        if _kwargs.get("submodel_id"):
+            payload["submodel_id"] = str(_kwargs["submodel_id"])
+        if _kwargs.get("reason"):
+            payload["reason"] = str(_kwargs["reason"])
         # Per-branch rollups emitted on subagent.complete (features 1+2+4).
         for int_key in (
             "input_tokens",
@@ -17447,6 +17456,7 @@ from . import (  # noqa: E402
     methods_profiles as _methods_profiles,
     methods_prompt as _methods_prompt,
     methods_session as _methods_session,
+    methods_submodels as _methods_submodels,
     methods_tools as _methods_tools,
 )
 
@@ -17460,6 +17470,7 @@ for _m in (
     _methods_profiles,
     _methods_images,
     _methods_bot_relay,
+    _methods_submodels,
 ):
     _m.register(sys.modules[__name__])
 del _m

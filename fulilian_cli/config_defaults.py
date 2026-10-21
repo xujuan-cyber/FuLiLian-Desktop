@@ -2097,6 +2097,28 @@ DEFAULT_CONFIG = {
         "surface_child_process_notifications": False,
     },
 
+    # Named submodel profiles (step 21 自定义子模型派发) — the delegate_task
+    # roster. Each entry routes a delegated child onto its own model /
+    # provider / toolset / persona; the parent model picks a profile by id
+    # (tasks[].profile) from the roster injected into the tool description.
+    # Managed via the desktop settings page (submodels.* RPC) or by hand:
+    #   - id: stable dispatch key (required, unique)
+    #   - name: user-readable label (required)
+    #   - description: dispatch-matching basis — scene + example + boundaries
+    #   - toolsets: subset of the registered toolsets; intersected with the
+    #     parent's enabled toolsets at dispatch (children never gain tools
+    #     the parent lacks)
+    #   - model: "provider:model" (empty = inherit delegation/parent model)
+    #   - provider: {base_url, api_key, api_mode} direct-endpoint override
+    #   - max_iterations: per-child budget cap (default: delegation.max_iterations)
+    #   - system_prompt_extra: additional role instructions appended to the
+    #     child's focused system prompt
+    #   - params: {temperature: ...} request overrides for the child
+    #   - enabled: disabled profiles leave the roster but keep their config
+    # Invalid entries are SKIPPED with a warning at read time — a broken
+    # profile never blocks the parent agent.
+    "submodels": [],
+
     # Ephemeral prefill messages file — JSON list of {role, content} dicts
     # injected at the start of every API call for few-shot priming.
     # Never saved to sessions, logs, or trajectories.

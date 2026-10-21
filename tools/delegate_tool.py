@@ -31,7 +31,7 @@ import weakref
 from concurrent.futures import (
     TimeoutError as FuturesTimeoutError,
 )
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlsplit, urlunsplit
 
 from toolsets import TOOLSETS
@@ -1178,6 +1178,7 @@ def _build_child_system_prompt(
     role: str = "leaf",
     max_spawn_depth: int = 2,
     child_depth: int = 1,
+    system_prompt_extra: Optional[str] = None,
 ) -> str:
     """Build a focused system prompt for a child agent.
 
@@ -1272,6 +1273,14 @@ def _build_child_system_prompt(
             "final summary, not your workers.\n\n"
             f"NOTE: You are at depth {child_depth}. The delegation tree "
             f"is capped at max_spawn_depth={max_spawn_depth}. {child_note}"
+        )
+    # Named submodel profiles (step 21): the profile's persona block rides
+    # after the base contract. Absent/empty → the prompt is byte-identical
+    # to the pre-profile behavior.
+    if system_prompt_extra and str(system_prompt_extra).strip():
+        parts.append(
+            "\n## Role Instructions (submodel profile)\n"
+            + str(system_prompt_extra).strip()
         )
     return "\n".join(parts)
 
@@ -1375,6 +1384,8 @@ def _build_child_progress_callback(
     model: Optional[str] = None,
     toolsets: Optional[List[str]] = None,
     session_ref: Optional[Dict[str, Any]] = None,
+    submodel_id: Optional[str] = None,
+    reason: Optional[str] = None,
 ) -> Optional[callable]:
     """Build a callback that relays child agent tool calls to the parent display.
 
@@ -1427,6 +1438,12 @@ def _build_child_progress_callback(
         # event lets UIs open/inspect the subagent's session directly.
         if session_ref and session_ref.get("session_id"):
             kw["child_session_id"] = str(session_ref["session_id"])
+        # Named-submodel attribution (step 21): present only when the task
+        # was dispatched via a profile — never synthesized for plain spawns.
+        if submodel_id is not None:
+            kw["submodel_id"] = submodel_id
+        if reason is not None:
+            kw["reason"] = reason
         kw["tool_count"] = _tool_count[0]
         return kw
 
@@ -1626,6 +1643,12 @@ def _build_child_agent(
     # 'leaf' (default) cannot; 'orchestrator' retains the delegation
     # toolset subject to depth/kill-switch bounds applied below.
     role: str = "leaf",
+    # Named submodel profile (step 21): persona block appended to the
+    # child's focused system prompt, plus event attribution fields relayed
+    # on every subagent.* payload.
+    override_system_prompt_extra: Optional[str] = None,
+    event_submodel_id: Optional[str] = None,
+    event_reason: Optional[str] = None,
 ):
     """
     Build a child AIAgent on the main thread (thread-safe construction).
@@ -1735,6 +1758,7 @@ def _build_child_agent(
         role=effective_role,
         max_spawn_depth=max_spawn,
         child_depth=child_depth,
+        system_prompt_extra=override_system_prompt_extra,
     )
     # Extract parent's API key so subagents inherit auth (e.g. Nous Portal).
     parent_api_key = getattr(parent_agent, "api_key", None)
@@ -1759,6 +1783,8 @@ def _build_child_agent(
         model=effective_model_for_cb,
         toolsets=child_toolsets,
         session_ref=child_session_ref,
+        submodel_id=event_submodel_id,
+        reason=event_reason,
     )
 
     # Each subagent gets its own iteration budget capped at max_iterations
@@ -1925,6 +1951,26 @@ def _build_child_agent(
     if isinstance(child_max_tokens, int):
         child_optional_kwargs["max_tokens"] = child_max_tokens
 
+    # Request-override resolution. Historical contract: with an explicit
+    # provider pin the delegation bundle's overrides REPLACE the parent's
+    # (pinned children must not inherit parent routing knobs). New (step 21)
+    # profile path: when the caller supplies overrides WITHOUT a provider
+    # pin (e.g. profile params.temperature), they merge OVER the parent's —
+    # the profile only wants to nudge one knob while inheriting the rest.
+    # Plain spawns pass neither → parent's overrides verbatim (unchanged).
+    if override_provider:
+        effective_request_overrides = dict(override_request_overrides or {})
+    elif override_request_overrides:
+        _merged_overrides = dict(
+            getattr(parent_agent, "request_overrides", {}) or {}
+        )
+        _merged_overrides.update(override_request_overrides)
+        effective_request_overrides = _merged_overrides
+    else:
+        effective_request_overrides = dict(
+            getattr(parent_agent, "request_overrides", {}) or {}
+        )
+
     # Each child gets a DEDICATED SessionDB connection instead of the parent's
     # live object. The parent's handle is owned by the parent's lifecycle
     # (cron run_job's finally block, gateway session end, /new) and can be
@@ -1993,11 +2039,7 @@ def _build_child_agent(
                 provider_sort=child_provider_sort,
                 provider_require_parameters=child_provider_require_parameters,
                 provider_data_collection=child_provider_data_collection,
-                request_overrides=(
-                    dict(override_request_overrides or {})
-                    if override_provider
-                    else dict(getattr(parent_agent, "request_overrides", {}) or {})
-                ),
+                request_overrides=effective_request_overrides,
                 openrouter_min_coding_score=child_openrouter_min_coding_score,
                 tool_progress_callback=child_progress_cb,
                 iteration_budget=None,  # fresh budget per subagent
@@ -2032,6 +2074,10 @@ def _build_child_agent(
     child._subagent_id = subagent_id
     child._parent_subagent_id = parent_subagent_id
     child._subagent_goal = goal
+    # Named-submodel attribution (step 21): stashed for introspection and
+    # the subagent registry; None on plain spawns (attribute absent).
+    child._submodel_id = event_submodel_id
+    child._delegate_reason = event_reason
     child._parent_turn_id = getattr(parent_agent, "_current_turn_id", "") or ""
     # Ownership chain for the model-facing control plane (action=list/steer/
     # stop): a parent may only control agents whose weakref chain reaches it.
@@ -3818,6 +3864,31 @@ def delegate_task(
             return tool_error(f"Task {i} output_schema invalid: {schema_err}")
         task_schemas.append(coerced_schema)
 
+    # Step 21: per-task submodel profile resolution. An explicit profile
+    # reference must fail loudly — unknown/disabled ids produce a clear
+    # per-task error instead of silently falling back to a default spawn.
+    task_profiles: List[Optional[Dict[str, Any]]] = []
+    for i, task in enumerate(task_list):
+        _pid = str(task.get("profile") or "").strip()
+        if not _pid:
+            task_profiles.append(None)
+            continue
+        try:
+            from agent.submodel_profiles import resolve_submodel
+
+            _profile = resolve_submodel(_pid, enabled_only=True)
+        except Exception:
+            _profile = None
+        if _profile is None:
+            return tool_error(
+                f"Task {i}: unknown or disabled submodel profile "
+                f"'{_pid}'. Check the AVAILABLE SUBMODEL PROFILES list in "
+                "this tool's description (only enabled profiles are "
+                "dispatchable) or fix the profile in config.yaml "
+                "(submodels:)."
+            )
+        task_profiles.append(_profile)
+
     overall_start = time.monotonic()
     results = []
 
@@ -3871,6 +3942,43 @@ def delegate_task(
         # Per-task role beats top-level; normalise again so unknown
         # per-task values warn and degrade to leaf uniformly.
         effective_role = _normalize_role(t.get("role") or top_role)
+        # Step 21: per-task submodel profile overrides. A profile pins the
+        # task's credentials (model/provider/base_url/api_key/api_mode via
+        # the same _resolve_delegation_credentials path), narrows toolsets
+        # (the _build_child_agent parent-intersection guard still applies —
+        # children can never gain tools the parent lacks), caps iterations,
+        # and appends its persona to the child's system prompt.
+        _profile = task_profiles[i] if i < len(task_profiles) else None
+        if _profile is not None:
+            task_creds, profile_err = _creds_for_profile(_profile, parent_agent)
+            if profile_err:
+                return tool_error(f"Task {i} (profile '{_profile.get('id', '')}'): {profile_err}")
+            _profile_toolsets = _profile.get("toolsets")
+            task_toolsets = (
+                [str(ts) for ts in _profile_toolsets] if _profile_toolsets else None
+            )
+            task_max_iter = (
+                _profile.get("max_iterations")
+                if isinstance(_profile.get("max_iterations"), int)
+                else effective_max_iter
+            )
+            _profile_params = _profile.get("params")
+            task_request_overrides = (
+                dict(_profile_params)
+                if isinstance(_profile_params, dict) and _profile_params
+                else None
+            )
+            task_extra_prompt = _profile.get("system_prompt_extra") or None
+            task_event_sid = str(_profile.get("id") or "")
+            task_event_reason = str(t.get("reason") or "").strip() or None
+        else:
+            task_creds = creds
+            task_toolsets = None
+            task_max_iter = effective_max_iter
+            task_request_overrides = creds.get("request_overrides")
+            task_extra_prompt = None
+            task_event_sid = None
+            task_event_reason = None
         # T1-24: schema'd tasks get the contract appended to their context
         # so the child knows the expected output shape before it starts.
         _task_schema = task_schemas[i] if i < len(task_schemas) else None
@@ -3884,27 +3992,37 @@ def delegate_task(
                 task_index=i,
                 goal=t["goal"],
                 context=_child_context,
-                # Subagents always inherit the parent's toolsets; the model
-                # cannot choose or narrow them (no model-facing toolsets arg).
-                toolsets=None,
-                model=creds["model"],
-                max_iterations=effective_max_iter,
+                # Default: subagents inherit the parent's toolsets (the
+                # model cannot choose or narrow them). Submodel profile:
+                # the profile's declared toolsets, still intersected with
+                # the parent's inside _build_child_agent.
+                toolsets=task_toolsets,
+                model=task_creds.get("model") or creds.get("model"),
+                max_iterations=task_max_iter,
                 task_count=n_tasks,
                 parent_agent=parent_agent,
-                override_provider=creds["provider"],
-                override_base_url=creds["base_url"],
-                override_api_key=creds["api_key"],
-                override_api_mode=creds["api_mode"],
-                override_request_overrides=creds.get("request_overrides"),
-                override_max_tokens=creds.get("max_output_tokens"),
-                override_acp_command=creds.get("command"),
-                override_acp_args=creds.get("args"),
+                override_provider=task_creds.get("provider"),
+                override_base_url=task_creds.get("base_url"),
+                override_api_key=task_creds.get("api_key"),
+                override_api_mode=task_creds.get("api_mode"),
+                override_request_overrides=task_request_overrides,
+                override_max_tokens=task_creds.get("max_output_tokens"),
+                override_acp_command=task_creds.get("command"),
+                override_acp_args=task_creds.get("args"),
                 role=effective_role,
+                override_system_prompt_extra=task_extra_prompt,
+                event_submodel_id=task_event_sid,
+                event_reason=task_event_reason,
             )
         except ValueError as exc:
             # Explicit-pin preflight failures (e.g. pinned delegation.command
             # missing from PATH) refuse the spawn loudly (#80450).
             return tool_error(str(exc))
+        if _profile is not None:
+            try:
+                child._submodel_id = str(_profile.get("id") or "")
+            except Exception:
+                pass
         # Attach the validated schema for the completion-side validation
         # hook in _run_single_child. Absent (None) on schema-less tasks.
         if _task_schema is not None:
@@ -4598,6 +4716,26 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
     }
 
 
+def _creds_for_profile(profile: dict, parent_agent) -> Tuple[Dict[str, Any], Optional[str]]:
+    """Resolve a submodel profile into delegation-shaped credentials.
+
+    Returns ``(creds, None)`` on success or ``({}, error_message)`` when the
+    profile's provider/model cannot be resolved (caller fails the spawn
+    loudly — an explicit profile reference must never silently degrade to
+    the default spawn).
+    """
+    try:
+        from agent.submodel_profiles import profile_to_delegation_cfg
+
+        cfg = profile_to_delegation_cfg(profile)
+    except Exception as exc:
+        return {}, f"invalid submodel profile: {exc}"
+    try:
+        return _resolve_delegation_credentials(cfg, parent_agent), None
+    except ValueError as exc:
+        return {}, str(exc)
+
+
 def _load_config() -> dict:
     """Load delegation config from the active Fulilian config.
 
@@ -4713,7 +4851,25 @@ def _build_top_level_description() -> str:
         + restrictions_rule +
         "- Children inherit the parent model unless pinned via "
         "delegation.provider / delegation.model in config.yaml."
+        + _build_roster_description_section()
     )
+
+
+def _build_roster_description_section() -> str:
+    """「可用子模型档案」section for the delegate_task description.
+
+    Empty roster → "" (no empty paragraph). Budgeted by
+    agent.submodel_profiles.build_roster_section (enabled-only, per-profile
+    description truncation, listing cap).
+    """
+    try:
+        from agent.submodel_profiles import build_roster_section
+
+        return build_roster_section()
+    except Exception:
+        # Roster injection must never break schema building.
+        logger.debug("submodel roster section build failed", exc_info=True)
+        return ""
 
 
 def _build_tasks_param_description() -> str:
@@ -4829,6 +4985,24 @@ DELEGATE_TASK_SCHEMA = {
                                 "schema_valid, plus schema_errors on "
                                 "failure). Keep it forgiving — require only "
                                 "fields you will read."
+                            ),
+                        },
+                        "profile": {
+                            "type": "string",
+                            "description": (
+                                "Optional named submodel profile id (from "
+                                "the AVAILABLE SUBMODEL PROFILES list in "
+                                "this tool's description) to run this task "
+                                "on its configured model/toolset/persona. "
+                                "Omit for default subagents."
+                            ),
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": (
+                                "Why this task is dispatched to this "
+                                "profile (shown to the user with the "
+                                "dispatch). Required when profile is set."
                             ),
                         },
                     },
