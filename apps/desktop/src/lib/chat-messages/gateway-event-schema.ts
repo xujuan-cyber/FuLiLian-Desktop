@@ -74,10 +74,15 @@ export const DESKTOP_EVENT_TYPES = [
   'tip.show',
   'preview.html',
   'preview.open',
+  'preview.act.request',
+  'preview.read.request',
   'browser.progress',
   'terminal.cwd',
   'terminal.backend',
-  'terminal.output',
+  'terminal.read.request',
+  'terminal.close',
+  'agent.terminal.output',
+  'window.read.request',
   'gateway.ready'
 ] as const
 

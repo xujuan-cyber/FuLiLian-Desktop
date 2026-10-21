@@ -45,16 +45,27 @@ const loadPreviewEngine = () => {
  *  (terminal/preview/window), agent terminal streaming, pane reveal, and
  *  message reactions. */
 export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
-  const { event, payload, isActiveEvent } = ctx
+  const { parsed, isActiveEvent } = ctx
 
-  if (event.type === 'terminal.read.request') {
+  if (parsed.kind !== 'desktop') {
+    return false
+  }
+
+  const payload = parsed.payload
+
+  // Desktop payloads are a wide record — every consumer narrows at its use
+  // site with these tiny guards (field values are untyped on the wire).
+  const str = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
+  const num = (value: unknown): number | undefined => (typeof value === 'number' ? value : undefined)
+
+  if (parsed.type === 'terminal.read.request') {
     // read_terminal tool: serialize the renderer's xterm buffer and answer
     // immediately (Python blocks on the respond). Empty text = no live pane.
-    const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
+    const requestId = typeof payload.request_id === 'string' ? payload.request_id : ''
 
     if (requestId) {
-      const start = typeof payload?.start === 'number' ? payload.start : undefined
-      const count = typeof payload?.count === 'number' ? payload.count : undefined
+      const start = typeof payload.start === 'number' ? payload.start : undefined
+      const count = typeof payload.count === 'number' ? payload.count : undefined
       const result = readActiveTerminal({ start, count })
 
       void $gateway.get()?.request('terminal.read.respond', {
@@ -66,14 +77,14 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'preview.read.request') {
+  if (parsed.type === 'preview.read.request') {
     // read_preview tool: serialize the active preview tab (a Browser
     // webview's page text is async) and answer. Empty text = nothing open.
-    const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
+    const requestId = typeof payload.request_id === 'string' ? payload.request_id : ''
 
     if (requestId) {
-      const start = typeof payload?.start === 'number' ? payload.start : undefined
-      const count = typeof payload?.count === 'number' ? payload.count : undefined
+      const start = typeof payload.start === 'number' ? payload.start : undefined
+      const count = typeof payload.count === 'number' ? payload.count : undefined
 
       void readActivePreview({ count, start }).then(result => {
         void $gateway.get()?.request('preview.read.respond', {
@@ -86,13 +97,13 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'preview.act.request') {
+  if (parsed.type === 'preview.act.request') {
     // drive_preview tool: click/type/scroll/press inside the guest page, or
     // drive the pane's history. Dynamic import keeps the injected engine off
     // the boot path. Active session only: a background turn must never reach
     // into the page the user is working in (desktop AGENTS.md: offer, don't
     // hijack).
-    const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
+    const requestId = typeof payload.request_id === 'string' ? payload.request_id : ''
 
     if (requestId) {
       const answer = (result: unknown) =>
@@ -105,15 +116,15 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
         void loadPreviewEngine()
           .then(run =>
             run({
-              amount: payload?.amount,
-              key: payload?.key,
-              kind: payload?.action ?? '',
-              max: payload?.max,
-              ref: payload?.ref,
-              selector: payload?.selector,
-              submit: payload?.submit,
-              text: payload?.text,
-              to: payload?.to as PreviewActAction['to']
+              amount: num(payload.amount),
+              key: str(payload.key),
+              kind: str(payload.action) ?? '',
+              max: num(payload.max),
+              ref: str(payload.ref),
+              selector: str(payload.selector),
+              submit: payload.submit === true,
+              text: str(payload.text),
+              to: str(payload.to) as PreviewActAction['to']
             })
           )
           .then(answer, error =>
@@ -130,11 +141,11 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'window.read.request') {
+  if (parsed.type === 'window.read.request') {
     // read_window_below tool: main owns native window enumeration, so ask
     // it over IPC and answer. Empty text = unavailable (no bridge, or
     // enumeration unsupported on this system e.g. Wayland).
-    const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
+    const requestId = typeof payload.request_id === 'string' ? payload.request_id : ''
 
     if (requestId) {
       const read = window.fulilianDesktop?.readWindowBelow
@@ -154,29 +165,29 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'agent.terminal.output') {
+  if (parsed.type === 'agent.terminal.output') {
     // Live chunk from a background process → its read-only agent terminal tab.
-    writeAgentTerminalChunk(payload?.process_id ?? '', payload?.chunk ?? '')
+    writeAgentTerminalChunk(str(payload.process_id) ?? '', str(payload.chunk) ?? '')
 
     return true
   }
 
-  if (event.type === 'terminal.close') {
+  if (parsed.type === 'terminal.close') {
     // Agent closed its own read-only tab via the desktop-gated close_terminal tool.
     // The process is untouched — this only drops the view.
-    closeAgentTerminalByProc(payload?.process_id ?? '')
+    closeAgentTerminalByProc(str(payload.process_id) ?? '')
 
     return true
   }
 
-  if (event.type === 'tour.request') {
+  if (parsed.type === 'tour.request') {
     // tour tool: run one guided-tour action (highlight/step/discover) via
     // driver.js — on the app's own DOM or inside the preview pane's guest
     // page — and answer with the outcome. Dynamic import keeps driver.js
     // and the preview injection payload off the boot path. Active session
     // only: a background turn must never paint overlays on the user's
     // screen (desktop AGENTS.md: offer, don't hijack).
-    const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
+    const requestId = typeof payload.request_id === 'string' ? payload.request_id : ''
 
     if (requestId) {
       const answer = (result: unknown) =>
@@ -195,15 +206,15 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
           .then(({ runTour }) =>
             runTour(
               {
-                kind: (payload?.action ?? 'stop') as TourAction['kind'],
-                selector: payload?.selector,
-                side: payload?.side as TourStep['side'],
-                startAt: payload?.step_index,
-                steps: payload?.steps as TourStep[] | undefined,
-                text: payload?.text,
-                title: payload?.title
+                kind: (str(payload.action) ?? 'stop') as TourAction['kind'],
+                selector: str(payload.selector),
+                side: str(payload.side) as TourStep['side'],
+                startAt: num(payload.step_index),
+                steps: payload.steps as TourStep[] | undefined,
+                text: str(payload.text),
+                title: str(payload.title)
               },
-              payload?.surface === 'preview' ? 'preview' : 'app'
+              payload.surface === 'preview' ? 'preview' : 'app'
             )
           )
           .then(answer, error =>
@@ -220,15 +231,15 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     return true
   }
 
-  if (event.type === 'tip.show') {
+  if (parsed.type === 'tip.show') {
     // tip tool: point the accent bubble at something and say one line about
     // it. Fire-and-forget — a tip is not a question, and blocking the turn on
     // one would stall the sentence the agent is in the middle of, so there is
     // nothing to answer and a refusal is simply a bubble that never appears.
     // Active session only: a background turn must never paint on the user's
     // screen (desktop AGENTS.md: offer, don't hijack).
-    const selector = typeof payload?.selector === 'string' ? payload.selector : ''
-    const text = typeof payload?.text === 'string' ? payload.text : ''
+    const selector = typeof payload.selector === 'string' ? payload.selector : ''
+    const text = typeof payload.text === 'string' ? payload.text : ''
 
     // A tip with nothing to point at is just a notification, and the app
     // already has those. Dropping it here also stops a malformed event from
@@ -236,51 +247,51 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     // later.
     if ($tipsEnabled.get() && isActiveEvent && selector && text) {
       showTip({
-        side: (payload?.side as ActiveTip['side']) ?? 'top',
+        side: (payload.side as ActiveTip['side']) ?? 'top',
         targets: [selector],
         text,
-        title: typeof payload?.title === 'string' ? payload.title : undefined
+        title: typeof payload.title === 'string' ? payload.title : undefined
       })
     }
 
     return true
   }
 
-  if (event.type === 'pane.reveal') {
+  if (parsed.type === 'pane.reveal') {
     // Agent revealed a pane via the desktop-gated focus_pane tool, in
     // response to an explicit user request. Active session only — a
     // background turn must never move the user's focus (desktop AGENTS.md:
     // offer, don't hijack).
     if (isActiveEvent) {
-      revealDesktopPane(payload?.pane ?? '')
+      revealDesktopPane(str(payload.pane) ?? '')
     }
 
     return true
   }
 
-  if (event.type === 'layout.apply') {
+  if (parsed.type === 'layout.apply') {
     // Agent applied a layout preset via the desktop-gated apply_layout
     // tool. Same contract as pane.reveal: active session only, and the
     // preset resolves against the SAME layouts registry the picker reads,
     // so core, plugin, and user presets are all addressable.
     if (isActiveEvent) {
-      applyDesktopLayoutPreset(typeof payload?.preset === 'string' ? payload.preset : '')
+      applyDesktopLayoutPreset(typeof payload.preset === 'string' ? payload.preset : '')
     }
 
     return true
   }
 
-  if (event.type === 'message.reaction') {
+  if (parsed.type === 'message.reaction') {
     // The agent reacted to a message via the desktop-gated
     // react_to_message tool. Already persisted — this only paints it now
     // instead of at the next resume. Fresh ChatMessage object per change:
     // the runtime repository caches normalized ThreadMessages in a WeakMap
     // keyed by ChatMessage identity.
-    const reactedRowId = payload?.row_id
+    const reactedRowId = payload.row_id
 
     if (typeof reactedRowId === 'number') {
-      const nextReactions = Array.isArray(payload?.reactions) ? payload.reactions : []
-      const reactedRole = payload?.role === 'assistant' ? 'assistant' : 'user'
+      const nextReactions = Array.isArray(payload.reactions) ? payload.reactions : []
+      const reactedRole = payload.role === 'assistant' ? 'assistant' : 'user'
 
       setMessages(messages => {
         // Preferred leg: the message already knows its durable row id
