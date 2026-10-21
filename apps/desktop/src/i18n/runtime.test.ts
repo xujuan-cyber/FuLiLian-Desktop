@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { fieldCopyForSchemaKey } from '@/app/settings/field-copy'
 
-import { loadAllTranslations, TRANSLATIONS } from './catalog'
+import { loadAllTranslations, getTranslations, TRANSLATIONS } from './catalog'
 import { setRuntimeI18nLocale, translateNow } from './runtime'
+import { DEFAULT_LOCALE } from './languages'
 import { zh } from './zh'
 
 describe('desktop i18n runtime translator', () => {
@@ -62,7 +63,7 @@ describe('desktop i18n runtime translator', () => {
     expect(fieldCopyForSchemaKey(zh.settings.fieldDescriptions, field)).toBe('当后端提供推理内容时予以显示。')
   })
 
-  it('falls back to English when the active locale cannot resolve a key', () => {
+  it('falls back to the default locale when the active locale cannot resolve a key', () => {
     const boot = TRANSLATIONS.ja.boot as { ready?: string }
     const originalReady = boot.ready
 
@@ -70,7 +71,9 @@ describe('desktop i18n runtime translator', () => {
       boot.ready = undefined
       setRuntimeI18nLocale('ja')
 
-      expect(translateNow('boot.ready')).toBe('Fulilian Desktop is ready')
+      // The fallback target is DEFAULT_LOCALE wherever it points; assert
+      // against the constant so the test survives default-language changes.
+      expect(translateNow('boot.ready')).toBe(getTranslations(DEFAULT_LOCALE).boot.ready)
     } finally {
       boot.ready = originalReady
     }

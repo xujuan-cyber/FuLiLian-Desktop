@@ -26,13 +26,17 @@ function render(value: unknown, args: unknown[]): null | string {
   return null
 }
 
-/** The active → DEFAULT → key resolution every translator shares. `source`
- *  yields a message tree per locale — the app catalog, or a plugin's bundles. */
+/** The active → fallback → key resolution every translator shares. `source`
+ *  yields a message tree per locale — the app catalog, or a plugin's bundles.
+ *  The fallback defaults to DEFAULT_LOCALE (app catalog semantics), but plugin
+ *  bundles pass 'en' explicitly: plugins always ship an `en` bundle regardless
+ *  of which locale the app defaults to. */
 export function translateFrom(
   source: (locale: Locale) => unknown,
   locale: Locale,
   key: string,
-  args: unknown[]
+  args: unknown[],
+  fallbackLocale: Locale = DEFAULT_LOCALE
 ): string {
   const active = render(resolvePath(source(locale), key), args)
 
@@ -40,8 +44,8 @@ export function translateFrom(
     return active
   }
 
-  if (locale !== DEFAULT_LOCALE) {
-    const fallback = render(resolvePath(source(DEFAULT_LOCALE), key), args)
+  if (locale !== fallbackLocale) {
+    const fallback = render(resolvePath(source(fallbackLocale), key), args)
 
     if (fallback !== null) {
       return fallback

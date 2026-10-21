@@ -89,7 +89,7 @@ describe('reportTimelineStarAudit', () => {
 function mountTimeline(caseId = 'CASE-2026-014') {
   return render(
     <MemoryRouter initialEntries={[`/cases/${caseId}/timeline`]}>
-      <I18nProvider>
+      <I18nProvider configClient={null} initialLocale="en">
         <CaseTimelineView caseId={caseId} />
       </I18nProvider>
     </MemoryRouter>

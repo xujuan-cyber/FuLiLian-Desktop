@@ -160,7 +160,9 @@ describe('buildToolView browser_navigate title', () => {
     )
 
     expect(view.status).toBe('error')
-    expect(view.title).toBe('Failed to open github.com')
+    // `hostnameOf` keeps hostname + pathname (targets.ts) so same-site pages
+    // stay distinguishable in the transcript — assert the full path.
+    expect(view.title).toBe('Failed to open github.com/xujuan-cyber/fulilian/docs')
   })
 
   it('shows opened title on success', () => {
@@ -174,7 +176,7 @@ describe('buildToolView browser_navigate title', () => {
     )
 
     expect(view.status).toBe('success')
-    expect(view.title).toBe('Opened github.com')
+    expect(view.title).toBe('Opened github.com/xujuan-cyber/fulilian/docs')
   })
 })
 

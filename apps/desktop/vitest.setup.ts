@@ -37,4 +37,7 @@ if (typeof (globalThis as any).localStorage === 'undefined') {
 // panels (radix menus, refetch chains) when the full suite runs under xdist
 // CPU contention in CI. Success still resolves the instant the node appears;
 // the wider deadline only absorbs a starved runner, killing timing flakes.
-configure({ asyncUtilTimeout: 5000 })
+// 5000 was still too tight for the heaviest full-suite files (messaging and
+// gateway-settings each need ~5.5-6.5s under contention) — 8000 clears them
+// with margin without slowing any passing test down.
+configure({ asyncUtilTimeout: 8000 })

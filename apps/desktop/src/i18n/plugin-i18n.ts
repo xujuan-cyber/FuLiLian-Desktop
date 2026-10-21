@@ -88,7 +88,10 @@ export function registerPluginLocales(pluginId: string, bundles: PluginLocaleBun
 }
 
 export function translatePlugin(pluginId: string, locale: Locale, key: string, args: unknown[]): string {
-  return translateFrom(l => registry.get(pluginId)?.get(l), locale, key, args)
+  // Fallback is always the plugin's own `en` bundle, never the app's
+  // DEFAULT_LOCALE — plugins document "active locale → en → key", and a
+  // plugin that ships only `en` must not render raw keys for zh users.
+  return translateFrom(l => registry.get(pluginId)?.get(l), locale, key, args, 'en')
 }
 
 /** Build the `ctx.i18n` door for a plugin. `track` records the disposer so the

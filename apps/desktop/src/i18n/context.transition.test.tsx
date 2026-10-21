@@ -65,7 +65,7 @@ describe('I18nProvider locale transition (P16)', () => {
 
   it('keeps the previous locale on screen during the transition and swaps once when the chunk lands', async () => {
     render(
-      <I18nProvider configClient={null}>
+      <I18nProvider configClient={null} initialLocale="en">
         <TransitionProbe />
       </I18nProvider>
     )
@@ -102,7 +102,7 @@ describe('I18nProvider locale transition (P16)', () => {
     }
 
     render(
-      <I18nProvider configClient={configClient}>
+      <I18nProvider configClient={configClient} initialLocale="en">
         <TransitionProbe />
       </I18nProvider>
     )
