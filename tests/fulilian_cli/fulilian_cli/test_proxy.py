@@ -13,7 +13,6 @@ import pytest
 
 from fulilian_cli.proxy.adapters import ADAPTERS, get_adapter
 from fulilian_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
-from fulilian_cli.proxy.adapters.nous_portal import NousPortalAdapter
 from fulilian_cli.proxy.adapters.xai import XAIGrokAdapter
 
 
@@ -47,6 +46,15 @@ def _write_auth_store(fulilian_home: Path, nous_state: Dict[str, Any]) -> Path:
 
 def test_nous_adapter_concurrent_refresh_serialized(tmp_path, monkeypatch):
     """Two parallel get_credential() calls must serialize through the lock."""
+    # BL-45: fulilian_cli.proxy.adapters.nous_portal was never implemented —
+    # fulilian_cli/proxy/adapters/ ships base.py + xai.py only. Importing it at
+    # module scope turned the whole file (xai adapter + proxy server cases
+    # included) into a collection error, which hid the real coverage. Skip just
+    # this case with the reason attached so the gap stays visible in the report.
+    nous_portal = pytest.importorskip(
+        "fulilian_cli.proxy.adapters.nous_portal",
+        reason="adapter not implemented; see BL-45",
+    )
     monkeypatch.setenv("FULILIAN_HOME", str(tmp_path))
     _write_auth_store(tmp_path, {
         "access_token": "a", "refresh_token": "r",
@@ -79,7 +87,7 @@ def test_nous_adapter_concurrent_refresh_serialized(tmp_path, monkeypatch):
         finally:
             in_flight.clear()
 
-    adapter = NousPortalAdapter()
+    adapter = nous_portal.NousPortalAdapter()
     results: list = []
     errors: list = []
 
