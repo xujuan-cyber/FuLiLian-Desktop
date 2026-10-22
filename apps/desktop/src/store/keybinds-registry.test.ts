@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { KEYBIND_ACTIONS, KEYBIND_READONLY } from '@/lib/keybinds/actions'
 
 import {
+  $keybindsSheetOpen,
   detectKeybindConflicts,
   DISPATCHED_KEYBIND_ENTRIES,
   fixedRowsForGroup,
@@ -14,7 +15,6 @@ import {
   setKeybindsSheetOpen,
   suggestAlternative,
   toggleKeybindsSheet,
-  $keybindsSheetOpen,
   validateDispatchedKeybinds
 } from './keybinds-registry'
 

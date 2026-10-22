@@ -17,6 +17,7 @@ describe('desktop i18n languages', () => {
 
   it('declares a writing direction for every locale', () => {
     expect(localeDir('ar')).toBe('rtl')
+
     for (const locale of ['zh', 'zh-hant', 'en', 'ja'] as const) {
       expect(localeDir(locale)).toBe('ltr')
     }

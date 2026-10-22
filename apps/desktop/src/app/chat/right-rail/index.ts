@@ -1,2 +1,2 @@
-export { PreviewTilePane } from './preview'
 export { ContainerSideCards } from './container-cards'
+export { PreviewTilePane } from './preview'

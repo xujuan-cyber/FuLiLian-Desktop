@@ -15,7 +15,6 @@ import {
   NOTIFICATION_CENTER_CHANNEL,
   type NotificationCenterWindow
 } from './notification-center'
-import type { NotifyPayload } from './notifications'
 
 class FakeWindow implements NotificationCenterWindow {
   sent: Array<{ channel: string; args: unknown[] }> = []
@@ -59,6 +58,7 @@ describe('createNotificationCenterSink', () => {
   test('fans the entry out to every live window on the center channel', () => {
     const winA = new FakeWindow()
     const winB = new FakeWindow()
+
     const sink = createNotificationCenterSink({
       getWindows: () => [winA, winB],
       nextId: () => 'id-1',

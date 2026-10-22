@@ -97,6 +97,7 @@ describe('createBootTiming', () => {
   const collect = () => {
     const lines: string[] = []
     let clock = 0
+
     const timing = createBootTiming({
       now: () => clock,
       sink: line => lines.push(line)
@@ -215,10 +216,12 @@ describe('createBootTiming', () => {
 
     // 负值 / 倒挂组合绝不产出（本机实测 window-shown 早于 resolve:start）。
     assert.equal(measures.some(line => /=\s*-/.test(line)), false)
+
     for (const line of measures) {
       const ms = Number(line.slice(line.lastIndexOf('= ') + 2, -2))
       assert.ok(ms >= 0, `measure must not be negative: ${line}`)
     }
+
     assert.equal(lines.includes(`${BOOT_TIMING_PREFIX} measure resolve→window-shown = -6400ms`), false)
     assert.equal(lines.includes(`${BOOT_TIMING_PREFIX} measure ready→window-shown = -10355ms`), false)
   })
@@ -255,6 +258,7 @@ describe('createBootTiming', () => {
 
     const value = timing.span('createWindow', () => {
       advance(12.3)
+
       return 'ok'
     })
 
@@ -266,9 +270,11 @@ describe('createBootTiming', () => {
     const { lines, timing, advance } = collect()
 
     let settle: (value: string) => void = () => {}
+
     const pending = new Promise<string>(resolve => {
       settle = resolve
     })
+
     const returned = timing.span('reapOrphanedBackends', () => pending)
 
     advance(6400)

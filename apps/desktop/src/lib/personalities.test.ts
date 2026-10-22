@@ -61,6 +61,7 @@ const BUILTIN_BLOCK = blockOf('BUILTIN_PERSONALITIES: Dict[str, Any] = {')
 const PRESET_BLOCK = blockOf('PRESET_TOOLSETS: Dict[str, List[str]] = {')
 
 const pythonPersonalityNames = keysAtTopLevel(BUILTIN_BLOCK)
+
 const pythonPresetKeys = Array.from(PRESET_BLOCK.matchAll(/"([A-Za-z0-9-]+)": \[/g))
   .map(match => match[1]!)
   .sort()

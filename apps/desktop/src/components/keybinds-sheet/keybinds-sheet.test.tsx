@@ -2,11 +2,10 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { setKeybindsSheetOpen, toggleKeybindsSheet, $keybindsSheetOpen } from '@/store/keybinds-registry'
+import { I18nProvider } from '@/i18n'
+import { $keybindsSheetOpen, setKeybindsSheetOpen, toggleKeybindsSheet } from '@/store/keybinds-registry'
 
 import { KeybindsSheet } from './keybinds-sheet'
-
-import { I18nProvider } from '@/i18n'
 
 // Step 16 · T9 (方案 §3-T9): the ? cheat sheet is a pure read of the shared
 // registry — open state lives in the store; '?'/Esc dispatch belongs to

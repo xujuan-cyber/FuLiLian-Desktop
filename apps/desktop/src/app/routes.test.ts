@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  APP_ROUTES,
   appViewForPath,
   CASES_ROUTE,
   caseTimelineCaseId,
@@ -10,8 +11,7 @@ import {
   primaryRouteSelectedSessionId,
   routeSessionId,
   sessionRoute,
-  SETTINGS_ROUTE,
-  APP_ROUTES
+  SETTINGS_ROUTE
 } from './routes'
 
 const SESS_A = 'sess-a'

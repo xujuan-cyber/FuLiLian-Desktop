@@ -7,9 +7,9 @@
 
 import type { Translations } from '@/i18n'
 import { writeDesktopFileText } from '@/lib/desktop-fs'
-import { notify } from '@/store/notifications'
 import { timelineToCsv } from '@/store/case-timeline-csv'
 import type { TimelineEvent } from '@/store/case-timeline-types'
+import { notify } from '@/store/notifications'
 
 /** Local "MM-DD HH:mm:ss" for the table's mono time column (预览 07). */
 export function timelineEventAt(at: number): string {

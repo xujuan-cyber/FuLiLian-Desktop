@@ -2,11 +2,10 @@ import type { Unstable_TriggerAdapter, Unstable_TriggerItem } from '@assistant-u
 import { useCallback } from 'react'
 
 import { searchSessions } from '@/api/sessions'
-import type { SessionSearchResult } from '@/types/fulilian'
-
-import { $sessions } from '@/store/session'
 import { sessionTitle } from '@/lib/chat-runtime'
 import { normalize } from '@/lib/text'
+import { $sessions } from '@/store/session'
+import type { SessionSearchResult } from '@/types/fulilian'
 
 import type { CompletionEntry, CompletionPayload } from './use-live-completion-adapter'
 import { useLiveCompletionAdapter } from './use-live-completion-adapter'

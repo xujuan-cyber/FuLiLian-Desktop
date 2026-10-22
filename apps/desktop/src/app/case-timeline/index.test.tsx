@@ -1,22 +1,23 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
-
-import { CaseTimelineView } from './index'
-import { reportTimelineStarAudit, setTimelineAuditCaseId, timelineEventAt } from './case-timeline-utils'
+import { I18nProvider } from '@/i18n'
+import { en } from '@/i18n/en'
 import {
+  $filteredEvents,
+  $timelineEvents,
+  $timelineMockGenerated,
   clearTimelineState,
   eventKey,
   setCaseTimelineDataset,
-  toggleTimelineStar,
-  $filteredEvents,
-  $timelineEvents,
-  $timelineMockGenerated
+  toggleTimelineStar
 } from '@/store/case-timeline'
 import type { TimelineEvent, TimelinePayload } from '@/store/case-timeline-types'
-import { I18nProvider } from '@/i18n'
-import { en } from '@/i18n/en'
+
+import { reportTimelineStarAudit, setTimelineAuditCaseId, timelineEventAt } from './case-timeline-utils'
+
+import { CaseTimelineView } from './index'
 
 vi.mock('react-router', async importOriginal => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -58,6 +59,7 @@ describe('reportTimelineStarAudit', () => {
 
   it('sends the star toggle over the caseTimeline bridge with atoms only', () => {
     const timeline = vi.fn().mockResolvedValue(null)
+
     ;(window.fulilianDesktop as unknown as { caseTimeline: { timeline: typeof timeline } }) = {
       caseTimeline: { timeline }
     } as never
@@ -73,6 +75,7 @@ describe('reportTimelineStarAudit', () => {
 
   it('stays silent when the bridge is unavailable (audit degrades, no throw)', () => {
     const original = window.fulilianDesktop
+
     ;(window as { fulilianDesktop?: unknown }).fulilianDesktop = undefined
 
     setTimelineAuditCaseId('CASE-1')

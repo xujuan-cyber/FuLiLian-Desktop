@@ -15,7 +15,6 @@ import {
   clearTimelineState,
   eventKey,
   filterTimelineEvents,
-  type TimelineFilterState,
   HISTOGRAM_BUCKET_MS,
   histogramBuckets,
   normalizeDragSpan,
@@ -26,8 +25,8 @@ import {
   setRangeFilter,
   setSourceFilter,
   setStarredOnly,
-  setTimelineCase,
   starredEvents,
+  type TimelineFilterState,
   toggleSource,
   toggleTag,
   toggleTimelineStar
@@ -106,6 +105,7 @@ describe('filterTimelineEvents (pure)', () => {
 
   it('axes compose: source + confidence + starred together', () => {
     const events = fixture()
+
     const filter: TimelineFilterState = {
       confidenceMin: 60,
       drag: null,

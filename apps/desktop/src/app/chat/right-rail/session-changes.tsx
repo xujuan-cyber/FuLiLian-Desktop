@@ -13,7 +13,7 @@ import { isExcludedPath } from '@/lib/excluded-paths'
 import { cn } from '@/lib/utils'
 import { $currentCwd } from '@/store/session'
 import { $focusedRuntimeId, $sessionStates } from '@/store/session-states'
-import { toolChangedPath, toolMayMutateFiles, $workspaceChangeTick } from '@/store/workspace-events'
+import { $workspaceChangeTick, toolChangedPath, toolMayMutateFiles } from '@/store/workspace-events'
 
 // SESSION CHANGES (step14 R2) — the session-scoped aggregate review view:
 // every file the conversation's tool calls touched, each expanding to its

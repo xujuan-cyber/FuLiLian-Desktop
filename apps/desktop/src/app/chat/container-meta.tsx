@@ -2,7 +2,7 @@ import { StatusDot } from '@/components/status-dot'
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-import { sessionContainerKind, type ContainerKind } from './sidebar/container-kind'
+import { type ContainerKind, sessionContainerKind } from './sidebar/container-kind'
 
 // Kind markers ride the StatusDot primitive's 6px geometry; the color is the
 // MODE color, not a status (DESIGN_PROPOSAL §2 原则 5 — 模式色只做 6px 点与

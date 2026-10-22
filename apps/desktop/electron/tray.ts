@@ -26,7 +26,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { app, ipcMain, Menu, Tray, nativeImage } from 'electron'
+import { app, ipcMain, Menu, nativeImage, Tray } from 'electron'
 
 // ── Menu copy ───────────────────────────────────────────────────────────────
 // Keys, not strings: the main process has no i18n runtime, so the renderer
@@ -468,20 +468,26 @@ function trayTemplate(
     switch (item.type) {
       case 'separator':
         return { type: 'separator' as const }
+
       case 'heading':
         return { enabled: false, label: `${labels[item.labelKey]} · ${item.count}` }
+
       case 'session':
         return { click: () => actions.focusSession(item.sessionId), label: item.title }
+
       case 'new-session':
         return {
           accelerator: item.accelerator,
           click: () => actions.newSession(item.sessionKind),
           label: labels[item.labelKey]
         }
+
       case 'open-main':
         return { accelerator: item.accelerator, click: () => actions.openMainWindow(), label: labels[item.labelKey] }
+
       case 'quit':
         return { click: () => actions.quit(), label: labels[item.labelKey] }
+
       default:
         return { type: 'separator' as const }
     }

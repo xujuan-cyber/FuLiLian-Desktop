@@ -36,10 +36,10 @@ import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
 import { OverlayMain, OverlayNav, OverlaySplitLayout } from '../overlays/overlay-split-layout'
 import { OverlayView } from '../overlays/overlay-view'
-import { ModelDistributionBar, UsageTrendChart, modelShares } from './usage-charts'
 
-import { MaintenancePanel } from './maintenance'
 import { LOG_FILES, LOG_LEVELS, LogsPanel } from './logs-panel'
+import { MaintenancePanel } from './maintenance'
+import { ModelDistributionBar, modelShares, UsageTrendChart } from './usage-charts'
 
 export type CommandCenterSection = 'logs' | 'maintenance' | 'sessions' | 'system' | 'usage'
 

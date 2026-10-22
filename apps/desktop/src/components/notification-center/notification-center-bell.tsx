@@ -14,21 +14,21 @@ import { useStore } from '@nanostores/react'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 
+import { openSession } from '@/app/open-session'
+import { titlebarButtonClass } from '@/app/shell/titlebar'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
-import { titlebarButtonClass } from '@/app/shell/titlebar'
 import { Bell } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { openSession } from '@/app/open-session'
 import {
   $centerGroups,
   $notificationCenterUnread,
   markNotificationRead,
-  startNotificationCenterFeed,
   type NotificationCenterGroup,
-  type NotificationCenterRow
+  type NotificationCenterRow,
+  startNotificationCenterFeed
 } from '@/store/notification-center'
 
 /** 6px status dot — the DESIGN_PROPOSAL §3.5 size, tinted per group. */
@@ -42,6 +42,7 @@ function GroupDot({ group }: { group: NotificationCenterGroup }) {
 function CenterRow({ row, onOpen }: { row: NotificationCenterRow; onOpen: (row: NotificationCenterRow) => void }) {
   const { t } = useI18n()
   const a = t.notificationCenter
+
   const hint =
     row.group === 'approval' ? a.approvalRowHint : row.id.startsWith('cron:') ? a.cronRowHint : row.id.startsWith('note:') ? a.noteRowHint : null
 
@@ -84,7 +85,7 @@ function GroupSection({
   }
 
   return (
-    <div data-slot="notification-center-section" data-group={group}>
+    <div data-group={group} data-slot="notification-center-section">
       <div className="flex items-center gap-1.5 px-2 pb-1 pt-2">
         <GroupDot group={group} />
         <span className="text-[0.625rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary)">{heading}</span>
@@ -156,7 +157,7 @@ export function NotificationCenterBell() {
           <p className="px-2 py-6 text-center text-xs text-(--ui-text-tertiary)">{a.empty}</p>
         ) : (
           sections.map(section => (
-            <GroupSection heading={section.heading} group={section.group} key={section.group} onOpen={open} rows={section.rows} />
+            <GroupSection group={section.group} heading={section.heading} key={section.group} onOpen={open} rows={section.rows} />
           ))
         )}
       </PopoverContent>

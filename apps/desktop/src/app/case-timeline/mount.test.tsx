@@ -6,8 +6,8 @@
 // (JSX lives in this .tsx because routes.test.ts is a plain .ts.)
 
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'
+import { describe, expect, it } from 'vitest'
 
 import { caseTimelineRoute } from '../routes'
 

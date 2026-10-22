@@ -34,22 +34,22 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { CheckCircle2, FileText } from '@/lib/icons'
 import { useI18n } from '@/i18n'
 import { writeDesktopFileText } from '@/lib/desktop-fs'
+import { CheckCircle2, FileText } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { notify, notifyError } from '@/store/notifications'
 import { $caseId, starredEvents } from '@/store/case-timeline'
 import { timelineToCsv } from '@/store/case-timeline-csv'
+import { notify, notifyError } from '@/store/notifications'
 import {
+  $reportExport,
   buildAuditJsonl,
   buildReportMarkdown,
+  REPORT_SECTION_IDS,
+  type ReportSectionId,
   sectionsWithData,
   setReportExportBusy,
-  setReportExportError,
-  $reportExport,
-  REPORT_SECTION_IDS,
-  type ReportSectionId
+  setReportExportError
 } from '@/store/report-center'
 
 /** Shape of one JSONL line in the audit export. Atoms + counts only. */

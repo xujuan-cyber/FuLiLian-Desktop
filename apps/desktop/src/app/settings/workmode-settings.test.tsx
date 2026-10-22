@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
 import type { ReactElement } from 'react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { FulilianConfigRecord } from '@/types/fulilian'
-
 import { stubResizeObserver } from '@/test/jsdom'
+import type { FulilianConfigRecord } from '@/types/fulilian'
 
 stubResizeObserver()
 
@@ -57,6 +56,7 @@ describe('ForensicsSettings (work mode · forensics)', () => {
     for (const name of ['Overview', 'Evidence inventory', 'Analysis process', 'Conclusion', 'Appendix']) {
       expect(screen.getByRole('switch', { name }).getAttribute('aria-checked')).toBe('true')
     }
+
     for (const name of ['Disk images', 'Logs', 'Packet captures']) {
       expect(screen.getByRole('switch', { name }).getAttribute('aria-checked')).toBe('true')
     }

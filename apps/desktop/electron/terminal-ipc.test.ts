@@ -128,6 +128,7 @@ test('P8/2 reaching the 64 KiB threshold flushes at once and cancels the window'
   vi.useFakeTimers()
 
   const sent: string[] = []
+
   const buffer = createTerminalOutputBuffer({
     flush: data => sent.push(data),
     thresholdBytes: TERMINAL_OUTPUT_FLUSH_BYTES,
@@ -153,6 +154,7 @@ test('P8/3 flush() is immediate and idempotent — the hook used before `exit`',
   vi.useFakeTimers()
 
   const sent: string[] = []
+
   const buffer = createTerminalOutputBuffer({
     flush: data => sent.push(data),
     thresholdBytes: TERMINAL_OUTPUT_FLUSH_BYTES,
@@ -177,6 +179,7 @@ test('P8/4 dispose drops the pending tail, sends nothing afterwards, and leaves 
   vi.useFakeTimers()
 
   const sent: string[] = []
+
   const buffer = createTerminalOutputBuffer({
     flush: data => sent.push(data),
     thresholdBytes: TERMINAL_OUTPUT_FLUSH_BYTES,
@@ -205,6 +208,7 @@ test('P8/5 one oversized chunk is sent whole and at once, never accumulated', ()
   vi.useFakeTimers()
 
   const sent: string[] = []
+
   const buffer = createTerminalOutputBuffer({
     flush: data => sent.push(data),
     thresholdBytes: TERMINAL_OUTPUT_FLUSH_BYTES,

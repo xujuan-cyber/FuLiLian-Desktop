@@ -2,13 +2,13 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { type KeybindRuntimeDeps, paletteOwnsNumberCombo, useKeybinds } from './use-keybinds'
-
 import { I18nProvider } from '@/i18n'
+import { actionAllowedInInput } from '@/lib/keybinds/combo'
 import { $commandPaletteOpen } from '@/store/command-palette'
 import { $keybindsSheetOpen } from '@/store/keybinds-registry'
 import { $newChatProfile, $profiles } from '@/store/profile'
-import { actionAllowedInInput } from '@/lib/keybinds/combo'
+
+import { type KeybindRuntimeDeps, paletteOwnsNumberCombo, useKeybinds } from './use-keybinds'
 
 // Step 16 · T8: the Ctrl 1-9 zone-jump guard. While the ⌘K palette is open the
 // profile/tab-slot switchers must yield mod+1..9 (the palette's input handler

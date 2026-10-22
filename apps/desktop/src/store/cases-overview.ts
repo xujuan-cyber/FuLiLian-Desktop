@@ -22,8 +22,8 @@ import { atom, computed } from 'nanostores'
 
 import type { SessionInfo } from '@/types/fulilian'
 
-import { $archivedSessions } from './sidebar-archive'
 import { $cronSessions, $messagingSessions, $sessions } from './session'
+import { $archivedSessions } from './sidebar-archive'
 
 // ── Data shape ───────────────────────────────────────────────────────────────
 
@@ -113,6 +113,7 @@ export function aggregateCaseCards({
 
   const absorb = (session: SessionInfo, archived: boolean): void => {
     const key = sessionContainerKey(session)
+
     const bucket = buckets.get(key) ?? {
       archived: true,
       lastActive: 0,

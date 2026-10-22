@@ -27,9 +27,10 @@
 // sanitize) is exported for direct unit tests; every electron surface is
 // injectable (fs-ipc.ts 先例).
 
-import { app, dialog, ipcMain } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
+
+import { app, dialog, ipcMain } from 'electron'
 
 // ── Audit marker line (T7/T13 先例) ─────────────────────────────────────────
 
@@ -232,6 +233,7 @@ export interface ReportExportIpcDeps {
 function defaultCreatePrintWindow(): ReportPrintWindow {
   // Lazy require-free: BrowserWindow comes from the top-level electron import.
   const { BrowserWindow } = require('electron') as typeof import('electron')
+
   const win = new BrowserWindow({
     show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
@@ -257,6 +259,7 @@ function defaultCreatePrintWindow(): ReportPrintWindow {
  */
 export function registerReportExportIpc(deps: ReportExportIpcDeps = {}): void {
   const log = deps.log ?? (() => {})
+
   const showSaveDialog =
     deps.showSaveDialog ??
     (async options => {
@@ -264,12 +267,15 @@ export function registerReportExportIpc(deps: ReportExportIpcDeps = {}): void {
 
       return { canceled: result.canceled, filePath: result.filePath }
     })
+
   const createPrintWindow = deps.createPrintWindow ?? defaultCreatePrintWindow
+
   const writeFile =
     deps.writeFile ??
     (async (filePath, data) => {
       await fs.promises.writeFile(filePath, data)
     })
+
   const readAuditText = deps.readAuditText ?? (() => readAuditLogText(deps.auditLogPath ?? ''))
 
   ipcMain.handle(REPORT_EXPORT_CHANNEL, async (_event, raw: unknown): Promise<unknown> => {
@@ -286,11 +292,13 @@ export function registerReportExportIpc(deps: ReportExportIpcDeps = {}): void {
       }
 
       const downloads = deps.downloadsPath ?? app.getPath('downloads')
+
       const picked = await showSaveDialog({
         defaultPath: path.join(downloads, `${sanitizeFilename(caseId || 'report', 'report')}-report.pdf`),
         filters: [{ extensions: ['pdf'], name: 'PDF' }],
         title: title || 'Export report PDF'
       })
+
       const filePath = picked?.filePath ?? null
 
       if (!filePath) {

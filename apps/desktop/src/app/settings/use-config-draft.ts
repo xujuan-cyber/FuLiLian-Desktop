@@ -43,7 +43,7 @@ export function useConfigDraft() {
     }
   }, [loadedConfig])
 
-  // eslint-disable-next-line no-restricted-syntax -- autosave bookkeeping refs, not an atom mirror
+   
   useEffect(() => {
     if (!config || saveVersion === 0) {
       return

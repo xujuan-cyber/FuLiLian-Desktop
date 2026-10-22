@@ -58,6 +58,7 @@ describe('home copy across locales', () => {
       }
 
       const own = renderedHome(t)
+
       for (const [key, value] of Object.entries(own)) {
         expect(value, `${locale}.home.${key} still reads as the English string`).not.toBe(base[key])
       }

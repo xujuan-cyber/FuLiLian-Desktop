@@ -18,13 +18,13 @@ import { test } from 'vitest'
 
 import {
   BACKEND_RESOLVE_CACHE_SCHEMA_VERSION,
+  type BackendResolveCacheIO,
   buildResolveCacheFingerprint,
   createBackendResolveCache,
   isCacheableBackendResolution,
   parseBackendResolveCacheFile,
-  resolveCacheFingerprintsMatch,
-  type BackendResolveCacheIO,
   type ResolveCacheFingerprint,
+  resolveCacheFingerprintsMatch,
   type ResolvedBackendSnapshot
 } from './backend-resolve-cache'
 
@@ -64,6 +64,7 @@ function baseBackend(): ResolvedBackendSnapshot {
 
 function memoryIO(initial: string | null = null): BackendResolveCacheIO & { writes: string[]; reads: number } {
   let contents = initial
+
   const state = {
     writes: [] as string[],
     reads: 0,
@@ -182,6 +183,7 @@ test('parseBackendResolveCacheFile: bootstrap-needed / missing command ⇒ null 
     backend: { ...baseBackend(), kind: 'bootstrap-needed', command: null },
     savedAt: ''
   })
+
   const noCommandFile = JSON.stringify({
     fingerprint: baseFingerprint(),
     backend: { ...baseBackend(), command: '' },
@@ -206,6 +208,7 @@ test('load: 命中零探测 —— 只读一次盘、不写盘、返回缓存 ba
   const io = memoryIO(
     JSON.stringify({ fingerprint: baseFingerprint(), backend: baseBackend(), savedAt: 't' })
   )
+
   const cache = createBackendResolveCache(CACHE_PATH, io)
 
   // 建模 main.ts 命中路径：命中即返回，绝不触碰解析阶梯。
@@ -239,6 +242,7 @@ test('load: 读盘抛错 ⇒ null（不抛）', () => {
     },
     writeFile: () => undefined
   }
+
   const cache = createBackendResolveCache(CACHE_PATH, io)
 
   assert.equal(cache.load(baseFingerprint()), null)
@@ -277,6 +281,7 @@ test('store: 写盘失败不抛（缓存是加速手段，绝不破坏启动）'
       throw new Error('EROFS')
     }
   }
+
   const cache = createBackendResolveCache(CACHE_PATH, io)
 
   assert.doesNotThrow(() => cache.store(baseFingerprint(), baseBackend()))

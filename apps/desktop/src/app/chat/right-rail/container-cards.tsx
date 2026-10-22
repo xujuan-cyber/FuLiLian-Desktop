@@ -21,6 +21,7 @@ import type { ContainerKind } from '../sidebar/container-kind'
 
 const CARD = 'rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-bg-secondary) p-3'
 const CARD_TITLE = 'text-[length:var(--conversation-caption-font-size)] font-medium text-(--ui-text-secondary)'
+
 const CARD_EMPTY =
   'mt-1.5 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)'
 

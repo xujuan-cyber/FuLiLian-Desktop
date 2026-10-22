@@ -1,8 +1,7 @@
-import { useI18n } from '@/i18n'
-import { Clock, Download, Trash2 } from '@/lib/icons'
-
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useI18n } from '@/i18n'
+import { Clock, Download, Trash2 } from '@/lib/icons'
 
 import { ListRow, SectionHeading, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { useConfigDraft } from './use-config-draft'

@@ -1,9 +1,8 @@
+import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { FolderOpen } from '@/lib/icons'
-
 import { confirm } from '@/store/confirm'
 
-import { Button } from '@/components/ui/button'
 import { ListRow, SectionHeading, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { useConfigDraft } from './use-config-draft'
 

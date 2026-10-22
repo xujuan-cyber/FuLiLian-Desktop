@@ -3,9 +3,9 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClientSessionState } from '@/app/types'
 
 import { $sessions } from './session'
+import type { SessionDotState } from './session-dot-state'
 import { clearAllSessionStates, publishSessionState } from './session-states'
 import { trayCounts, traySnapshotFrom } from './tray-state'
-import type { SessionDotState } from './session-dot-state'
 
 const desktopWindow = window as unknown as { fulilianDesktop?: Window['fulilianDesktop'] }
 const pushState = vi.fn()
@@ -13,8 +13,10 @@ const setCloseToTrayBridge = vi.fn()
 
 const busy = (storedSessionId: string, isBusy: boolean) =>
   ({ busy: isBusy, needsInput: false, storedSessionId }) as unknown as ClientSessionState
+
 const blocked = (storedSessionId: string) =>
   ({ busy: false, messages: [], needsInput: true, storedSessionId }) as unknown as ClientSessionState
+
 const session = (id: string, title: null | string) => ({ id, title }) as (typeof $sessions.value)[number]
 
 let setCloseToTray: (on: boolean) => void

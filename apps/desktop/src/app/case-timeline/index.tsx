@@ -20,10 +20,9 @@ import { ReportCenterDialog } from '@/app/report-center'
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ChevronLeft, Download, FileText, Save, Star, StarFilled, X } from '@/lib/icons'
 import { type Translations, useI18n } from '@/i18n'
+import { ChevronLeft, Download, FileText, Save, Star, StarFilled, X } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { notify, notifyError } from '@/store/notifications'
 import {
   $confidenceFilter,
   $dragSelection,
@@ -46,14 +45,16 @@ import {
   setDragSelection,
   setStarredOnly,
   setTimelineCase,
+  type TimelineEvent,
+  type TimelinePayload,
   toggleSource,
   toggleTag,
-  toggleTimelineStar,
-  type TimelineEvent,
-  type TimelinePayload
+  toggleTimelineStar
 } from '@/store/case-timeline'
 import { TIMELINE_EVENT_SOURCES } from '@/store/case-timeline-types'
-import { runTimelineCsvExport, reportTimelineStarAudit, setTimelineAuditCaseId, timelineEventAt } from './case-timeline-utils'
+import { notify, notifyError } from '@/store/notifications'
+
+import { reportTimelineStarAudit, runTimelineCsvExport, setTimelineAuditCaseId, timelineEventAt } from './case-timeline-utils'
 
 type SourceId = (typeof TIMELINE_EVENT_SOURCES)[number]
 

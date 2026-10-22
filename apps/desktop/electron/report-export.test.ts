@@ -7,15 +7,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   AUDIT_LINE_PATTERN,
-  type ReportExportIpcDeps,
-  type ReportPrintWindow,
-  REPORT_EXPORT_AUDIT_MARKER,
-  REPORT_EXPORT_CHANNEL,
   filterAuditLines,
   formatReportExportAuditLine,
   markdownToReportHtml,
   registerReportExportIpc,
+  REPORT_EXPORT_AUDIT_MARKER,
+  REPORT_EXPORT_CHANNEL,
+  type ReportExportIpcDeps,
   reportHtmlTemplate,
+  type ReportPrintWindow,
   sanitizeFilename
 } from './report-export'
 
@@ -248,6 +248,7 @@ describe('registerReportExportIpc', () => {
     ipcLog.mockClear()
 
     const saveDialog = vi.fn().mockResolvedValue({ canceled: false, filePath: 'x.pdf' })
+
     const win = {
       close: vi.fn(),
       loadUrl: vi.fn().mockResolvedValue(undefined),

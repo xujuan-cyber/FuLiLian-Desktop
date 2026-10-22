@@ -1,5 +1,5 @@
 import type { Unstable_TriggerItem } from '@assistant-ui/core'
-import { Fragment, useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
+import { Fragment, type MouseEvent as ReactMouseEvent, useEffect, useRef } from 'react'
 
 import { referenceKind, referenceStyle } from '@/components/assistant-ui/reference-kinds'
 import { Codicon } from '@/components/ui/codicon'

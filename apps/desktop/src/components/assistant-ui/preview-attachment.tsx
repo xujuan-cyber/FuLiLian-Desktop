@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef, useState } from 'react'
 
-import { useSessionView } from '@/app/chat/session-view'
 import { LocalFilePreview } from '@/app/chat/right-rail/preview-file'
+import { useSessionView } from '@/app/chat/session-view'
 import { useI18n } from '@/i18n'
 import { MonitorPlay } from '@/lib/icons'
 import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
@@ -179,7 +179,7 @@ export function PreviewAttachment({ source = 'manual', target }: { source?: Prev
           {inlineFailed ? (
             <InlineUnavailable label={t.preview.unavailable} />
           ) : inlineUnavailable ? (
-            <InlineUnavailable actionLabel={t.preview.openPreview} onOpen={() => void togglePreview()} label={t.preview.inlineTooLarge(name)} />
+            <InlineUnavailable actionLabel={t.preview.openPreview} label={t.preview.inlineTooLarge(name)} onOpen={() => void togglePreview()} />
           ) : inlineTarget ? (
             <LocalFilePreview reloadKey={0} target={inlineTarget} />
           ) : null}

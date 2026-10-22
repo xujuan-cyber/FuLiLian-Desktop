@@ -4,21 +4,21 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { clearTimelineState, setCaseTimelineDataset, toggleTimelineStar } from './case-timeline'
+import type { TimelineEvent } from './case-timeline-types'
 import {
+  $reportCaseId,
+  $reportExport,
   buildAuditJsonl,
   buildReportMarkdown,
   clearReportExportState,
   currentReportMarkdown,
   findingsLines,
   openReportCenter,
-  $reportCaseId,
-  $reportExport,
   sectionsWithData,
   setReportExportBusy,
   setReportExportError
 } from './report-center'
-import { clearTimelineState, setCaseTimelineDataset, toggleTimelineStar } from './case-timeline'
-import type { TimelineEvent } from './case-timeline-types'
 
 const HOUR = 3_600_000
 /** Fixed anchor so expectations never drift with the wall clock (the electron
@@ -56,6 +56,7 @@ describe('sectionsWithData', () => {
     const sections = sectionsWithData({ hasTimeline: true })
 
     expect(sections.find(section => section.id === 'timeline')?.hasData).toBe(true)
+
     for (const id of ['summary', 'findings', 'artifacts', 'flags']) {
       expect(sections.find(section => section.id === id)?.hasData).toBe(false)
     }
