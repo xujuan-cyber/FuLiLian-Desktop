@@ -1,3 +1,8 @@
+// Renderer harness for the short-session hang reproduction (P2-4). It has no
+// exports and is never imported by the app, so it lives in scripts/ instead of
+// src/ — nothing here belongs in the shipped renderer graph. Its `@/…` imports
+// only resolve after run-short-session-hang-repro.mjs copies this file into a
+// throwaway clone's apps/desktop/src/app/chat/.
 import type { ChatMessage } from '@/lib/chat-messages'
 import { setBusy, setMessages } from '@/store/session'
 

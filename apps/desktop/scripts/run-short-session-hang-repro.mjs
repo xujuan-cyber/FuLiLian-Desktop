@@ -28,7 +28,10 @@ import { CDP, discoverTarget, sleep } from './perf/lib/cdp.mjs'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const DESKTOP_ROOT = resolve(HERE, '..')
 const REPO_ROOT = resolve(DESKTOP_ROOT, '..', '..')
-const HARNESS_SOURCE = resolve(DESKTOP_ROOT, 'src/app/chat/short-session-hang-repro.tsx')
+// The harness lives outside src/ (P2-4): it has no exports and is never part of
+// the app, so it must not ship in the renderer graph. It is copied INTO the
+// throwaway clone's src/app/chat/ at run time, where its `@/…` imports resolve.
+const HARNESS_SOURCE = resolve(HERE, 'short-session-hang-repro.tsx')
 const UPSTREAM_URL = 'https://github.com/NousResearch/hermes-agent.git'
 const DEFAULT_BASELINE = '3651627d88858912e8460e6f949b7125725600c3'
 const DEFAULT_CANDIDATE = '3651627d88858912e8460e6f949b7125725600c3'
