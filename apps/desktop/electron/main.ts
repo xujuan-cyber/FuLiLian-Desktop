@@ -2367,7 +2367,49 @@ async function unwrapWindowsVenvFulilianCommand(command, backendArgs) {
 // installs, dev checkouts, and the Windows venv). Fallback: probe the CLI once
 // (covers a bare `fulilian` resolved from PATH with no known source root). Result
 // is cached per resolved runtime so we probe at most once per backend.
+//
+// P13c · 探测结果落盘：内存缓存只活一个进程，而 `fulilian` 从 PATH 解析到的
+// 运行时（无 backend.root）每次冷启动都要付一次 `serve --help` 子进程 —— 真机实测
+// 该子进程 ≈2.1 s，占冷启动 14.9 s 的 14%。这里把「该可执行文件支持 serve」按
+// (command, mtimeMs, size) 指纹落盘，跨启动复用；指纹不符（升级/降级/替换二进制）
+// 即失效重探。读/写失败一律静默回退到探测（缓存是加速手段，绝不破坏启动）。
 const _serveSupportCache = new Map()
+const DESKTOP_SERVE_SUPPORT_CACHE_PATH = path.join(app.getPath('userData'), 'serve-support-cache.json')
+
+function readServeSupportCache(command: string): boolean | null {
+  try {
+    const stat = fs.statSync(command)
+    const raw = JSON.parse(fs.readFileSync(DESKTOP_SERVE_SUPPORT_CACHE_PATH, 'utf8'))
+
+    if (
+      raw?.schemaVersion !== 1 ||
+      raw.command !== command ||
+      raw.mtimeMs !== Math.trunc(stat.mtimeMs) ||
+      raw.size !== stat.size ||
+      typeof raw.supported !== 'boolean'
+    ) {
+      return null
+    }
+
+    return raw.supported
+  } catch {
+    return null
+  }
+}
+
+function writeServeSupportCache(command: string, supported: boolean): void {
+  try {
+    const stat = fs.statSync(command)
+
+    fs.writeFileSync(
+      DESKTOP_SERVE_SUPPORT_CACHE_PATH,
+      JSON.stringify({ schemaVersion: 1, command, mtimeMs: Math.trunc(stat.mtimeMs), size: stat.size, supported }),
+      'utf8'
+    )
+  } catch {
+    // best-effort — a full/writable-less userData just means we probe next launch.
+  }
+}
 
 async function backendSupportsServe(backend) {
   if (!backend || !backend.command) {
@@ -2378,6 +2420,19 @@ async function backendSupportsServe(backend) {
 
   if (_serveSupportCache.has(key)) {
     return _serveSupportCache.get(key)
+  }
+
+  // 落盘缓存只对「无源码根、只能靠子进程探」的运行时生效 —— 有 root 的走读文件
+  // 快路径，本来就不花时间，也就不参与落盘（避免把源码树的判断结果钉死）。
+  if (!backend.root) {
+    const cached = readServeSupportCache(backend.command)
+
+    if (cached !== null) {
+      _serveSupportCache.set(key, cached)
+      rememberLog(`[backend] \`serve\` ${cached ? 'supported' : 'unsupported'} for ${backend.label || key} (disk cache)`)
+
+      return cached
+    }
   }
 
   let supported = null
@@ -2422,6 +2477,13 @@ async function backendSupportsServe(backend) {
   rememberLog(
     `[backend] \`serve\` ${supported ? 'supported' : 'unsupported → routing via legacy `dashboard`'} for ${backend.label || key}`
   )
+
+  // 只把**肯定命中**（探针成功）写盘：探针超时 / AV 拦截 / 半装运行时给出的 false
+  // 是瞬时噪声，落盘会把它钉死到下一次升级为止 —— 老运行时走 dashboard 兜底是
+  // 安全方向，现代运行时被误判成老运行时则会静默退化，故 false 一律不持久化。
+  if (!backend.root && supported === true) {
+    writeServeSupportCache(backend.command, true)
+  }
 
   return supported
 }
