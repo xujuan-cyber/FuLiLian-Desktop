@@ -348,11 +348,19 @@ export function SubmodelsSettings() {
         <section>
           <SectionHeading
             aside={
-              <div className="flex items-center gap-2">
+              // Five controls ride the heading row; `flex-wrap` keeps them from
+              // pushing past the pane's right edge on narrow windows (P2-9).
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <Button onClick={() => setImportOpen(true)} size="icon-sm" title={m.importLabel} variant="ghost">
                   <Upload />
                 </Button>
-                <Button disabled={profiles.length === 0} onClick={exportProfiles} size="icon-sm" title={m.exportLabel} variant="ghost">
+                <Button
+                  disabled={profiles.length === 0}
+                  onClick={exportProfiles}
+                  size="icon-sm"
+                  title={m.exportLabel}
+                  variant="ghost"
+                >
                   <Download />
                 </Button>
                 <Button onClick={() => setWizard({ profile: null })} size="sm" variant="outline">

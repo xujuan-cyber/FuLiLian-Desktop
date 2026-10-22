@@ -928,9 +928,17 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
       </section>
 
       <section>
-        <div className="mb-2.5 flex items-center justify-between">
-          <SectionHeading icon={Cpu} title={m.auxiliaryTitle} />
+        {/* The heading + one-click reset share a row; at narrow pane widths the
+            row used to overflow and clip the reset label at the right edge
+            (P2-9). `flex-wrap` + a non-shrinking button keeps the same
+            left/right split when there is room and drops the button onto its
+            own line when there isn't — the grid itself is untouched. */}
+        <div className="mb-2.5 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <div className="min-w-0">
+            <SectionHeading icon={Cpu} title={m.auxiliaryTitle} />
+          </div>
           <Button
+            className="shrink-0"
             disabled={!mainModel || applying}
             onClick={() => void resetAuxiliaryModels()}
             size="sm"
