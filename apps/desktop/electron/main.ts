@@ -234,6 +234,7 @@ import { createHudSnapShortcut } from './hud-snap-shortcut'
 import { buildHudWindowUrl } from './hud-url'
 import { resolveHudWindowing } from './hud-windowing'
 import { createLinkTitleWindow, guardLinkTitleSession, readLinkTitleWindowTitle } from './link-title-window'
+import { redactLogLines, redactLogText } from './log-redaction'
 import { ensureMainWindow } from './main-window-lifecycle'
 import {
   assertManagedUpdatePreflightClear,
@@ -1868,6 +1869,19 @@ function clampBootProgress(value) {
   return Math.max(0, Math.min(100, Math.round(numeric)))
 }
 
+// The renderer renders `error`/`message` on the recovery screen, and a backend
+// exit message embeds the install path plus a raw output tail. Redact on the
+// way out only — the in-memory state stays verbatim so failure classification
+// (reauth detection, retry policy) still sees exactly what happened.
+function redactedBootProgress() {
+  return {
+    ...bootProgressState,
+    error: typeof bootProgressState.error === 'string' ? redactLogText(bootProgressState.error) : bootProgressState.error,
+    message:
+      typeof bootProgressState.message === 'string' ? redactLogText(bootProgressState.message) : bootProgressState.message
+  }
+}
+
 function broadcastBootProgress() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return
@@ -1879,7 +1893,7 @@ function broadcastBootProgress() {
     return
   }
 
-  webContents.send('fulilian:boot-progress', bootProgressState)
+  webContents.send('fulilian:boot-progress', redactedBootProgress())
 }
 
 // Bootstrap-event broadcast channel + state. The bootstrap runner emits a
@@ -2860,7 +2874,9 @@ function resolveGhBinary() {
 }
 
 function recentFulilianLog() {
-  return fulilianLog.slice(-20).join('\n')
+  // Renderer-facing (rejection text lands in the recovery screen), so it is
+  // redacted: absolute install paths and guard JSON must not reach the UI.
+  return redactLogLines(fulilianLog.slice(-20)).join('\n')
 }
 
 // ─── Self-update (git-pull against the running backend's fulilian root) ──────
@@ -11300,7 +11316,7 @@ async function connectRegistryBackend(
       // is only the routing label. fulilian:api uses it to translate explicit
       // self-profile query filters into the backend's namespace.
       remoteProfile: sshConfig.remoteProfile || '',
-      logs: fulilianLog.slice(-80),
+      logs: redactLogLines(fulilianLog.slice(-80)),
       ...getWindowState()
     }
   }
@@ -11331,7 +11347,7 @@ async function connectRegistryBackend(
     // One host, many profiles: REST paths must carry ?profile= (same contract
     // as the global-remote shared-primary route).
     sharedRemote: true,
-    logs: fulilianLog.slice(-80),
+    logs: redactLogLines(fulilianLog.slice(-80)),
     ...getWindowState()
   }
 }
@@ -11936,7 +11952,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     return {
       ...remote,
       profile,
-      logs: fulilianLog.slice(-80),
+      logs: redactLogLines(fulilianLog.slice(-80)),
       ...getWindowState()
     }
   }
@@ -12103,7 +12119,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     token: authToken,
     profile,
     wsUrl,
-    logs: fulilianLog.slice(-80),
+    logs: redactLogLines(fulilianLog.slice(-80)),
     ...getWindowState()
   }
 }
@@ -12501,7 +12517,9 @@ async function startFulilian() {
         )
         rejectBackendStart?.(
           new Error(
-            `Fulilian backend exited before it became ready (${signal || code}). Log: ${DESKTOP_LOG_PATH}\n${recentFulilianLog()}`
+            redactLogText(
+              `Fulilian backend exited before it became ready (${signal || code}). Log: ${DESKTOP_LOG_PATH}\n${recentFulilianLog()}`
+            )
           )
         )
       }
@@ -12568,7 +12586,7 @@ async function startFulilian() {
       authMode: 'token',
       token: authToken,
       wsUrl,
-      logs: fulilianLog.slice(-80),
+      logs: redactLogLines(fulilianLog.slice(-80)),
       ...getWindowState()
     }
   })().catch(async error => {
@@ -14534,7 +14552,7 @@ ipcMain.handle('fulilian:bootstrap:cancel', async () => {
 
   return { ok: false, cancelled: false }
 })
-ipcMain.handle('fulilian:boot-progress:get', async () => bootProgressState)
+ipcMain.handle('fulilian:boot-progress:get', async () => redactedBootProgress())
 ipcMain.handle('fulilian:bootstrap:get', async () => getBootstrapState())
 ipcMain.handle('fulilian:connection-config:get', async (_event, profile) =>
   sanitizeDesktopConnectionConfig(readDesktopConnectionConfig(), profile)
@@ -16749,7 +16767,10 @@ ipcMain.handle('fulilian:logs:reveal', async () => {
   }
 })
 
-ipcMain.handle('fulilian:logs:recent', async () => ({ path: DESKTOP_LOG_PATH, lines: fulilianLog.slice(-200) }))
+ipcMain.handle('fulilian:logs:recent', async () => ({
+  path: DESKTOP_LOG_PATH,
+  lines: redactLogLines(fulilianLog.slice(-200))
+}))
 
 // Renderer error-boundary catches (#79428 defect B): the component stack only
 // exists in renderer memory, so the boundary posts it here and we persist it

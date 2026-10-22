@@ -29,6 +29,29 @@ const GatewaySettings = lazy(() =>
   import('@/app/settings/gateway-settings').then(module => ({ default: module.GatewaySettings }))
 )
 
+// Last line of defence. The main process already scrubs every log surface it
+// hands over (electron/log-redaction.ts — the single entry point); this only
+// catches the case where a line slips through another IPC path or a stale
+// preload. Deliberately coarser than the main-process rules: a line that still
+// carries an absolute path or guard JSON is truncated to its timestamp prefix
+// rather than prettified, because the point is that it must not be printed.
+const LOG_PREFIX = /^((?:\[[^\]]{1,64}\]\s*){1,2})/
+
+const LEAKY_LOG_LINE =
+  /(?:[A-Za-z]:\\|\\\\[^\s\\]+\\|\/(?:mnt\/[a-zA-Z]|cygdrive\/[a-zA-Z]|home|Users|root)\/|\[safe-delete\]|\bSAFE_DELETE_[A-Z_]+\b|\bsk-[A-Za-z0-9_-]{8,}|\bBearer\s+\S{8,})/i
+
+function redactForDisplay(lines: string[]): string[] {
+  return lines.map(line => {
+    if (!LEAKY_LOG_LINE.test(line)) {
+      return line
+    }
+
+    const prefix = LOG_PREFIX.exec(line)?.[1] ?? ''
+
+    return `${prefix}[redacted]`
+  })
+}
+
 type BusyAction = 'local' | 'repair' | 'retry' | 'signin' | null
 type RecoveryView = 'connect' | 'recovery'
 
@@ -73,7 +96,7 @@ export function BootFailureOverlay() {
 
     void window.fulilianDesktop
       ?.getRecentLogs()
-      .then(res => setLogs(res.lines ?? []))
+      .then(res => setLogs(redactForDisplay(res.lines ?? [])))
       .catch(() => undefined)
   }, [boot.error, visible])
 

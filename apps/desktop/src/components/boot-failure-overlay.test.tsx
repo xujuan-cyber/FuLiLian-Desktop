@@ -227,4 +227,41 @@ describe('BootFailureOverlay', () => {
       restore()
     }
   })
+
+  it('never prints absolute paths, guard JSON or tokens from the recent logs', async () => {
+    // P1-3: the recovery surface used to join desktop.log verbatim. The main
+    // process redacts before sending (electron/log-redaction.ts); this asserts
+    // the rendered text — the thing users screenshot — stays clean even when a
+    // leaky line arrives.
+    const leaky = [
+      '[2026-10-22T06:12:33.123Z] [fulilian] [boot] reading C:\\Users\\Administrator\\AppData\\Roaming\\fulilian\\desktop.log\n',
+      '[2026-10-22T06:12:33.200Z] [fulilian] [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]{"count":104}\n',
+      '[2026-10-22T06:12:33.300Z] [fulilian] auth boot sk-abcdef1234567890 Bearer eyJhbGciOiJIUzI1NiJ9\n',
+      '[2026-10-22T06:12:33.400Z] [fulilian] 后端未就绪: gateway never announced its port\n',
+      '[2026-10-22T06:12:33.500Z] [fulilian] import E:\\FuLilian-Desktop\\agent\\__pycache__\\x.py\n'
+    ]
+
+    const restore = stubDesktop(remoteToken, {
+      getRecentLogs: async () => ({ lines: leaky, path: 'C:\\Users\\Administrator\\desktop.log' })
+    })
+
+    try {
+      const { container } = render(<BootFailureOverlay />)
+      fireEvent.click(await screen.findByRole('button', { name: /show recent logs/i }))
+
+      const text = container.textContent ?? ''
+
+      expect(text).not.toMatch(/[A-Za-z]:\\/)
+      expect(text).not.toContain('Administrator')
+      expect(text).not.toContain('safe-delete')
+      expect(text).not.toContain('SAFE_DELETE')
+      expect(text).not.toContain('sk-')
+      expect(text).not.toContain('eyJhbGciOiJIUzI1NiJ9')
+      // Diagnosability survives: the timestamp prefix and the plain line stay.
+      expect(text).toContain('[2026-10-22T06:12:33.400Z]')
+      expect(text).toContain('后端未就绪: gateway never announced its port')
+    } finally {
+      restore()
+    }
+  })
 })
