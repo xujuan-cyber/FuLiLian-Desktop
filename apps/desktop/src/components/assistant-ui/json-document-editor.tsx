@@ -1,12 +1,21 @@
 import type * as React from 'react'
-import { type RefObject, useRef } from 'react'
+import { lazy, type RefObject, Suspense, useRef } from 'react'
 
-import { CodeEditor, type CodeEditorApi } from '@/components/assistant-ui/code-editor'
+import type { CodeEditorApi } from '@/components/assistant-ui/code-editor'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
+
+// Boot-path hygiene: this component is reached statically from the Skills MCP
+// tab, which itself rides the entry chunk (sdk/index.ts's SkillsView re-export
+// pins the page eagerly). A static CodeEditor import here therefore pinned the
+// whole CodeMirror family onto the boot path. The lazy boundary defers the
+// editor chunk until a JSON editor actually renders.
+const CodeEditor = lazy(async () => ({
+  default: (await import('@/components/assistant-ui/code-editor')).CodeEditor
+}))
 
 // Kept a string (not a shared CSS utility): the `size-5` prefix lets
 // tailwind-merge override <Button size="icon">'s larger built-in size.
@@ -78,19 +87,21 @@ export function JsonDocumentEditor({
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        <CodeEditor
-          apiRef={editorApi}
-          disabled={disabled}
-          filePath={filePath}
-          formatJson
-          highlight={highlight}
-          initialValue={initialValue}
-          key={remountKey}
-          onChange={onChange}
-          onCursorChange={onCursorChange}
-          onFormatJsonError={onFormatJsonError}
-          onSave={onSave}
-        />
+        <Suspense fallback={null}>
+          <CodeEditor
+            apiRef={editorApi}
+            disabled={disabled}
+            filePath={filePath}
+            formatJson
+            highlight={highlight}
+            initialValue={initialValue}
+            key={remountKey}
+            onChange={onChange}
+            onCursorChange={onCursorChange}
+            onFormatJsonError={onFormatJsonError}
+            onSave={onSave}
+          />
+        </Suspense>
       </div>
     </div>
   )

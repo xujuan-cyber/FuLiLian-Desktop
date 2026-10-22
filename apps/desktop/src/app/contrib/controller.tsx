@@ -11,7 +11,6 @@ import {
   TITLEBAR_HEIGHT,
   TITLEBAR_TAB_STRIP_HEIGHT
 } from '@/app/shell/titlebar'
-import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
 import { BrandMark } from '@/components/brand-mark'
 import { IdleMount } from '@/components/idle-mount'
 import { $layoutEditMode, toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
@@ -92,8 +91,18 @@ import {
 } from '../chat/session-tile'
 import { AppContextMenu } from '../context-menu/app-context-menu'
 import { HudShell } from '../hud/hud-shell'
+import { prefetchPageChunks } from '../prefetch-page-chunks'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
 import { $workspaceIsPage } from '../routes'
+
+// Boot-path hygiene: the directive body reaches preview-attachment →
+// preview-file → CodeEditor → the whole CodeMirror family, but it only
+// RENDERS when a transcript actually contains a `::preview` directive. The
+// lazy boundary keeps that chain off the boot module graph; the first
+// directive render pays one local chunk read.
+const InlinePreviewDirective = lazy(async () => ({
+  default: (await import('@/components/assistant-ui/inline-preview-directive')).InlinePreviewDirective
+}))
 
 import { FilesPane, LogsPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
@@ -341,7 +350,11 @@ registry.registerMany([
     area: TRANSCRIPT_DIRECTIVE_AREA,
     data: {
       name: 'preview',
-      render: ({ attrs, streaming }) => <InlinePreviewDirective attrs={attrs} streaming={streaming} />
+      render: ({ attrs, streaming }) => (
+        <Suspense fallback={null}>
+          <InlinePreviewDirective attrs={attrs} streaming={streaming} />
+        </Suspense>
+      )
     } satisfies TranscriptDirectiveContribution
   },
   {
@@ -501,6 +514,14 @@ if (!isBrowserWindow()) {
   watchPreviewTiles()
 }
 
+// Warm the lazy page/overlay chunks once boot has settled: the first
+// navigation to each page otherwise pays chunk parse/eval on the click's
+// critical path behind a blank Suspense fallback. Main window only — HUD and
+// browser pop-outs never navigate pages. One module per idle slot inside.
+if (isBrowserWindow() && !isHudWindow()) {
+  prefetchPageChunks()
+}
+
 // Composer pop-out state is keyed by layout zone, so drop entries for zones the
 // user has since closed or merged away — otherwise a long-lived install keeps a
 // row for every split it has ever had.
@@ -521,9 +542,29 @@ watchUnreadWriteGuard()
 // fresh draft) — a stack of main + tiles is then just a row of session names.
 // register() replaces same-id in place; the render fn is the shared constant
 // above, so the pane content never remounts.
+//
+// `$sessions` fires on every list tick (status churn, unread counts, recency
+// bumps — several a second while a turn runs), and each re-register cascaded
+// into a fresh tree registration → every TreeGroup re-rendered. The payload's
+// meaningful identity is only (selected id, title, headerVeto): the tab's
+// status dot resolves its own state reactively (SessionStatusDot subscribes to
+// `$sessionDotStateById` itself), and tabTitle only depends on the draft scope.
+// Everything else in the payload below is rebuilt but semantically identical,
+// so when the signature is unchanged we skip the register entirely.
+let lastWorkspaceTitleSig = ''
+
 const syncWorkspaceTitle = () => {
   const selected = $selectedStoredSessionId.get()
   const stored = selected ? $sessions.get().find(s => sessionMatchesStoredId(s, selected)) : null
+  const title = stored ? storedSessionTitle(stored) : NEW_SESSION_TITLE
+  const headerVeto = $workspaceIsPage.get()
+  const sig = `${selected ?? ''}\u0000${title}\u0000${headerVeto}`
+
+  if (sig === lastWorkspaceTitleSig) {
+    return
+  }
+
+  lastWorkspaceTitleSig = sig
 
   registry.register({
     id: 'workspace',
@@ -531,7 +572,7 @@ const syncWorkspaceTitle = () => {
     workspaceMode: 'sessions',
     // The placeholder, not the draft's live name — `tabTitle` below renders
     // that. Keeping it here would re-register the pane on every keystroke.
-    title: stored ? storedSessionTitle(stored) : NEW_SESSION_TITLE,
+    title,
     data: {
       // The tab's status dot — the SAME primitive the sidebar row and session
       // tiles render, so the main tab never disagrees with its sidebar row. A
@@ -543,7 +584,7 @@ const syncWorkspaceTitle = () => {
       // re-registering the pane.
       tabTitle: stored ? undefined : () => <SessionDraftTitle scope={selected} />,
       // Pages aren't tab-able: the main zone's bar stands down while one shows.
-      headerVeto: $workspaceIsPage.get(),
+      headerVeto,
       placement: 'main',
       minWidth: '22vw',
       tabDrag: workspaceTabDrag,

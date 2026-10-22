@@ -11,9 +11,9 @@
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { atom } from 'nanostores'
+import { lazy, Suspense } from 'react'
 
 import { RightSidebarPane } from '@/app/right-sidebar'
-import { ReviewPane } from '@/app/right-sidebar/review'
 import type { GroupSetter } from '@/app/shell/group-setter'
 import type { StatusbarItem } from '@/app/shell/statusbar-controls'
 import type { TitlebarTool } from '@/app/shell/titlebar-controls'
@@ -26,6 +26,16 @@ import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 import { cn } from '@/lib/utils'
 import { openPreview } from '@/store/preview'
 import { $currentCwd } from '@/store/session'
+
+// Boot-path hygiene: panes.tsx is reached statically from the controller, so a
+// static ReviewPane import pinned the whole review cluster — the diff-count
+// auto-chunk and, through it, katex + vendor-md + the CodeEditor/CodeMirror
+// family — onto the first-frame module graph even though the pane only shows
+// behind ⌘G. The lazy boundary defers the cluster until the pane actually
+// mounts (it renders behind IdleMount, already off the first-paint path).
+const ReviewPane = lazy(async () => ({
+  default: (await import('@/app/right-sidebar/review')).ReviewPane
+}))
 
 // ---------------------------------------------------------------------------
 // Logs — live agent-log tail. ⌘K-only chrome: the pane contribution exists
@@ -104,7 +114,9 @@ export function ReviewPaneContent() {
   // diff state instead of showing the previous repo's files.
   return (
     <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col [&>aside]:min-h-0 [&>aside]:flex-1')}>
-      <ReviewPane key={cwd || 'no-cwd'} />
+      <Suspense fallback={null}>
+        <ReviewPane key={cwd || 'no-cwd'} />
+      </Suspense>
     </div>
   )
 }

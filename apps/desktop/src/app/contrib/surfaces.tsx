@@ -179,13 +179,19 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
       <Route element={page(<CaseTimelineView />)} path="cases/:caseId/timeline" />
       <Route element={page(<CasesOverviewView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="cases" />
-      <Route element={null} path="agents" />
-      <Route element={null} path="command-center" />
-      <Route element={null} path="cron" />
-      <Route element={null} path="profiles" />
-      <Route element={null} path="settings" />
-      <Route element={null} path="starmap" />
-      <Route element={null} path="webhooks" />
+      {/* Overlay views (settings/agents/…): the modal lives in the controller,
+          floating over the workspace with a full-window backdrop. Rendering the
+          chat BENEATH it (the state overlay-view.tsx documents as intended)
+          keeps the heaviest subtree mounted across open/close — element={null}
+          tore the whole conversation down on open and rebuilt it on close,
+          which made every overlay toggle pay a full chat remount. */}
+      <Route element={page(chatView)} path="agents" />
+      <Route element={page(chatView)} path="command-center" />
+      <Route element={page(chatView)} path="cron" />
+      <Route element={page(chatView)} path="profiles" />
+      <Route element={page(chatView)} path="settings" />
+      <Route element={page(chatView)} path="starmap" />
+      <Route element={page(chatView)} path="webhooks" />
       {/* Registry-contributed pages (core features + plugins) render in the
           workspace pane like any built-in view — behind the same blast wall
           as every other contribution mount. */}

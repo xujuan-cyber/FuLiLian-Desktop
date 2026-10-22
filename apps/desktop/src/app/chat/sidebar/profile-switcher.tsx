@@ -19,11 +19,10 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useStore } from '@nanostores/react'
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { ProfileScope } from '@/api/client'
-import { CodeEditor } from '@/components/assistant-ui/code-editor'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ColorSwatches } from '@/components/ui/color-swatches'
@@ -101,6 +100,16 @@ import { ProfileRemoteOverrideDialog } from './profile-remote-override-dialog'
 import { useFleetRoster } from './use-fleet-roster'
 import { useProfilePrewarm } from './use-profile-prewarm'
 import { useProfileRailRefreshOnActive } from './use-profile-rail-refresh-on-active'
+
+// Boot-path hygiene: the sidebar is on the first-frame module graph, and a
+// static CodeEditor import pinned the whole CodeMirror family (@codemirror/* →
+// the `dist-*` vendor chunks) onto boot even though the editor only renders
+// inside the SOUL.md dialog after a profile row action. Lazy boundary: the
+// chunk loads when the dialog first opens (a local disk read, imperceptible
+// mid-interaction), and CodeMirror leaves the boot path entirely.
+const CodeEditor = lazy(async () => ({
+  default: (await import('@/components/assistant-ui/code-editor')).CodeEditor
+}))
 
 const RAIL_GAP = 4 // px — matches gap-1 between squares.
 
@@ -661,15 +670,17 @@ function EditSoulDialog({
         </DialogHeader>
         <div className="h-80">
           {!loading && profileName && (
-            <CodeEditor
-              filePath="SOUL.md"
-              framed
-              initialValue={content}
-              key={profileName}
-              onCancel={() => !saving && onClose()}
-              onChange={setContent}
-              onSave={() => void save()}
-            />
+            <Suspense fallback={null}>
+              <CodeEditor
+                filePath="SOUL.md"
+                framed
+                initialValue={content}
+                key={profileName}
+                onCancel={() => !saving && onClose()}
+                onChange={setContent}
+                onSave={() => void save()}
+              />
+            </Suspense>
           )}
         </div>
         <DialogFooter>

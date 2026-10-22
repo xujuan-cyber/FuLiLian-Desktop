@@ -1,4 +1,4 @@
-import { type ComponentProps, useEffect, useState } from 'react'
+import { type ComponentProps, useEffect, useRef, useState } from 'react'
 
 import { prefersReducedMotion } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
@@ -55,6 +55,37 @@ export function DecodeText({
   const staticPrefix = text.slice(0, prefix)
   const tailText = text.slice(prefix)
   const [tail, setTail] = useState(tailText)
+  // Offscreen/hidden gating: this primitive also decorates permanent
+  // empty-state panes ("LOGS", the workspace idle ticker), which sit inside
+  // collapsed `display:none` zones. In loop mode the 45 ms interval would
+  // otherwise scramble + setState forever while nothing can see it — a
+  // permanent 22 Hz render heartbeat per mounted instance. The observer flips
+  // a ref (not state, so visibility changes never re-render); the tick reads
+  // it and skips the churn while offscreen.
+  const hostRef = useRef<HTMLSpanElement>(null)
+  const offscreenRef = useRef(false)
+
+  // The rule below targets atom→ref mirrors; this effect wires a DOM
+  // IntersectionObserver into a gate flag that is never rendered from, so the
+  // stale-read hazard it guards against cannot occur.
+  // eslint-disable-next-line no-restricted-syntax -- DOM-visibility gate, not an atom mirror
+  useEffect(() => {
+    const el = hostRef.current
+
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      return
+    }
+
+    const observer = new IntersectionObserver(entries => {
+      // Gate flag only — never rendered from, so a stale read is impossible;
+      // it exists precisely because render-time state would churn on flips.
+      offscreenRef.current = !entries.some(entry => entry.isIntersecting)
+    })
+
+    observer.observe(el)
+
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!active) {
@@ -76,6 +107,10 @@ export function DecodeText({
     let hold = 0
 
     const id = window.setInterval(() => {
+      if (offscreenRef.current || document.visibilityState === 'hidden') {
+        return
+      }
+
       if (resolved >= tailText.length) {
         hold += 1
 
@@ -106,6 +141,7 @@ export function DecodeText({
         'inline-flex items-center font-mono text-[0.64rem] font-semibold uppercase tracking-[0.4em] tabular-nums',
         className
       )}
+      ref={hostRef}
       {...props}
     >
       {cursor && <style>{'@keyframes decode-cursor { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }'}</style>}

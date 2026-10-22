@@ -1,11 +1,19 @@
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import type * as React from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+// This page module is pinned EAGER by `src/sdk/index.ts`'s `SkillsView`
+// re-export (rolldown flags the route table's dynamic import as ineffective),
+// so a static CodeEditor import here pinned the whole CodeMirror family onto
+// the boot path. Lazy boundary: the editor chunk loads when a SKILL.md editor
+// actually opens (local disk, imperceptible mid-interaction).
+const CodeEditor = lazy(async () => ({
+  default: (await import('@/components/assistant-ui/code-editor')).CodeEditor
+}))
+
 import { ArchiveSkillConfirmDialog } from '@/app/learning/archive-skill-confirm-dialog'
-import { CodeEditor } from '@/components/assistant-ui/code-editor'
 import { PageLoader } from '@/components/page-loader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -58,8 +66,8 @@ import { SETTINGS_ROUTE } from '../routes'
 import { ComputerUsePanel } from '../settings/computer-use-panel'
 import { asText, includesQuery, prettyName, toolNames, toolsetDisplayLabel } from '../settings/helpers'
 import { TerminalBackendPanel } from '../settings/terminal-backend-panel'
-import { WslCliPanel } from '../settings/wsl-cli-panel'
 import { ToolsetConfigPanel } from '../settings/toolset-config-panel'
+import { WslCliPanel } from '../settings/wsl-cli-panel'
 import type { SetStatusbarItemGroup } from '../shell/statusbar-controls'
 
 import { EmbeddedHubPicker } from './embedded-hub-picker'
@@ -660,14 +668,16 @@ export function SkillsView({
       onClose={() => setSkillEditor(null)}
       title={<span className="text-[0.68rem] font-normal text-muted-foreground/60">{skillEditor.name}/SKILL.md</span>}
     >
-      <CodeEditor
-        filePath="SKILL.md"
-        initialValue={skillEditor.content}
-        key={skillEditor.name}
-        onCancel={() => setSkillEditor(null)}
-        onChange={setSkillDraft}
-        onSave={() => void saveSkillEdit()}
-      />
+      <Suspense fallback={null}>
+        <CodeEditor
+          filePath="SKILL.md"
+          initialValue={skillEditor.content}
+          key={skillEditor.name}
+          onCancel={() => setSkillEditor(null)}
+          onChange={setSkillDraft}
+          onSave={() => void saveSkillEdit()}
+        />
+      </Suspense>
     </DetailPane>
   )
 

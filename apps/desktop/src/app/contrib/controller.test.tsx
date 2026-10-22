@@ -25,9 +25,13 @@ const browserPopout = read('src/app/chat/browser-popout-shell.tsx')
 
 describe('step17 P9b — controller chat edges load on demand', () => {
   it('lazy-loads BrowserPopoutShell and SessionChangesPanel behind Suspense', () => {
-    expect(controller.match(/\blazy\(/g)).toHaveLength(2)
+    // Fluency round: InlinePreviewDirective joined as a third lazy boundary
+    // (its body reaches CodeEditor → the whole CodeMirror family, but it only
+    // renders when a transcript contains a `::preview` directive).
+    expect(controller.match(/\blazy\(/g)).toHaveLength(3)
     expect(controller).toMatch(/const BrowserPopoutShell = lazy\(/)
     expect(controller).toMatch(/const SessionChangesPanel = lazy\(/)
+    expect(controller).toMatch(/const InlinePreviewDirective = lazy\(/)
     expect(controller).toMatch(
       /<Suspense fallback=\{null\}>[\s\S]*?<BrowserPopoutShell \/>[\s\S]*?<\/Suspense>/
     )
@@ -42,6 +46,9 @@ describe('step17 P9b — controller chat edges load on demand', () => {
     )
     expect(controller).not.toMatch(
       /^import \{ SessionChangesPanel \} from '\.\.\/chat\/right-rail\/session-changes'$/m
+    )
+    expect(controller).not.toMatch(
+      /^import \{ InlinePreviewDirective \} from '@\/components\/assistant-ui\/inline-preview-directive'$/m
     )
   })
 })

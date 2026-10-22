@@ -238,6 +238,14 @@ export default defineConfig(({ command }) => ({
               test: /node_modules[\\/](shiki|@shikijs|react-shiki|@streamdown[\\/]code|oniguruma-to-es|oniguruma-parser|regex(-[^\\/]+)?)[\\/]/
             },
             { name: 'katex', test: /node_modules[\\/]katex[\\/]/ },
+            // P10 (fluency): katex-memo is a small app lib shared by two LAZY
+            // chunks (markdown-text, preview-file). Left to the automatic
+            // splitter it merged into the shared small-module chunk that also
+            // carries contrib/react/boundary ($initial) — and the chunk's
+            // whole import closure (katex, ~250 KB) went onto the boot preload
+            // list. Pin it to its own group so it loads only with its lazy
+            // consumers.
+            { name: 'katex-memo', test: /katex-memo/ },
             // P9 (step 17): collapse the swarm of tiny shared chunks the
             // automatic splitter emits — one per tabler icon, one per radix
             // primitive — into a single `vendor-shared` chunk. Only modules
