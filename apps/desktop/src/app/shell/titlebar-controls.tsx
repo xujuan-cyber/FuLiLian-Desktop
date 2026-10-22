@@ -45,6 +45,8 @@ export interface TitlebarTool {
   hidden?: boolean
   href?: string
   icon: ReactNode
+  /** MUST be non-interactive (a glyph, not a button): every tool is rendered
+   *  inside a titlebar <button>, so a button-bearing icon nests buttons. */
   onSelect?: (event?: MouseEvent) => void
   /** Keybind action id — when set, the tooltip shows the label + keybind hint. */
   actionId?: string
@@ -255,9 +257,10 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         triggerHaptic('open')
         onOpenSettings()
       }
-    },
-    // Notification center (step 16 · T15): the titlebar bell + dropdown panel.
-    { icon: <NotificationCenterBell />, id: 'notification-center', label: '' }
+    }
+    // The notification center is NOT a tool entry: it brings its own button +
+    // Radix popover, so routing it through TitlebarToolButton nested a
+    // <button> inside a <button> (P1-4). It renders as a bare sibling below.
   ]
 
   // While a full-screen overlay (settings, command center, …) is open it should
@@ -316,6 +319,8 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
+        {/* Notification center (step 16 · T15) — owns its own button + popover. */}
+        <NotificationCenterBell />
         <TitlebarToolButton navigate={navigate} tool={rightSidebarTool} />
       </div>
     </>
