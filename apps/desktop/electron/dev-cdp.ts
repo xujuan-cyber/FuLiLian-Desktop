@@ -14,9 +14,11 @@
  * app exposing it, which is the one hard gate here.
  *
  *  - packaged build              → always closed, whatever the env says.
- *  - no FULILIAN_DESKTOP_DEV_SERVER → closed (an unpackaged `electron .` against
- *    dist/ is how the packaged app gets smoke tested; it should behave like
- *    the packaged app).
+ *  - no FULILIAN_DESKTOP_DEV_SERVER → closed by default (an unpackaged
+ *    `electron .` against dist/ is how the packaged app gets smoke tested; it
+ *    should behave like the packaged app). An explicit
+ *    FULILIAN_DESKTOP_CDP_PORT opens it for that run only — that is the
+ *    deliberate, per-invocation opt-in for debugging a dist build.
  *  - otherwise                    → open on 9222, or FULILIAN_DESKTOP_CDP_PORT.
  *
  * `FULILIAN_DESKTOP_CDP_PORT=off` (or `0` / `false`) opts out for anyone who
@@ -59,19 +61,22 @@ function resolveDevCdpPort({ env, isPackaged, devServer }: DevCdpInput): DevCdpD
     return { port: null, reason: 'packaged' }
   }
 
-  // A dev server means a source-tree run (`npm run dev` / `hgui`).
-  if (!devServer) {
+  const requested = (env.FULILIAN_DESKTOP_CDP_PORT ?? '').trim()
+
+  if (requested && OPT_OUT.has(requested.toLowerCase())) {
+    return { port: null, reason: 'opted-out' }
+  }
+
+  // Only a dev-server run (`npm run dev` / `hgui`) opens the port by default.
+  // A dist run stays closed unless this exact process was asked for it: the
+  // exposed surface is arbitrary code execution in the renderer, so it takes an
+  // explicit, auditable opt-in per invocation rather than an inherited env.
+  if (!devServer && !requested) {
     return { port: null, reason: 'no-dev-server' }
   }
 
-  const requested = (env.FULILIAN_DESKTOP_CDP_PORT ?? '').trim()
-
   if (!requested) {
     return { port: DEFAULT_PORT, reason: null }
-  }
-
-  if (OPT_OUT.has(requested.toLowerCase())) {
-    return { port: null, reason: 'opted-out' }
   }
 
   const port = Number(requested)

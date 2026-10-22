@@ -92,3 +92,44 @@ test('stays quiet when the port opened, or is closed by design', () => {
   assert.equal(describeDevCdpDecision(resolveDevCdpPort({ ...devRun, isPackaged: true })), null)
   assert.equal(describeDevCdpDecision(resolveDevCdpPort({ ...devRun, devServer: undefined })), null)
 })
+
+// P2-7: the three ways a build can present itself. Production (`dist` run) keeps
+// the port closed unless this exact process was asked for it, and a shipped
+// build never opens it at all.
+test('a dist run stays closed with no explicit opt-in', () => {
+  assert.deepEqual(resolveDevCdpPort({ env: {}, isPackaged: false, devServer: undefined }), {
+    port: null,
+    reason: 'no-dev-server'
+  })
+})
+
+test('a dist run opens on an explicit FULILIAN_DESKTOP_CDP_PORT', () => {
+  assert.deepEqual(
+    resolveDevCdpPort({ env: { FULILIAN_DESKTOP_CDP_PORT: '9333' }, isPackaged: false, devServer: undefined }),
+    { port: 9333, reason: null }
+  )
+})
+
+test('a dist run still honours an explicit opt-out and refuses bad ports', () => {
+  for (const value of ['off', '0']) {
+    const decision = resolveDevCdpPort({ env: { FULILIAN_DESKTOP_CDP_PORT: value }, isPackaged: false, devServer: undefined })
+
+    assert.equal(decision.port, null)
+    assert.equal(decision.reason, 'opted-out')
+  }
+
+  const bogus = resolveDevCdpPort({ env: { FULILIAN_DESKTOP_CDP_PORT: 'nope' }, isPackaged: false, devServer: undefined })
+
+  assert.equal(bogus.port, null)
+  assert.equal(bogus.reason, 'invalid-port')
+})
+
+test('a packaged build never opens even for a dist run with an explicit port', () => {
+  const decision = resolveDevCdpPort({
+    env: { FULILIAN_DESKTOP_CDP_PORT: '9333' },
+    isPackaged: true,
+    devServer: undefined
+  })
+
+  assert.deepEqual(decision, { port: null, reason: 'packaged' })
+})
