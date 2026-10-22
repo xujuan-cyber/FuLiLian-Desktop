@@ -127,6 +127,7 @@ class TestUvStoreDetection:
         assert not tcc._is_uv_macos_store(path)
 
 
+@pytest.mark.macos_only
 class TestEnsureTccAnchor:
     def test_noop_on_non_macos(self, tmp_path, monkeypatch):
         _linux(monkeypatch)
@@ -453,6 +454,7 @@ class TestBootGate:
         assert tcc._passes_boot_gate(tmp_path / "staged", venv)
 
 
+@pytest.mark.macos_only
 class TestTccAnchorState:
     def test_state_active_through_unpatched_home_symlink(self, tmp_path, monkeypatch):
         # The managed-runtime layout symlinks cpython-3.11-macos-* →
