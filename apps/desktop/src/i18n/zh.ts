@@ -1006,7 +1006,15 @@ export const zh: Translations = {
         shellCmd: 'cmd',
         wslDistroTitle: '默认 WSL 发行版',
         wslDistroHint: '将在终端切换器中预选；FULILIAN_DESKTOP_SHELL 环境变量始终优先。',
-        saveFailed: '终端 shell 偏好保存失败'
+        saveFailed: '终端 shell 偏好保存失败',
+        effectiveShellTitle: '当前生效的 shell',
+        shellFallbackPwsh: '未检测到 PowerShell 7，已回退到 Windows PowerShell 5.1',
+        envSideTitle: '启动侧',
+        envSideWindows: 'Windows 本地',
+        envSideWsl: 'WSL',
+        wslDetectAction: '检测 WSL 发行版',
+        wslDetectHint: '启动期不触碰 WSL：仅在你点击后执行一次 wsl.exe 探测。',
+        wslDetectEmpty: '未检测到可用的 WSL 发行版（或本机未安装 WSL）。'
       },
       translucencyTitle: '窗口透明',
       translucencyDesc: '让整个窗口（包括文字）透出桌面。',
@@ -3804,6 +3812,9 @@ export const zh: Translations = {
     wslCliDistroLabel: '发行版',
     terminalCloseOthers: '关闭其他',
     terminalCloseAll: '关闭全部',
+    terminalRestoreTitle: 'WSL 会话待恢复',
+    terminalRestoreDesc: '为避免启动时调用 wsl.exe，该标签页的 WSL 会话未自动重建。',
+    terminalRestoreAction: '恢复会话',
     addToChat: '添加到对话'
   },
 

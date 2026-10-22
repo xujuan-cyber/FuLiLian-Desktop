@@ -7,8 +7,9 @@ import { zh } from './zh'
 import { zhHant } from './zh-hant'
 
 /**
- * The ten `settings.appearance.terminalShell` keys frozen by step17
- * (`types.ts`). `en.ts` is the single source of truth for the names.
+ * The `settings.appearance.terminalShell` keys frozen by step17 (ten) plus the
+ * N1/N2 additions (eight: effective-shell reporting, startup side, on-demand
+ * WSL detection). `en.ts` is the single source of truth for the names.
  */
 const TERMINAL_SHELL_KEYS = [
   'sectionTitle',
@@ -20,11 +21,19 @@ const TERMINAL_SHELL_KEYS = [
   'shellCmd',
   'wslDistroTitle',
   'wslDistroHint',
-  'saveFailed'
+  'saveFailed',
+  'effectiveShellTitle',
+  'shellFallbackPwsh',
+  'envSideTitle',
+  'envSideWindows',
+  'envSideWsl',
+  'wslDetectAction',
+  'wslDetectHint',
+  'wslDetectEmpty'
 ] as const
 
 /** Product-name keys that are intentionally identical across locales. */
-const PRODUCT_NAME_KEYS = ['shellPwsh', 'shellPowershell', 'shellCmd'] as const
+const PRODUCT_NAME_KEYS = ['shellPwsh', 'shellPowershell', 'shellCmd', 'envSideWsl'] as const
 
 const LOCALES = [
   { copy: zh, name: 'zh' },
@@ -34,18 +43,18 @@ const LOCALES = [
 ] as const
 
 describe('terminal shell locale copy', () => {
-  it('en: carries exactly the ten frozen terminalShell keys', () => {
+  it('en: carries exactly the frozen terminalShell keys', () => {
     const fallback = en.settings.appearance.terminalShell as unknown as Record<string, unknown>
 
     expect(Object.keys(fallback).sort()).toEqual([...TERMINAL_SHELL_KEYS].sort())
   })
 
   for (const { copy, name } of LOCALES) {
-    it(`${name}: localizes all ten terminalShell keys (never the English fallback)`, () => {
+    it(`${name}: localizes every terminalShell key (never the English fallback)`, () => {
       const localized = copy.settings.appearance.terminalShell
       const fallback = en.settings.appearance.terminalShell
 
-      // All ten keys exist on the merged catalog (defineLocale fills the rest).
+      // Every frozen key exists on the merged catalog (defineLocale fills the rest).
       expect(Object.keys(localized as unknown as Record<string, unknown>).sort()).toEqual(
         [...TERMINAL_SHELL_KEYS].sort()
       )

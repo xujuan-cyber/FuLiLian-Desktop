@@ -912,6 +912,17 @@ export interface Translations {
         wslDistroTitle: string
         wslDistroHint: string
         saveFailed: string
+        /** R-4: which shell actually runs, and where it lives. */
+        effectiveShellTitle: string
+        shellFallbackPwsh: string
+        /** N1: which side new sessions start on. */
+        envSideTitle: string
+        envSideWindows: string
+        envSideWsl: string
+        /** R-2: the WSL distro probe is strictly on-demand. */
+        wslDetectAction: string
+        wslDetectHint: string
+        wslDetectEmpty: string
       }
       translucencyTitle: string
       translucencyDesc: string
@@ -3187,6 +3198,10 @@ export interface Translations {
     wslCliDistroLabel: string
     terminalCloseOthers: string
     terminalCloseAll: string
+    /** R-3: a restored WSL tab that is intentionally NOT auto-spawned. */
+    terminalRestoreTitle: string
+    terminalRestoreDesc: string
+    terminalRestoreAction: string
     addToChat: string
   }
 

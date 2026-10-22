@@ -1043,7 +1043,15 @@ export const ja = defineLocale({
         shellCmd: 'cmd',
         wslDistroTitle: '既定の WSL ディストリビューション',
         wslDistroHint: 'ターミナルスイッチャーで事前選択されます。FULILIAN_DESKTOP_SHELL 環境変数が常に優先されます。',
-        saveFailed: 'ターミナルシェル設定を保存できませんでした'
+        saveFailed: 'ターミナルシェル設定を保存できませんでした',
+        effectiveShellTitle: '実際に使われるシェル',
+        shellFallbackPwsh: 'PowerShell 7 が見つからないため、Windows PowerShell 5.1 にフォールバックしました',
+        envSideTitle: '起動側',
+        envSideWindows: 'Windows（ローカル）',
+        envSideWsl: 'WSL',
+        wslDetectAction: 'WSL ディストリビューションを検出',
+        wslDetectHint: '起動時は WSL に触れません。クリックしたときだけ wsl.exe を 1 回実行します。',
+        wslDetectEmpty: '利用できる WSL ディストリビューションが見つかりません（WSL 未導入の可能性）。'
       },
       translucencyTitle: 'ウィンドウの透過',
       translucencyDesc: 'テキストも含めウィンドウ全体を透過させてデスクトップを表示します。',
@@ -3910,6 +3918,9 @@ export const ja = defineLocale({
     wslCliDistroLabel: 'ディストリビューション',
     terminalCloseOthers: '他を閉じる',
     terminalCloseAll: 'すべて閉じる',
+    terminalRestoreTitle: 'WSL セッションは待機中',
+    terminalRestoreDesc: '起動時に wsl.exe を呼ばないため、このタブの WSL セッションは自動で再開されていません。',
+    terminalRestoreAction: 'セッションを復元',
     addToChat: 'チャットに追加'
   },
 

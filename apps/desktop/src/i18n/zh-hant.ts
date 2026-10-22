@@ -1012,7 +1012,15 @@ export const zhHant = defineLocale({
         shellCmd: 'cmd',
         wslDistroTitle: '預設 WSL 發行版',
         wslDistroHint: '將在終端切換器中預選；FULILIAN_DESKTOP_SHELL 環境變數始終優先。',
-        saveFailed: '終端 shell 偏好儲存失敗'
+        saveFailed: '終端 shell 偏好儲存失敗',
+        effectiveShellTitle: '目前生效的 shell',
+        shellFallbackPwsh: '未偵測到 PowerShell 7，已回退至 Windows PowerShell 5.1',
+        envSideTitle: '啟動側',
+        envSideWindows: 'Windows 本機',
+        envSideWsl: 'WSL',
+        wslDetectAction: '偵測 WSL 發行版',
+        wslDetectHint: '啟動期間不觸碰 WSL：僅在你點擊後執行一次 wsl.exe 探測。',
+        wslDetectEmpty: '未偵測到可用的 WSL 發行版（或本機未安裝 WSL）。'
       },
       translucencyTitle: '視窗透明',
       translucencyDesc: '讓整個視窗（包括文字）透出桌面。',
@@ -3799,6 +3807,9 @@ export const zhHant = defineLocale({
     wslCliDistroLabel: '發行版',
     terminalCloseOthers: '關閉其他',
     terminalCloseAll: '全部關閉',
+    terminalRestoreTitle: 'WSL 工作階段待恢復',
+    terminalRestoreDesc: '為避免啟動時呼叫 wsl.exe，此分頁的 WSL 工作階段未自動重建。',
+    terminalRestoreAction: '恢復工作階段',
     addToChat: '新增至聊天'
   },
 

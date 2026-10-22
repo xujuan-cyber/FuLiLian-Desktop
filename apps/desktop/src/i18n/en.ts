@@ -1041,7 +1041,15 @@ export const en: Translations = {
         shellCmd: 'cmd',
         wslDistroTitle: 'Default WSL distro',
         wslDistroHint: 'Preselected in the terminal switcher; the FULILIAN_DESKTOP_SHELL override always wins.',
-        saveFailed: 'Could not save the terminal shell preference'
+        saveFailed: 'Could not save the terminal shell preference',
+        effectiveShellTitle: 'Effective shell',
+        shellFallbackPwsh: 'PowerShell 7 was not found; falling back to Windows PowerShell 5.1',
+        envSideTitle: 'Startup side',
+        envSideWindows: 'Windows (local)',
+        envSideWsl: 'WSL',
+        wslDetectAction: 'Detect WSL distros',
+        wslDetectHint: 'WSL is never touched at startup — one wsl.exe probe runs only when you click.',
+        wslDetectEmpty: 'No usable WSL distro found (or WSL is not installed).'
       },
       translucencyTitle: 'Window Translucency',
       translucencyDesc: 'See your desktop through the whole window, text and all. Tuned separately for light and dark.',
@@ -3670,6 +3678,10 @@ export const en: Translations = {
     wslCliDistroLabel: 'Distribution',
     terminalCloseOthers: 'Close others',
     terminalCloseAll: 'Close all',
+    terminalRestoreTitle: 'WSL session paused',
+    terminalRestoreDesc:
+      'To avoid starting wsl.exe at launch, this tab did not re-open its WSL session automatically.',
+    terminalRestoreAction: 'Restore session',
     addToChat: 'Add to chat'
   },
 

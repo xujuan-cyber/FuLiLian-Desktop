@@ -1027,7 +1027,15 @@ export const ar = defineLocale({
         shellCmd: 'cmd',
         wslDistroTitle: 'توزيعة WSL الافتراضية',
         wslDistroHint: 'تُحدد مسبقًا في مبدّل الطرفية؛ متغير البيئة FULILIAN_DESKTOP_SHELL له الأولوية دائمًا.',
-        saveFailed: 'تعذر حفظ تفضيل صدفة الطرفية'
+        saveFailed: 'تعذر حفظ تفضيل صدفة الطرفية',
+        effectiveShellTitle: 'الصدفة الفعلية',
+        shellFallbackPwsh: 'لم يتم العثور على PowerShell 7، وتم الرجوع إلى Windows PowerShell 5.1',
+        envSideTitle: 'جانب بدء التشغيل',
+        envSideWindows: 'Windows (محلي)',
+        envSideWsl: 'WSL',
+        wslDetectAction: 'كشف توزيعات WSL',
+        wslDetectHint: 'لا يتم لمس WSL عند بدء التشغيل؛ يُنفَّذ استدعاء wsl.exe مرة واحدة فقط عند النقر.',
+        wslDetectEmpty: 'لم يتم العثور على توزيعة WSL صالحة (أو أن WSL غير مثبّت).'
       },
       translucencyTitle: 'شفافية النافذة',
       translucencyDesc: 'إظهار سطح المكتب من خلال النافذة بالكامل، بما في ذلك النص.',
@@ -3809,6 +3817,9 @@ export const ar = defineLocale({
     wslCliDistroLabel: 'التوزيعة',
     terminalCloseOthers: 'إغلاق الأخرى',
     terminalCloseAll: 'إغلاق الكل',
+    terminalRestoreTitle: 'جلسة WSL قيد الانتظار',
+    terminalRestoreDesc: 'لتجنب تشغيل wsl.exe عند بدء التطبيق، لم تُعَد جلسة WSL لهذه العلامة تلقائيًا.',
+    terminalRestoreAction: 'استعادة الجلسة',
     addToChat: 'إضافة للمحادثة'
   },
   preview: {
