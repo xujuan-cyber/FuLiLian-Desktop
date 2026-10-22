@@ -472,7 +472,8 @@ function SidebarMenuButton({
 }: React.ComponentProps<'button'> & {
   asChild?: boolean
   isActive?: boolean
-  tooltip?: string | React.ComponentProps<typeof TooltipContent>
+  /** Plain text, content props, or a ready label element. */
+  tooltip?: string | React.ReactElement | React.ComponentProps<typeof TooltipContent>
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const Comp = asChild ? Slot.Root : 'button'
   const { isMobile, state } = useSidebar()
@@ -492,16 +493,17 @@ function SidebarMenuButton({
     return button
   }
 
-  if (typeof tooltip === 'string') {
-    tooltip = {
-      children: tooltip
-    }
-  }
+  // A caller may hand over a ready element (a keybind label, say). Spreading it
+  // as props leaks the element's own fields — `key` (React warns about a spread
+  // key), plus `$$typeof`/`type`/`props`/`_owner`/`_store`, which Radix forwards
+  // onto the content <div>. Wrap it as children instead.
+  const contentProps =
+    typeof tooltip === 'string' || React.isValidElement(tooltip) ? { children: tooltip } : tooltip
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent align="center" hidden={state !== 'collapsed' || isMobile} side="right" {...tooltip} />
+      <TooltipContent align="center" hidden={state !== 'collapsed' || isMobile} side="right" {...contentProps} />
     </Tooltip>
   )
 }
