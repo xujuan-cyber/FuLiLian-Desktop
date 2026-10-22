@@ -38,6 +38,11 @@ export interface TerminalEntry {
    *  local shell, so pre-WSL tabs and local sessions are unaffected. Changing it
    *  re-creates the PTY (the workspace keys the instance on the CLI). */
   wsl?: null | WslCliTarget
+  /** R-3 (N1): a RESTORED WSL tab whose PTY was deliberately not rebuilt on
+   *  launch, so a cold start never spawns `wsl.exe`. The tab keeps its place in
+   *  the rail, shows a "restore" affordance, and spawns only when clicked.
+   *  In-memory only — never written to the persisted layout. */
+  resumePending?: boolean
 }
 
 interface PersistedTerminalEntry {
@@ -169,10 +174,32 @@ function persistTerminals(list: readonly TerminalEntry[], activeTerminalId: null
 
 const restored = loadPersistedTerminals()
 
-export const $terminals = atom<readonly TerminalEntry[]>(
-  restored.terminals.map(term => ({ ...term, kind: 'user' as const }))
-)
-export const $activeTerminalId = atom<string | null>(restored.activeTerminalId)
+/**
+ * R-3 (N1): a terminal layout restored at launch keeps every WSL tab, but does
+ * NOT resurrect its PTY — a restored WSL tab would otherwise spawn
+ * `wsl.exe -d … -e bash -lc …` the moment the pane mounts, which is exactly the
+ * startup WSL touch N1 forbids. The tab is marked `resumePending` and only
+ * spawns when the user clicks it (rail) or the placeholder (workspace).
+ */
+const restoredTerminals: TerminalEntry[] = restored.terminals.map(term => ({
+  ...term,
+  kind: 'user' as const,
+  ...(term.wsl ? { resumePending: true } : {})
+}))
+
+/** Focus prefers a tab that can render immediately over a paused WSL tab. */
+function preferredRestoredActive(list: readonly TerminalEntry[], persisted: null | string): null | string {
+  const active = list.find(term => term.id === persisted)
+
+  if (!active || !active.resumePending) {
+    return persisted
+  }
+
+  return list.find(term => term.kind === 'user' && !term.resumePending)?.id ?? persisted
+}
+
+export const $terminals = atom<readonly TerminalEntry[]>(restoredTerminals)
+export const $activeTerminalId = atom<string | null>(preferredRestoredActive(restoredTerminals, restored.activeTerminalId))
 
 $terminals.subscribe(list => persistTerminals(list, $activeTerminalId.get()))
 $activeTerminalId.subscribe(active => persistTerminals($terminals.get(), active))
@@ -214,9 +241,27 @@ export function createTerminal(cwd: string = $currentCwd.get(), wsl?: null | Wsl
 export function setTerminalWslCli(id: string, target: null | WslCliTarget): void {
   $terminals.set(
     $terminals.get().map(term =>
-      term.id === id && term.kind === 'user' ? { ...term, reviveBuffer: '', wsl: target } : term
+      term.id === id && term.kind === 'user'
+        ? { ...term, resumePending: false, reviveBuffer: '', wsl: target }
+        : term
     )
   )
+}
+
+/**
+ * Clear the N1 restore pause on a WSL tab (rail click / placeholder button).
+ * The workspace keys the instance on the CLI, so clearing the flag mounts the
+ * instance and its PTY — i.e. this IS the "click to restore" gesture. A no-op
+ * for local or already-live tabs.
+ */
+export function resumeTerminal(id: string): void {
+  const list = $terminals.get()
+
+  if (!list.some(term => term.id === id && term.resumePending)) {
+    return
+  }
+
+  $terminals.set(list.map(term => (term.id === id ? { ...term, resumePending: false } : term)))
 }
 
 // Procs we've already surfaced a tab for — so closing an agent tab doesn't

@@ -44,6 +44,7 @@ import {
   closeOtherTerminals,
   closeTerminal,
   createTerminal,
+  resumeTerminal,
   selectTerminal,
   setTerminalWslCli,
   type TerminalEntry
@@ -221,7 +222,10 @@ interface TerminalRailItemProps {
 
 function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: TerminalRailItemProps) {
   const { t } = useI18n()
-  const label = `${index + 1}. ${term.title}`
+  // R-3 (N1): a restored WSL tab whose PTY is intentionally not running yet.
+  // Clicking the rail entry is the documented "restore" gesture.
+  const pending = Boolean(term.wsl && term.resumePending)
+  const label = `${index + 1}. ${term.title}${pending ? ` · ${t.rightSidebar.terminalRestoreTitle}` : ''}`
 
   return (
     <ContextMenu>
@@ -244,14 +248,27 @@ function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: T
                   : 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
               )}
               {...middleClickHandlers(() => closeTerminal(term.id))}
-              // ⌘-click closes (the pane-tab gesture); a plain click selects.
-              onClick={event => (isMetaClose(event) ? closeTerminal(term.id) : selectTerminal(term.id))}
+              // ⌘-click closes (the pane-tab gesture); a plain click selects —
+              // and, for a paused WSL tab, resumes it (spawns the PTY).
+              onClick={event => {
+                if (isMetaClose(event)) {
+                  closeTerminal(term.id)
+
+                  return
+                }
+
+                if (pending) {
+                  resumeTerminal(term.id)
+                }
+
+                selectTerminal(term.id)
+              }}
               role="tab"
               type="button"
             >
               <Codicon
                 className={cn(term.kind === 'agent' && !active && 'text-primary')}
-                name={term.kind === 'agent' ? 'agent' : 'terminal'}
+                name={pending ? 'debug-pause' : term.kind === 'agent' ? 'agent' : 'terminal'}
                 size="0.875rem"
               />
             </button>

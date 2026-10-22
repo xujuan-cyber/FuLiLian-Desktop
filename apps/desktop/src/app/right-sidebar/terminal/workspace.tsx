@@ -2,11 +2,13 @@ import { useStore } from '@nanostores/react'
 import { useEffect } from 'react'
 
 import { $backgroundStatusBySession } from '@/store/composer-status'
+import { $terminalShellEnvSide } from '@/store/terminal-shell'
 
 import { seedAgentTerminalCommand, syncAgentTerminalSnapshot } from './agent-terminal-stream'
 import { setActiveTerminalId } from './buffer'
 import { AgentTerminalInstance, TerminalInstance } from './instance'
-import { $activeTerminalId, $terminals, ensureAgentTerminal } from './terminals'
+import { PendingTerminalInstance } from './pending'
+import { $activeTerminalId, $terminals, ensureAgentTerminal, resumeTerminal } from './terminals'
 
 interface TerminalWorkspaceProps {
   onAddSelectionToChat: (text: string, label?: string) => void
@@ -20,6 +22,9 @@ export function TerminalWorkspace({ onAddSelectionToChat }: TerminalWorkspacePro
   const terminals = useStore($terminals)
   const activeId = useStore($activeTerminalId)
   const background = useStore($backgroundStatusBySession)
+  // N1/R-3: on the Windows side a restored WSL tab stays paused (no PTY) until
+  // the user asks for it. On an explicit `wsl` side it may rebuild eagerly.
+  const envSide = useStore($terminalShellEnvSide)
 
   // Mirror the tab selection into the agent reader (read_terminal reads it).
   useEffect(() => {
@@ -46,10 +51,25 @@ export function TerminalWorkspace({ onAddSelectionToChat }: TerminalWorkspacePro
 
   return (
     <>
-      {terminals.map(term =>
-        term.kind === 'agent' ? (
-          <AgentTerminalInstance active={term.id === activeId} id={term.id} key={term.id} procId={term.procId!} />
-        ) : (
+      {terminals.map(term => {
+        if (term.kind === 'agent') {
+          return <AgentTerminalInstance active={term.id === activeId} id={term.id} key={term.id} procId={term.procId!} />
+        }
+
+        // R-3: paused restored WSL tab — render the placeholder, never the
+        // instance, so no PTY (and no wsl.exe) is created before the click.
+        if (term.wsl && term.resumePending && envSide === 'windows') {
+          return (
+            <PendingTerminalInstance
+              active={term.id === activeId}
+              key={`${term.id}:paused`}
+              onResume={() => resumeTerminal(term.id)}
+              term={term}
+            />
+          )
+        }
+
+        return (
           <TerminalInstance
             active={term.id === activeId}
             cwd={term.cwd}
@@ -64,7 +84,7 @@ export function TerminalWorkspace({ onAddSelectionToChat }: TerminalWorkspacePro
             wsl={term.wsl}
           />
         )
-      )}
+      })}
     </>
   )
 }

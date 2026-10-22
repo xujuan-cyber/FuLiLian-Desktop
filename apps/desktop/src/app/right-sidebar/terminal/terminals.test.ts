@@ -202,6 +202,103 @@ describe('terminal store persistence', () => {
     expect('reviveBuffer' in storedEntry()).toBe(false)
     expect($terminals.get()[0]?.wsl).toBeNull()
   })
+
+  // ── R-3 (N1): restored WSL tabs start paused ────────────────────────
+
+  function seedMixedLayout(active: string) {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        activeTerminalId: active,
+        terminals: [
+          { auto: true, cwd: '/repo', id: 'term-local', title: 'pwsh' },
+          { auto: false, cwd: '/repo', id: 'term-wsl', title: 'claude', wsl: { cli: 'claude', distro: 'Ubuntu' } }
+        ]
+      })
+    )
+  }
+
+  it('marks every restored WSL tab as resume-pending (no PTY at launch)', async () => {
+    seedMixedLayout('term-local')
+
+    const { $terminals } = await loadTerminalStore()
+
+    expect($terminals.get().find(term => term.id === 'term-local')?.resumePending).toBeUndefined()
+    expect($terminals.get().find(term => term.id === 'term-wsl')?.resumePending).toBe(true)
+  })
+
+  it('never persists the resume-pending flag', async () => {
+    seedMixedLayout('term-local')
+
+    const { $terminals } = await loadTerminalStore()
+
+    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}')
+
+    expect(stored.terminals.map((term: { resumePending?: boolean }) => term.resumePending)).toEqual([
+      undefined,
+      undefined
+    ])
+    // The WSL target itself survives, so the tab still knows where to resume.
+    expect(stored.terminals[1].wsl).toEqual({ cli: 'claude', distro: 'Ubuntu' })
+    expect($terminals.get()[1]?.resumePending).toBe(true)
+  })
+
+  it('prefers a live local tab as the active tab when the persisted one is paused', async () => {
+    seedMixedLayout('term-wsl')
+
+    const { $activeTerminalId } = await loadTerminalStore()
+
+    expect($activeTerminalId.get()).toBe('term-local')
+  })
+
+  it('keeps the paused WSL tab active when it is the only tab', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        activeTerminalId: 'term-wsl',
+        terminals: [
+          { auto: false, cwd: '/repo', id: 'term-wsl', title: 'claude', wsl: { cli: 'claude', distro: 'Ubuntu' } }
+        ]
+      })
+    )
+
+    const { $activeTerminalId, $terminals } = await loadTerminalStore()
+
+    expect($activeTerminalId.get()).toBe('term-wsl')
+    expect($terminals.get()[0]?.resumePending).toBe(true)
+  })
+
+  it('resumeTerminal clears the pause so the instance (and its PTY) can mount', async () => {
+    seedMixedLayout('term-local')
+
+    const { $terminals, resumeTerminal } = await loadTerminalStore()
+
+    resumeTerminal('term-wsl')
+    expect($terminals.get().find(term => term.id === 'term-wsl')?.resumePending).toBe(false)
+    // Still persisted with its target, and still no resume flag on disk.
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').terminals[1].wsl).toEqual({
+      cli: 'claude',
+      distro: 'Ubuntu'
+    })
+
+    // Idempotent / a no-op for local tabs.
+    resumeTerminal('term-wsl')
+    resumeTerminal('term-local')
+    expect($terminals.get().find(term => term.id === 'term-local')?.resumePending).toBeUndefined()
+  })
+
+  it('re-targeting a paused tab through the CLI switcher resumes it', async () => {
+    seedMixedLayout('term-local')
+
+    const { $terminals, setTerminalWslCli } = await loadTerminalStore()
+
+    setTerminalWslCli('term-wsl', { cli: 'hermes', distro: 'Debian' })
+
+    expect($terminals.get().find(term => term.id === 'term-wsl')).toMatchObject({
+      resumePending: false,
+      wsl: { cli: 'hermes', distro: 'Debian' }
+    })
+  })
 })
 
 describe('session cwd → terminal tab linking', () => {
