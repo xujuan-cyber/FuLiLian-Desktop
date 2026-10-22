@@ -492,6 +492,16 @@ redundant-cast = "ignore"
 
 [tool.ruff]
 preview = true  # required for PLW1514 (unspecified-encoding) — preview rule
+# skills/ctf-knowledge/{snippets,scripts} hold scraped CTF write-up payloads
+# and third-party play scripts: Python 2 sources, GBK-encoded files, and
+# minified one-liners.  They are shipped as *data* by the skill, are not
+# importable product code, and 31.5k of them do not even parse.  Syntax
+# errors cannot be suppressed by per-file-ignores, so they are excluded at
+# the root rather than exempted file by file.
+extend-exclude = [
+  "skills/ctf-knowledge/snippets",
+  "skills/ctf-knowledge/scripts",
+]
 
 [tool.ruff.lint]
 # All other lints are intentionally disabled (see comment history on this
@@ -501,9 +511,72 @@ preview = true  # required for PLW1514 (unspecified-encoding) — preview rule
 # which silently corrupts any non-ASCII file content.  We had three
 # separate Windows sandbox regressions in one debug session before
 # adding the explicit encoding.  This rule keeps new code honest.
-select = ["PLW1514"]
+#
+# E9/F63/F7/F82 are the "cannot possibly run" tier, not a style opinion:
+#   E9  -> syntax/I-O-level errors ruff must parse to see at all
+#   F63 -> invalid __future__ / assert misuse
+#   F7  -> undefined names (F821) — catches names that only exist at runtime
+#          in a broken branch, which is exactly how ``sys`` went missing in
+#          the TUI gateway (f4e2eb0)
+#   F82 -> undefined __all__ / star-import entries
+# Verified on this tree: 185/185 handlers report zero findings.  Anything
+# that trips these is a defect, not a preference, so the CI job and the
+# local scripts/gate both block on them.
+select = ["PLW1514", "E9", "F63", "F7", "F82"]
 
 [tool.ruff.lint.per-file-ignores]
+# tui_gateway/methods_*.py rebinds handler functions via types.FunctionType
+# and resolves their globals from a template module at runtime.  Static
+# analysis cannot see that namespace, so F821 fires ~1446 times with zero
+# signal.  The exemption is scoped to the rebound-handler files only; the
+# rest of tui_gateway (including ws.py) stays checked.
+"tui_gateway/methods_*.py" = ["F821"]
+# ---------------------------------------------------------------------------
+# F821 debt register (BL-46).  Everything below was already undefined before
+# this change; enabling F7 only made it visible.  Each entry is scoped to one
+# file so the rest of the tree stays checked, and each one is either a
+# late-bound annotation that never evaluates, or a known latent NameError
+# filed for a follow-up fix.  Removing the defect should remove the entry —
+# the gate is supposed to shrink this list, not grow it.
+# ---------------------------------------------------------------------------
+# Late-bound annotations (string forward refs / PEP 563 module): a name that
+# is only ever read by type checkers, never at runtime.  Fixing them means
+# adding a TYPE_CHECKING import, which is cosmetic; tracked, not urgent.
+"agent/agent_init.py" = ["F821"]  # Optional["RateLimitState"]
+"cron/executions.py" = ["F821"]  # Optional[Path] under `from __future__`
+"fulilian_cli/web_server.py" = ["F821"]  # "DashboardOAuthFlow", "uvicorn.Server"
+"fulilian_ctf/cli.py" = ["F821"]  # "RaceResult" / "MultiAgentResult"
+"gateway/run.py" = ["F821"]  # "ActivityProvenance"
+"gateway/platforms/whatsapp_common.py" = ["F821"]  # -> Path
+"plugins/context_engine/__init__.py" = ["F821"]  # Optional["ContextEngine"]
+"plugins/memory/holographic/retrieval.py" = ["F821"]  # "np.ndarray" (numpy is optional)
+"plugins/platforms/teams/adapter.py" = ["F821"]  # httpx behind PEP 563
+"plugins/platforms/whatsapp/adapter.py" = ["F821"]  # "aiohttp.ClientSession"
+"tools/patch_parser.py" = ["F821"]  # 'PatchResult' imported inside the body
+# Known latent NameErrors — real defects, filed as BL-46 rather than fixed in
+# a lint-enablement commit (they need their own review + tests).
+"fulilian_cli/main.py" = ["F821"]  # _warn_pending_fleet_restart_on_startup() is never defined (swallowed by except)
+"plugins/google_meet/cli.py" = ["F821"]  # `e` used in a closure after `except ... as e` deletes it
+"plugins/platforms/sms/adapter.py" = ["F821"]  # re.sub / aiohttp never imported
+"tui_gateway/server.py" = ["F821"]  # _pending_reaction_notes() undefined at the call site
+# Test-side breakage — collectible files that would die the moment the named
+# symbol is reached (see BL-46; fixed separately from a lint change).
+"tests/e2e/conftest.py" = ["F821"]  # "GatewayRunner"
+"tests/gateway/test_feishu.py" = ["F821"]  # "FeishuAdapter"
+"tests/gateway/test_telegram_audio_vs_voice.py" = ["F821"]  # "GatewayRunner"
+"tests/gateway/test_video_context_note.py" = ["F821"]  # "GatewayRunner"
+"tests/fulilian_cli/fulilian_cli/test_config.py" = ["F821"]  # tmp_path / self / config_path out of scope
+"tests/test_background_review_list_shapes.py" = ["F821"]  # main() references un-prefixed test fns
+"tests/tools/test_computer_use.py" = ["F821"]  # Optional not imported
+"tests/tools/test_mcp_tool.py" = ["F821"]  # self outside a class
+# Skill script shipped as a payload: its helpers (score_response /
+# escalate_encoding) were never landed, so the script is manual-run only and
+# has been inert since it was added.  Nothing imports it.
+"optional-skills/security/godmode/scripts/auto_jailbreak.py" = ["F821"]
+# PEP 562: gateway/platforms/__init__.py re-exports QQAdapter/YuanbaoAdapter
+# through a module-level __getattr__ to keep the import cost off the CLI path.
+# __all__ is legitimate; F822 cannot see through the deferred import.
+"gateway/platforms/__init__.py" = ["F822"]
 # Tests can intentionally exercise locale-encoding edge cases.
 "tests/**" = ["PLW1514"]
 # Skills and plugins are partially user-authored — their own conventions.

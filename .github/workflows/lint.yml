@@ -4,9 +4,9 @@ name: Lint (ruff + ty)
 #   1. Advisory diff — ruff + ty diagnostics as a diff vs the target branch.
 #      Writes a Markdown summary to the run page. Exit zero always.
 #   2. Blocking ``ruff check .`` — enforces the explicit rules in
-#      ``[tool.ruff.lint.select]`` (currently PLW1514). Failure blocks merge.
-#      Separate job so the advisory diff still runs even when enforcement
-#      fails.
+#      ``[tool.ruff.lint.select]`` (PLW1514 + E9/F63/F7/F82). Failure blocks
+#      merge.  Separate job so the advisory diff still runs even when
+#      enforcement fails.
 #
 # CI-sensitive file review was previously here as a ``ci-review`` job but
 # has moved to ``review-labels.yml`` so it can be rerun independently.
@@ -119,12 +119,15 @@ jobs:
           cat .lint-reports/summary.md >> "$GITHUB_STEP_SUMMARY"
 
   ruff-blocking:
-    # Enforce the rules in pyproject.toml [tool.ruff.lint.select]. Currently
+    # Enforce the rules in pyproject.toml [tool.ruff.lint.select]:
     # PLW1514 (unspecified-encoding) — catches bare ``open()`` /
     # ``read_text()`` / ``write_text()`` calls that default to locale
-    # encoding on Windows. Failure here blocks merge; the advisory
-    # ``lint-diff`` job above runs independently so reviewers still get
-    # the diff comment even when enforcement fails.
+    # encoding on Windows — plus E9/F63/F7/F82, the "cannot possibly run"
+    # tier (syntax errors, undefined names, broken __all__ entries).
+    # Failure here blocks merge; the advisory ``lint-diff`` job above runs
+    # independently so reviewers still get the diff comment even when
+    # enforcement fails.  The same rules run locally via scripts/gate/run.sh
+    # so an unpushed branch can be gated without waiting for CI.
     name: ruff enforcement (blocking)
     runs-on: ubuntu-latest
     timeout-minutes: 5
