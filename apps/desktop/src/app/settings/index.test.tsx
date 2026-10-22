@@ -139,8 +139,8 @@ describe('SettingsView tab shell (step 17 · P3b)', () => {
     // happy-dom, so deleting it would leave property 1 green).
     const src = readFileSync(join(process.cwd(), 'src/app/settings/index.tsx'), 'utf8')
 
-    // Only the 21 view modules are split; no stray `lazy(` elsewhere.
-    expect(src.match(/\blazy\(/g)).toHaveLength(21)
+    // Only the 22 view modules are split; no stray `lazy(` elsewhere.
+    expect(src.match(/\blazy\(/g)).toHaveLength(22)
 
     // Each split view keeps its original specifier — a rename or a re-static
     // import would drop the count above, but pin a few of the shapes that

@@ -29,6 +29,8 @@ const EXPECTED_PAGE_VIEWS = [
   'evidence-protection',
   'audit',
   'sensitive-info',
+  // Models & capabilities
+  'submodels',
   // Connection & data
   'providers',
   'gateway',
@@ -114,6 +116,7 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
     // Models & capabilities
     expect(groupOf.get('config:model')).toBe('model-capabilities')
     expect(groupOf.get('providers')).toBe('model-capabilities')
+    expect(groupOf.get('submodels')).toBe('model-capabilities')
     expect(groupOf.get('config:memory')).toBe('model-capabilities')
     expect(groupOf.get('config:voice')).toBe('model-capabilities')
     expect(groupOf.get('config:browser')).toBe('model-capabilities')
