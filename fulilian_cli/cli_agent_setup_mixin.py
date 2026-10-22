@@ -614,6 +614,9 @@ class CLIAgentSetupMixin:
             SessionResumeTooLargeError,
             resolved_max_resume_messages,
         )
+        # Lazy, matching this module's convention: ``cli`` is fully loaded by
+        # the time any of these methods run, so the import can't cycle.
+        from cli import logger
 
         try:
             if tip_only:
