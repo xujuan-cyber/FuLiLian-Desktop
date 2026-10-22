@@ -7,7 +7,17 @@
 // `terminal` surfaces).
 import { app, ipcMain } from 'electron'
 
-import { configureTerminalShellPrefPersistence, readTerminalShellPref, writeTerminalShellPref } from './terminal-shell-pref'
+import {
+  configureTerminalShellPrefPersistence,
+  readTerminalShellPref,
+  type TerminalShellPref,
+  writeTerminalShellPref
+} from './terminal-shell-pref'
+import {
+  defaultShellResolveDeps,
+  noteShellDegradation,
+  resolveTerminalShellPref
+} from './terminal-shell-resolve'
 
 export interface TerminalShellIpcDeps {
   rememberLog: (line: string) => void
@@ -25,7 +35,21 @@ export function registerTerminalShellIpc({ rememberLog }: TerminalShellIpcDeps):
   // failing the registration.
   configureTerminalShellPrefPersistence(app.getPath('userData'))
 
-  ipcMain.handle('fulilian:terminal-shell:get', () => readTerminalShellPref())
+  // R-4: the settings page shows which shell will ACTUALLY run and where it
+  // lives. `resolvedShell` is a purely ADDITIVE field on the existing payload —
+  // no channel is added, no existing key changes shape, and the persisted file
+  // is untouched (it is computed, never written). Resolution is spawn-free.
+  function withResolution(pref: TerminalShellPref) {
+    const resolvedShell = resolveTerminalShellPref(pref, defaultShellResolveDeps())
+
+    // One desktop.log line the first time a missing shell forces a fallback,
+    // so "pwsh not installed" is never silent (R-4).
+    noteShellDegradation(resolvedShell, rememberLog)
+
+    return { ...pref, resolvedShell }
+  }
+
+  ipcMain.handle('fulilian:terminal-shell:get', () => withResolution(readTerminalShellPref()))
 
   ipcMain.handle('fulilian:terminal-shell:set', (_event, payload) => {
     // Defensive read: the renderer may send undefined / a non-object.
@@ -38,7 +62,7 @@ export function registerTerminalShellIpc({ rememberLog }: TerminalShellIpcDeps):
 
     rememberLog(`[terminal-shell] set local=${state.local} wslDistro=${String(state.wslDistro)}`)
 
-    return state
+    return withResolution(state)
   })
 
   return { channels: TERMINAL_SHELL_CHANNELS }

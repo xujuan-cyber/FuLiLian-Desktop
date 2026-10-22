@@ -19,6 +19,11 @@ import {
   TERMINAL_OUTPUT_FLUSH_MS
 } from './terminal-output-buffer'
 import { readTerminalShellPref } from './terminal-shell-pref'
+import {
+  noteShellDegradation,
+  resolveTerminalShellPref,
+  type ShellResolveDeps
+} from './terminal-shell-resolve'
 import { buildWindowsInteractiveCommand } from './windows-remote-lifecycle'
 import { windowsToWslPosix } from './wsl-cli-paths'
 import { WSL_CLI_NAMES, type WslCliName } from './wsl-cli-probe'
@@ -72,15 +77,6 @@ export function registerTerminalIpc({
     return { args: interactiveArgs, command: shellPath, name: shellName }
   }
 
-  // Windows PowerShell 5.1 ships at a fixed System32 path on every Windows box;
-  // prefer it only after PowerShell 7+ (`pwsh`).
-  function windowsPowerShellPath() {
-    const systemRoot = process.env.SystemRoot || process.env.windir || 'C:\\Windows'
-    const builtin = path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
-
-    return isExecutableFile(builtin) ? builtin : findOnPath('powershell.exe')
-  }
-
   // Map a resolved shell path to its spawn spec, picking interactive flags by
   // family: PowerShell drops its logo banner (so the prompt sits flush like the
   // POSIX shells), cmd needs nothing, and everything else (zsh/bash/fish/sh…)
@@ -99,17 +95,31 @@ export function registerTerminalIpc({
     return posixShellSpec(shellPath)
   }
 
-  // Best installed Windows shell: PowerShell 7+ (`pwsh`), then Windows PowerShell
-  // 5.1, then comspec/cmd.exe as the universal fallback.
-  function windowsShellSpec() {
-    const command =
-      findOnPath('pwsh.exe') || findOnPath('pwsh') || windowsPowerShellPath() || process.env.COMSPEC || 'cmd.exe'
+  // Resolution deps for the shared, spawn-free resolver (terminal-shell-
+  // resolve.ts). It reuses this factory's injected `findOnPath` / `isWindows`
+  // so the PTY argv and the settings page's "effective shell" answer can never
+  // disagree, and so tests keep controlling the lookup.
+  const shellResolveDeps: ShellResolveDeps = {
+    env: process.env,
+    fileExists: filePath => {
+      if (!filePath || !path.isAbsolute(filePath)) {
+        return false
+      }
 
-    return shellSpecFor(command)
+      try {
+        fs.accessSync(filePath, fs.constants.X_OK)
+
+        return true
+      } catch {
+        return false
+      }
+    },
+    findOnPath,
+    isWindows
   }
 
   // Resolve the interactive shell for the embedded terminal: an explicit user
-  // override wins, otherwise auto-detect the best one installed for the platform.
+  // override wins, otherwise the persisted preference, otherwise auto-detect.
   function terminalShellCommand() {
     // FULILIAN_DESKTOP_SHELL is the cross-platform escape hatch (a path or a bare
     // name on PATH); $SHELL is honored on POSIX, where it's the user's canonical
@@ -125,36 +135,27 @@ export function registerTerminalIpc({
       }
     }
 
-    // The persisted shell preference (step17) sits between the env escape
-    // hatch above and auto-detection below. An unknown local choice from a
-    // hostile file never reaches here (normalize whitelists it); a choice
-    // whose binary is missing degrades to auto-detect instead of failing the
-    // spawn. `pwsh` is portable; the 5.1 / cmd choices are Windows-only.
-    const pref = readShellPref()
-    const requested = pref && pref.local && pref.local !== 'auto' ? String(pref.local) : ''
+    // The persisted shell preference (step17, default `pwsh` since N2) sits
+    // between the env escape hatch above and auto-detection below. An unknown
+    // local choice from a hostile file never reaches here (normalize
+    // whitelists it); a choice whose binary is missing degrades to the best
+    // installed shell — and says so in desktop.log instead of failing or
+    // silently pretending the choice applied (R-4).
+    const resolution = resolveTerminalShellPref(readShellPref(), shellResolveDeps)
 
-    const prefCommand =
-      requested === 'pwsh'
-        ? findOnPath('pwsh.exe') || findOnPath('pwsh')
-        : isWindows && requested === 'powershell'
-          ? windowsPowerShellPath()
-          : isWindows && requested === 'cmd'
-            ? process.env.COMSPEC || 'cmd.exe'
-            : undefined
+    noteShellDegradation(resolution, rememberLog)
 
-    if (prefCommand) {
-      rememberLog(`[terminal] shell preference applied: ${requested}`)
+    if (resolution.path) {
+      if (!resolution.degraded) {
+        rememberLog(`[terminal] shell preference applied: ${resolution.choice} (${resolution.path})`)
+      }
 
-      return shellSpecFor(prefCommand)
+      return shellSpecFor(resolution.path)
     }
 
-    if (isWindows) {
-      return windowsShellSpec()
-    }
-
-    const shellPath = ['/bin/zsh', '/bin/bash', '/bin/sh'].find(candidate => isExecutableFile(candidate))
-
-    return posixShellSpec(shellPath || '/bin/sh')
+    // Unreachable in practice (cmd exists on Windows, /bin/sh on POSIX), but
+    // never hand node-pty an undefined command.
+    return isWindows ? shellSpecFor(process.env.COMSPEC || 'cmd.exe') : posixShellSpec('/bin/sh')
   }
 
   function safeTerminalCwd(cwd) {
