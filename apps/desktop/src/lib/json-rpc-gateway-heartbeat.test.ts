@@ -126,6 +126,10 @@ describe('JsonRpcGatewayClient heartbeat recovery', () => {
     await vi.advanceTimersByTimeAsync(1_000)
     expect(client.connectionState).toBe('open')
     expect(socket.readyState).toBe(FakeSocket.OPEN)
-    expect(socket.sent).toEqual([])
+
+    // Protocol v2 negotiation sends one `client.hello` optimistically on open
+    // (apps/shared/src/json-rpc-gateway.ts). What this case pins is narrower:
+    // no heartbeat probe may follow a backend that never advertises one.
+    expect(socket.sent.map(frame => JSON.parse(frame).method)).toEqual(['client.hello'])
   })
 })
