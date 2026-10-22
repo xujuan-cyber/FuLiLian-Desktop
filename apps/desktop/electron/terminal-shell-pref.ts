@@ -24,14 +24,34 @@ export const TERMINAL_SHELL_CHOICES = ['auto', 'cmd', 'powershell', 'pwsh'] as c
 
 export type TerminalShellChoice = (typeof TERMINAL_SHELL_CHOICES)[number]
 
+/**
+ * Which side new terminal sessions start on (N1). `windows` = this host's
+ * local shell (PowerShell 7 by default); `wsl` = a CLI inside a distro.
+ * Kept as a persisted, whitelisted field so a pre-N1 file can be migrated
+ * forward without guessing the user's intent.
+ */
+export const TERMINAL_SHELL_ENV_SIDES = ['windows', 'wsl'] as const
+
+export type TerminalShellEnvSide = (typeof TERMINAL_SHELL_ENV_SIDES)[number]
+
+/** N2: PowerShell 7 is the Windows-side default shell (not `auto`). */
+const DEFAULT_LOCAL_SHELL: TerminalShellChoice = 'pwsh'
+
 export interface TerminalShellPref {
   local: TerminalShellChoice
   /** Default WSL distro for the terminal switcher; null = not chosen. */
   wslDistro: null | string
+  /** Startup side (N1). Absent in pre-N1 files → migrated to `windows`. */
+  envSide: TerminalShellEnvSide
 }
 
+/**
+ * Windows-side default (N1/N2): PowerShell 7 on the local host, no WSL distro
+ * pre-selected, and no startup-side WSL involvement. The key order here is the
+ * serialized key order — migration relies on it to stay byte-stable.
+ */
 export function defaultTerminalShellPref(): TerminalShellPref {
-  return { local: 'auto', wslDistro: null }
+  return { local: DEFAULT_LOCAL_SHELL, wslDistro: null, envSide: 'windows' }
 }
 
 export interface TerminalShellPersistFs {
@@ -61,14 +81,29 @@ function isValidWslDistroName(raw: unknown): raw is string {
   return typeof raw === 'string' && WSL_DISTRO_NAME_RE.test(raw.trim())
 }
 
+function normalizeEnvSide(raw: unknown): TerminalShellEnvSide {
+  return TERMINAL_SHELL_ENV_SIDES.includes(raw as TerminalShellEnvSide)
+    ? (raw as TerminalShellEnvSide)
+    : 'windows'
+}
+
 /** Coerce arbitrary parsed JSON into the normalized shape; unknown → default. */
 export function normalizeTerminalShellPref(raw: unknown): TerminalShellPref {
   const root = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
   const local = root.local
 
   return {
-    local: TERMINAL_SHELL_CHOICES.includes(local as TerminalShellChoice) ? (local as TerminalShellChoice) : 'auto',
-    wslDistro: isValidWslDistroName(root.wslDistro) ? String(root.wslDistro).trim() : null
+    // An unrecognized / missing `local` degrades to the product default
+    // (PowerShell 7), matching "a missing or corrupt file degrades to the
+    // all-default preference"; an explicit `auto` is whitelisted and kept.
+    local: TERMINAL_SHELL_CHOICES.includes(local as TerminalShellChoice)
+      ? (local as TerminalShellChoice)
+      : DEFAULT_LOCAL_SHELL,
+    wslDistro: isValidWslDistroName(root.wslDistro) ? String(root.wslDistro).trim() : null,
+    // A file written before N1 has no `envSide`; the product posture is the
+    // Windows side, so an absent value migrates to `windows` rather than
+    // inheriting a WSL-ish default. Junk values collapse to the same place.
+    envSide: normalizeEnvSide(root.envSide)
   }
 }
 
@@ -139,7 +174,7 @@ export function readTerminalShellPrefFile(
  */
 export function writeTerminalShellPrefFile(
   filePath: null | string,
-  patch: { local?: unknown; wslDistro?: unknown },
+  patch: { local?: unknown; wslDistro?: unknown; envSide?: unknown },
   deps: TerminalShellPersistDeps = {}
 ): TerminalShellPref {
   const target = normalizePath(filePath)
@@ -155,6 +190,10 @@ export function writeTerminalShellPrefFile(
 
   if ('wslDistro' in patch) {
     merged.wslDistro = (patch.wslDistro ?? null) as null | string
+  }
+
+  if (TERMINAL_SHELL_ENV_SIDES.includes(patch.envSide as TerminalShellEnvSide)) {
+    merged.envSide = patch.envSide as TerminalShellEnvSide
   }
 
   const normalized = normalizeTerminalShellPref(merged)
@@ -197,12 +236,95 @@ function configuredFilePath(): null | string {
   return configuredDir ? terminalShellPrefFilePath(configuredDir) : null
 }
 
+/** True when `raw` already carries a whitelisted `envSide` (post-N1 file). */
+function hasValidEnvSide(raw: unknown): boolean {
+  const root = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
+
+  return Boolean(root && TERMINAL_SHELL_ENV_SIDES.includes(root.envSide as TerminalShellEnvSide))
+}
+
+/**
+ * Read the configured preference, healing the file so it always carries the
+ * N1 `envSide` field (D5/D6):
+ *
+ *   1. no file → seed the default pref (`local:'pwsh'`, `envSide:'windows'`);
+ *   2. unreadable / unparsable → seed the default pref (same degradation the
+ *      plain reader already had, now made explicit on disk);
+ *   3. pre-N1 file (no `envSide`) → merge-write it back, preserving the user's
+ *      explicit `local`/`wslDistro` and only adding `envSide:'windows'`;
+ *   4. post-N1 file → plain read (mtime-cached, zero writes).
+ *
+ * Idempotent by construction: step 3 leaves a file that step 4 then serves
+ * without writing, and the serializer's key order is fixed by
+ * `normalizeTerminalShellPref`, so a second boot produces identical bytes.
+ * Never throws.
+ */
+export function ensureTerminalShellPrefFile(
+  filePath: null | string,
+  deps: TerminalShellPersistDeps = {}
+): TerminalShellPref {
+  const target = normalizePath(filePath)
+
+  if (!target) {
+    return readTerminalShellPrefFile(null, deps)
+  }
+
+  const fsImpl = deps.fs || fs
+  let mtime: null | number = null
+
+  try {
+    mtime = fsImpl.statSync(target).mtimeMs
+  } catch {
+    mtime = null
+  }
+
+  if (cache && cache.path === target && cache.mtime === mtime) {
+    return cache.state
+  }
+
+  let rawText: null | string = null
+
+  try {
+    rawText = String(fsImpl.readFileSync(target, 'utf8'))
+  } catch {
+    rawText = null
+  }
+
+  let parsed: unknown = null
+
+  if (rawText !== null) {
+    try {
+      parsed = JSON.parse(rawText)
+    } catch {
+      parsed = null
+    }
+  }
+
+  // Missing / corrupt / pre-N1: write back the normalized shape (which keeps
+  // any explicit local / wslDistro and supplies the default the rest).
+  if (parsed === null || !hasValidEnvSide(parsed)) {
+    const root = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+
+    return writeTerminalShellPrefFile(
+      target,
+      root ? { local: root.local, wslDistro: root.wslDistro } : {},
+      deps
+    )
+  }
+
+  return readTerminalShellPrefFile(target, deps)
+}
+
 /** Read the configured preference (never throws). */
 export function readTerminalShellPref(): TerminalShellPref {
-  return readTerminalShellPrefFile(configuredFilePath())
+  return ensureTerminalShellPrefFile(configuredFilePath())
 }
 
 /** Merge-write the configured preference (never throws). */
-export function writeTerminalShellPref(patch: { local?: unknown; wslDistro?: unknown }): TerminalShellPref {
+export function writeTerminalShellPref(patch: {
+  envSide?: unknown
+  local?: unknown
+  wslDistro?: unknown
+}): TerminalShellPref {
   return writeTerminalShellPrefFile(configuredFilePath(), patch)
 }

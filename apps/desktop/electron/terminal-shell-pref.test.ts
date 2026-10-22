@@ -7,6 +7,7 @@ import { beforeEach, test, vi } from 'vitest'
 import {
   configureTerminalShellPrefPersistence,
   defaultTerminalShellPref,
+  ensureTerminalShellPrefFile,
   normalizeTerminalShellPref,
   readTerminalShellPref,
   readTerminalShellPrefFile,
@@ -57,7 +58,8 @@ test('normalize whitelists the local shell choice and defaults everything else',
 
   assert.deepEqual(normalizeTerminalShellPref({ local: 'pwsh', wslDistro: 'kali-linux' }), {
     local: 'pwsh',
-    wslDistro: 'kali-linux'
+    wslDistro: 'kali-linux',
+    envSide: 'windows'
   })
 
   // An explicit auto with a distro keeps the distro (they are independent).
@@ -103,7 +105,7 @@ test('the mtime cache serves repeat reads without re-reading the file', () => {
 
   const first = readTerminalShellPrefFile('C:\\x\\file.json', { fs: fsImpl })
 
-  assert.deepEqual(first, { local: 'cmd', wslDistro: 'kali-linux' })
+  assert.deepEqual(first, { local: 'cmd', wslDistro: 'kali-linux', envSide: 'windows' })
 
   fsImpl.readFileSync.mockClear()
 
@@ -123,13 +125,15 @@ test('a null path is in-memory only and isolates from file-backed state', () => 
   fsImpl.statSync.mockReturnValue({ mtimeMs: 1 })
   fsImpl.readFileSync.mockReturnValue(JSON.stringify({ local: 'pwsh' }))
 
-  assert.deepEqual(readTerminalShellPrefFile(filePath, { fs: fsImpl }), { local: 'pwsh', wslDistro: null })
+  const filePref = { local: 'pwsh', wslDistro: null, envSide: 'windows' } as const
+
+  assert.deepEqual(readTerminalShellPrefFile(filePath, { fs: fsImpl }), filePref)
 
   const written = writeTerminalShellPrefFile(null, { local: 'cmd' })
 
-  assert.deepEqual(written, { local: 'cmd', wslDistro: null })
+  assert.deepEqual(written, { local: 'cmd', wslDistro: null, envSide: 'windows' })
   // The null-path cache is keyed separately: the file-backed read is untouched.
-  assert.deepEqual(readTerminalShellPrefFile(filePath, { fs: fsImpl }), { local: 'pwsh', wslDistro: null })
+  assert.deepEqual(readTerminalShellPrefFile(filePath, { fs: fsImpl }), filePref)
 })
 
 test('write merges over the current state, normalizes, and writes atomically', () => {
@@ -142,7 +146,7 @@ test('write merges over the current state, normalizes, and writes atomically', (
 
   const state = writeTerminalShellPrefFile(filePath, { wslDistro: 'docker-desktop' }, { fs: fsImpl, writeAtomic })
 
-  assert.deepEqual(state, { local: 'pwsh', wslDistro: 'docker-desktop' })
+  assert.deepEqual(state, { local: 'pwsh', wslDistro: 'docker-desktop', envSide: 'windows' })
   assert.equal(writeAtomic.mock.calls.length, 1)
   assert.equal(writeAtomic.mock.calls[0][0], filePath)
   assert.deepEqual(JSON.parse(writeAtomic.mock.calls[0][1]), state)
@@ -155,7 +159,7 @@ test('write merges over the current state, normalizes, and writes atomically', (
     { fs: fsImpl, writeAtomic }
   )
 
-  assert.deepEqual(hostile, { local: 'pwsh', wslDistro: null })
+  assert.deepEqual(hostile, { local: 'pwsh', wslDistro: null, envSide: 'windows' })
 
   // A failed write is swallowed and the in-memory state still wins.
   const failing = vi.fn(() => {
@@ -164,7 +168,7 @@ test('write merges over the current state, normalizes, and writes atomically', (
 
   const survived = writeTerminalShellPrefFile(filePath, { local: 'cmd' }, { fs: fsImpl, writeAtomic: failing })
 
-  assert.deepEqual(survived, { local: 'cmd', wslDistro: null })
+  assert.deepEqual(survived, { local: 'cmd', wslDistro: null, envSide: 'windows' })
 })
 
 test('the configured surface reads and writes through the configured directory', () => {
@@ -177,7 +181,7 @@ test('the configured surface reads and writes through the configured directory',
   // surface by writing first (mkdir/read are only needed for pre-existing files).
   const written = writeTerminalShellPref({ local: 'pwsh', wslDistro: 'Ubuntu' })
 
-  assert.deepEqual(written, { local: 'pwsh', wslDistro: 'Ubuntu' })
+  assert.deepEqual(written, { local: 'pwsh', wslDistro: 'Ubuntu', envSide: 'windows' })
   assert.deepEqual(readTerminalShellPref(), written, 'write-through serves the cached state')
 
   // Reconfiguring to another directory resets the cache (no stale bleed).
@@ -186,4 +190,99 @@ test('the configured surface reads and writes through the configured directory',
 
   assert.deepEqual(readTerminalShellPref(), defaultTerminalShellPref())
   assert.equal(fsImpl.readFileSync.mock.calls.length, 0)
+})
+
+// ── N1/N2: Windows-side default + envSide migration (idempotent) ─────
+
+/**
+ * An in-memory preference file: `readFileSync` throws while the file is
+ * absent, `writeAtomic` stores the exact bytes the real writer would emit, and
+ * `statSync` bumps a synthetic mtime on each write so the module's mtime cache
+ * behaves like it would against a real file.
+ */
+function makeMemoryDir(initial: null | string) {
+  let file: null | string = initial
+  let mtime = initial === null ? 0 : 1
+
+  const impl = {
+    mkdirSync: vi.fn(),
+    readFileSync: vi.fn<() => string>(() => {
+      if (file === null) {
+        throw new Error('missing')
+      }
+
+      return file
+    }),
+    statSync: vi.fn<() => { mtimeMs: number }>(() => {
+      if (file === null) {
+        throw new Error('missing')
+      }
+
+      return { mtimeMs: mtime }
+    })
+  }
+
+  const writeAtomic = vi.fn((_path: string, data: string) => {
+    file = data
+    mtime += 1
+  })
+
+  return {
+    bytes: () => file,
+    deps: { fs: impl as typeof impl & TerminalShellPersistFs, writeAtomic },
+    readFileSync: impl.readFileSync,
+    writeAtomic
+  }
+}
+
+test('N1: a first run with no file seeds local=pwsh + envSide=windows', () => {
+  const dir = makeMemoryDir(null)
+
+  const state = ensureTerminalShellPrefFile('C:\\userData\\terminal-shell.json', dir.deps)
+
+  assert.deepEqual(state, { local: 'pwsh', wslDistro: null, envSide: 'windows' })
+  assert.equal(dir.writeAtomic.mock.calls.length, 1, 'the first read seeds the file')
+  assert.deepEqual(JSON.parse(String(dir.bytes())), state)
+})
+
+test('N1: a pre-envSide file keeps its explicit local and gains envSide=windows', () => {
+  const dir = makeMemoryDir(JSON.stringify({ local: 'cmd', wslDistro: 'Ubuntu-22.04' }))
+
+  const state = ensureTerminalShellPrefFile('C:\\userData\\terminal-shell.json', dir.deps)
+
+  assert.deepEqual(state, { local: 'cmd', wslDistro: 'Ubuntu-22.04', envSide: 'windows' })
+  assert.deepEqual(JSON.parse(String(dir.bytes())), state, 'the file is rewritten once, on disk')
+})
+
+test('N1: an explicit local=auto is never overwritten by the new default', () => {
+  const dir = makeMemoryDir(JSON.stringify({ local: 'auto', wslDistro: null }))
+
+  assert.equal(ensureTerminalShellPrefFile('C:\\x\\terminal-shell.json', dir.deps).local, 'auto')
+})
+
+test('N1: migration is byte-idempotent across repeated boots', () => {
+  const dir = makeMemoryDir(JSON.stringify({ local: 'pwsh', wslDistro: 'Ubuntu' }))
+
+  ensureTerminalShellPrefFile('C:\\x\\terminal-shell.json', dir.deps)
+  const firstBytes = dir.bytes()
+
+  assert.ok(firstBytes, 'the first pass wrote the migrated file')
+
+  for (let boot = 0; boot < 3; boot += 1) {
+    resetTerminalShellPrefCache()
+
+    const state = ensureTerminalShellPrefFile('C:\\x\\terminal-shell.json', dir.deps)
+
+    assert.deepEqual(state, { local: 'pwsh', wslDistro: 'Ubuntu', envSide: 'windows' })
+    assert.equal(dir.bytes(), firstBytes, `boot ${boot + 2} leaves the bytes untouched`)
+  }
+
+  assert.equal(dir.writeAtomic.mock.calls.length, 1, 'exactly one migration write, ever')
+})
+
+test('N1: envSide is whitelisted (wsl honored, junk collapses to windows)', () => {
+  assert.equal(normalizeTerminalShellPref({ envSide: 'wsl' }).envSide, 'wsl')
+  assert.equal(normalizeTerminalShellPref({ envSide: 'linux' }).envSide, 'windows')
+  assert.equal(normalizeTerminalShellPref({ envSide: 42 }).envSide, 'windows')
+  assert.equal(normalizeTerminalShellPref({}).envSide, 'windows')
 })
