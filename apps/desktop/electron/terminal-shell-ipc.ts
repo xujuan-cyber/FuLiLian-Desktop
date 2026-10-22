@@ -35,6 +35,18 @@ export function registerTerminalShellIpc({ rememberLog }: TerminalShellIpcDeps):
   // failing the registration.
   configureTerminalShellPrefPersistence(app.getPath('userData'))
 
+  // Seed/heal the file at registration, not on first PTY (N1 R-1): the
+  // Windows-side default must be observable on disk right after first boot,
+  // and a pre-N1 file gains its `envSide:'windows'` here. `readTerminalShellPref`
+  // routes through ensureTerminalShellPrefFile, which is idempotent by
+  // construction — a post-N1 file is served from the mtime cache with zero
+  // writes, and an unwritable directory degrades to the in-memory default.
+  const seeded = readTerminalShellPref()
+
+  rememberLog(
+    `[terminal-shell] pref seeded local=${seeded.local} envSide=${seeded.envSide} wslDistro=${String(seeded.wslDistro)}`
+  )
+
   // R-4: the settings page shows which shell will ACTUALLY run and where it
   // lives. `resolvedShell` is a purely ADDITIVE field on the existing payload —
   // no channel is added, no existing key changes shape, and the persisted file
