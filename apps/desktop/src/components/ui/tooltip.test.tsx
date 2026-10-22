@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, render } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { suppressNonKeyboardFocusOpen } from './tooltip'
+import { suppressNonKeyboardFocusOpen, Tip } from './tooltip'
 
 // Radix opens tooltips on ANY trigger focus; menus/dialogs restore focus to
 // their trigger on close, which left tips stuck open after a mouse pick (e.g.
@@ -78,5 +79,40 @@ describe('suppressNonKeyboardFocusOpen', () => {
     suppressNonKeyboardFocusOpen(pointer.event, 'pointer')
 
     expect(pointer.preventDefault).toHaveBeenCalledOnce()
+  })
+})
+
+// P2-1: `Tip` puts the trigger props (incl. `aria-describedby`, which Radix
+// supplies as `undefined` while closed) on its child via `asChild`. A Fragment
+// cannot carry props — React drops the whole set and warns
+// "Invalid prop `aria-describedby` supplied to `React.Fragment`", which means
+// the description silently never reaches the accessibility tree.
+afterEach(cleanup)
+
+describe('Tip trigger target', () => {
+  it('attaches the trigger to a real element when the child is a Fragment', () => {
+    const errors: string[] = []
+
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      errors.push(args.map(String).join(' '))
+    })
+
+    try {
+      const { container } = render(
+        <Tip label="hint">
+          <>
+            <span data-testid="inline-a" />
+            <span data-testid="inline-b" />
+          </>
+        </Tip>
+      )
+
+      expect(container.querySelector('[data-slot="tooltip-trigger"]')).toBeTruthy()
+      expect(container.querySelector('[data-testid="inline-a"]')).toBeTruthy()
+      expect(errors.join('\n')).not.toContain('React.Fragment')
+      expect(errors.join('\n')).not.toContain('aria-describedby')
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

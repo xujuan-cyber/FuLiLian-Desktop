@@ -166,9 +166,21 @@ function Tip({ label, children, delayDuration = TIP_DELAY_MS, ...props }: TipPro
     return <>{children}</>
   }
 
+  // `asChild` clones the child to attach pointer/focus handlers and
+  // `aria-describedby`. A Fragment cannot carry props: React drops the whole
+  // set ("Invalid prop `aria-describedby` supplied to `React.Fragment`") and
+  // the tip silently loses its a11y wiring — P2-1. Give the trigger a real host
+  // element instead; `display: contents` keeps it out of the layout.
+  const trigger =
+    React.isValidElement(children) && children.type === React.Fragment ? (
+      <span className="contents">{children}</span>
+    ) : (
+      children
+    )
+
   const tip = (
     <Tooltip delayDuration={delayDuration} disableHoverableContent>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent {...props}>{label}</TooltipContent>
     </Tooltip>
   )

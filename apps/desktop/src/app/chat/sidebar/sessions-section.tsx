@@ -73,25 +73,36 @@ function SidebarSectionHeader({
     </>
   )
 
+  // The tip hangs off the BUTTON, not off the label: a Fragment cannot carry
+  // `aria-describedby` (Radix clones the trigger), so wrapping `labelBody`
+  // dropped the description and warned on every render — P2-1.
+  const toggle = (
+    <button
+      // min-w-0 lets the label truncate at narrow sidebar widths instead of
+      // pushing the header's trailing action icons out of view.
+      className="group/section-label flex w-fit min-w-0 items-center gap-1 bg-transparent text-left leading-none"
+      onClick={onToggle}
+      type="button"
+    >
+      {labelBody}
+      <DisclosureCaret
+        className="text-(--v3-ink-3) opacity-0 transition group-hover/section-label:opacity-100"
+        open={open}
+      />
+    </button>
+  )
+
   return (
     // Same rhythm as every other group title: 20px above, 6px below, zero
     // rules. The hint (drag / shift-click) rides the label as a tooltip
     // instead of a standing sentence under the list.
     <div className="group/section mb-1.5 mt-5 flex h-6 shrink-0 items-center justify-between gap-1">
       {collapsible ? (
-        <button
-          // min-w-0 lets the label truncate at narrow sidebar widths instead of
-          // pushing the header's trailing action icons out of view.
-          className="group/section-label flex w-fit min-w-0 items-center gap-1 bg-transparent text-left leading-none"
-          onClick={onToggle}
-          type="button"
-        >
-          {hint ? <Tip label={hint}>{labelBody}</Tip> : labelBody}
-          <DisclosureCaret
-            className="text-(--v3-ink-3) opacity-0 transition group-hover/section-label:opacity-100"
-            open={open}
-          />
-        </button>
+        hint ? (
+          <Tip label={hint}>{toggle}</Tip>
+        ) : (
+          toggle
+        )
       ) : (
         <div className="flex w-fit min-w-0 items-center gap-1 leading-none">{labelBody}</div>
       )}
