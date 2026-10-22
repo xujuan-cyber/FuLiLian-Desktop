@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { SECTIONS, SETTINGS_GROUPS } from './constants'
+import {
+  DEFAULT_SETTINGS_VIEW,
+  SECTIONS,
+  SETTINGS_GROUPS,
+  SETTINGS_VIEWS,
+  settingsViewFromSection
+} from './constants'
 
 // The Workbench regrouping (DESIGN_PROPOSAL §5.5) must be a pure re-grouping:
 // every section id and key list survives untouched.
@@ -155,5 +161,41 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
 
     // 9 config sections + 20 page views = 29 rows in the regrouped nav.
     expect(views.length).toBe(SECTIONS.length + EXPECTED_PAGE_VIEWS.length)
+  })
+})
+
+// D3: `?section=` deep links. The resolver must be a *derivation* of the two
+// tables above — a hand-kept second list is exactly the drift this pins out.
+describe('settings section deep-link resolver (D3)', () => {
+  it('derives the view enum from the group table, not a second list', () => {
+    expect(SETTINGS_VIEWS).toEqual([...SETTINGS_GROUPS.flatMap(group => group.views), 'connections'])
+    expect(DEFAULT_SETTINGS_VIEW).toBe('config:model')
+    expect(SETTINGS_VIEWS).toContain(DEFAULT_SETTINGS_VIEW)
+  })
+
+  it('resolves every nav view id to itself', () => {
+    for (const view of SETTINGS_GROUPS.flatMap(group => group.views)) {
+      expect(settingsViewFromSection(view), `view ${view}`).toBe(view)
+    }
+  })
+
+  it('resolves a bare SECTIONS id to its config page', () => {
+    for (const section of SECTIONS) {
+      expect(settingsViewFromSection(section.id), `section ${section.id}`).toBe(`config:${section.id}`)
+    }
+  })
+
+  it('resolves the documented aliases and rejects everything else', () => {
+    // QA/docs spell the Model section in the plural.
+    expect(settingsViewFromSection('models')).toBe('config:model')
+    expect(settingsViewFromSection('approvals')).toBe('approvals')
+    expect(settingsViewFromSection('audit')).toBe('audit')
+    expect(settingsViewFromSection('submodels')).toBe('submodels')
+    expect(settingsViewFromSection('providers')).toBe('providers')
+    // Unknown / empty → null, so the shell falls back instead of blanking.
+    expect(settingsViewFromSection('no-such-section')).toBeNull()
+    expect(settingsViewFromSection('')).toBeNull()
+    expect(settingsViewFromSection(null)).toBeNull()
+    expect(settingsViewFromSection(undefined)).toBeNull()
   })
 })

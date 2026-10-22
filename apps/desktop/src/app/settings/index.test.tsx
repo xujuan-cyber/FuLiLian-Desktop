@@ -25,8 +25,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { I18nProvider } from '@/i18n'
@@ -71,28 +71,73 @@ vi.mock('./sensitive-info-settings', () => ({
   SensitiveInfoSettings: () => <div data-view="sensitive-info" />
 }))
 vi.mock('./sessions-settings', () => ({ SessionsSettings: () => <div data-view="sessions" /> }))
+vi.mock('./submodels-settings', () => ({ SubmodelsSettings: () => <div data-view="submodels" /> }))
 vi.mock('./tray-settings', () => ({ TraySettings: () => <div data-view="tray" /> }))
 
 // Awaited plainly (see the file header): the suspension must stay observable
 // to `findBy*` rather than being trapped inside an `async act`.
-async function mountShell(tab?: string) {
+//
+// `query` is the raw search string (no `?`), so a test can mount the shell with
+// either the canonical `?tab=` or the documented `?section=` deep-link form.
+// Returns the render container: rail rows are read from it rather than from the
+// `document` global (banned by the repo's no-restricted-globals rule).
+async function mountShell(query?: string, viewLabel = 'config:model') {
   const { SettingsView } = await import('./index')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-  render(
-    <MemoryRouter initialEntries={[tab ? `/settings?tab=${tab}` : '/settings']}>
+  const { container } = render(
+    <MemoryRouter initialEntries={[query ? `/settings?${query}` : '/settings']}>
       <QueryClientProvider client={client}>
         <I18nProvider configClient={null} initialLocale="en">
+          <LocationProbe />
           {/* data-view rides a shell-owned wrapper rather than the view modules
               themselves: it survives the view's own root markup and lets the
               assertion read which chunk resolved. */}
-          <div data-testid="settings-view" data-view={tab ?? 'config:model'}>
+          <div data-testid="settings-view" data-view={viewLabel}>
             <SettingsView onClose={() => undefined} />
           </div>
         </I18nProvider>
       </QueryClientProvider>
     </MemoryRouter>
   )
+
+  return container
+}
+
+// Reads back what the shell wrote to the URL — the half a render assertion
+// cannot see (a section can swap panes without ever touching `?tab=`).
+function LocationProbe() {
+  const { search } = useLocation()
+
+  return <div data-testid="location-search">{search}</div>
+}
+
+// The rail's active state is a class swap (OverlayNavItem sets no aria-current),
+// so pin the one class the `active` prop maps to and read the rows by their
+// stable `data-tour` handle instead of by translated label.
+const ACTIVE_RAIL_CLASS = 'bg-(--ui-bg-tertiary)'
+
+// Container of the last mount (see mountShell).
+let root: HTMLElement
+
+function railRow(view: string): HTMLElement {
+  const row = root.querySelector(`[data-tour="nav-${view}"]`)
+
+  if (!row) {
+    throw new Error(`rail row missing: ${view}`)
+  }
+
+  return row as HTMLElement
+}
+
+function railIsActive(view: string): boolean {
+  return railRow(view).className.includes(ACTIVE_RAIL_CLASS)
+}
+
+function resolvedMarker(): string | null {
+  const shell = screen.getByTestId('settings-view')
+
+  return shell.querySelector('[data-view]')?.getAttribute('data-view') ?? null
 }
 
 beforeEach(() => {
@@ -119,7 +164,7 @@ describe('SettingsView tab shell (step 17 · P3b)', () => {
 
     for (const [tab, marker] of tabs) {
       cleanup()
-      await mountShell(tab)
+      root = await mountShell(`tab=${tab}`, tab)
 
       // The shell's own wrapper is mounted...
       const shell = await screen.findByTestId('settings-view').catch(() => null)
@@ -180,5 +225,103 @@ describe('SettingsView tab shell (step 17 · P3b)', () => {
     const fallback = src.slice(start, end)
     expect(fallback).toContain('<SettingsSkeleton sections={[{ rows: 4 }]} />')
     expect(fallback).not.toContain('<SettingsContent')
+  })
+})
+
+// D3: `?section=<id>` is the documented deep-link spelling for QA and external
+// launchers (`#/settings?section=approvals`). It must *drive* the pane — the
+// pre-fix shell only ever read `?tab=`, so every `?section=` link landed on the
+// default Model page with the rail highlight stuck on Model.
+describe('SettingsView section deep links (D3)', () => {
+  it('renders the linked section for every documented ?section= form', async () => {
+    // [section param, marker the pane must resolve to]
+    const cases: [string, string][] = [
+      // page-level views
+      ['approvals', 'approvals'],
+      ['audit', 'audit'],
+      ['evidence-protection', 'evidence'],
+      ['sensitive-info', 'sensitive-info'],
+      ['submodels', 'submodels'],
+      ['providers', 'providers'],
+      // bare SECTIONS ids → their config page
+      ['appearance', 'appearance'],
+      ['model', 'config'],
+      // QA/docs spelling for the Model section
+      ['models', 'config']
+    ]
+
+    for (const [section, marker] of cases) {
+      cleanup()
+      root = await mountShell(`section=${section}`, section)
+
+      await waitFor(() => expect(resolvedMarker()).toBe(marker))
+    }
+  })
+
+  it('derives the rail highlight from the URL instead of pinning it to Model', async () => {
+    root = await mountShell('section=approvals', 'approvals')
+    await waitFor(() => expect(resolvedMarker()).toBe('approvals'))
+
+    expect(railIsActive('approvals')).toBe(true)
+    expect(railIsActive('config:model')).toBe(false)
+
+    cleanup()
+    root = await mountShell('section=models', 'models')
+    await waitFor(() => expect(resolvedMarker()).toBe('config'))
+
+    expect(railIsActive('config:model')).toBe(true)
+    expect(railIsActive('approvals')).toBe(false)
+  })
+
+  it('falls back to the default section when no section is given', async () => {
+    root = await mountShell()
+
+    // Default landing spot must not move: Model.
+    await waitFor(() => expect(resolvedMarker()).toBe('config'))
+    expect(railIsActive('config:model')).toBe(true)
+  })
+
+  it('falls back to the default section for an unknown ?section= value', async () => {
+    root = await mountShell('section=no-such-section', 'no-such-section')
+
+    await waitFor(() => expect(resolvedMarker()).toBe('config'))
+    expect(railIsActive('config:model')).toBe(true)
+    // The junk param is left in place rather than rewritten on mount: no
+    // navigate-on-load, no blank pane.
+    expect(screen.getByTestId('location-search').textContent).toBe('?section=no-such-section')
+  })
+
+  it('writes the picked section back to the URL and swaps the pane', async () => {
+    root = await mountShell()
+    await waitFor(() => expect(resolvedMarker()).toBe('config'))
+
+    fireEvent.click(railRow('audit'))
+
+    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=audit'))
+    await waitFor(() => expect(resolvedMarker()).toBe('audit'))
+    expect(railIsActive('audit')).toBe(true)
+  })
+
+  it('drops a stale ?section= alias once the user picks a row', async () => {
+    root = await mountShell('section=approvals', 'approvals')
+    await waitFor(() => expect(resolvedMarker()).toBe('approvals'))
+
+    fireEvent.click(railRow('audit'))
+
+    // One canonical param only — a lingering alias could outvote the click.
+    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=audit'))
+    await waitFor(() => expect(resolvedMarker()).toBe('audit'))
+  })
+
+  it('keeps the canonical ?tab= form working alongside the alias', async () => {
+    root = await mountShell('tab=approvals', 'approvals')
+    await waitFor(() => expect(resolvedMarker()).toBe('approvals'))
+    expect(railIsActive('approvals')).toBe(true)
+
+    // A real tab wins over a stale alias in the same URL.
+    cleanup()
+    root = await mountShell('tab=audit&section=approvals', 'audit')
+    await waitFor(() => expect(resolvedMarker()).toBe('audit'))
+    expect(railIsActive('audit')).toBe(true)
   })
 })

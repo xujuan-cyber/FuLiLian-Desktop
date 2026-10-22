@@ -814,6 +814,51 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   { id: 'apps', views: ['plugins', 'presets', 'about', 'pet', 'quick-entry'] }
 ]
 
+// Every view the shell can render, derived from the group table so the rail,
+// the narrow dropdown and the deep-link enum can never drift apart. The legacy
+// `connections` alias stays resolvable (redirected to gateway by the shell) but
+// has no nav row of its own.
+export const SETTINGS_VIEWS: readonly SettingsView[] = [...SETTINGS_GROUPS.flatMap(group => group.views), 'connections']
+
+// Where a bare `/settings` lands. Unchanged by the URL params work — the shell
+// falls back here whenever neither `?tab=` nor `?section=` names a view.
+export const DEFAULT_SETTINGS_VIEW: SettingsView = 'config:model'
+
+// `?section=` spellings whose name differs from the view id they address.
+// Deliberately tiny: anything not listed here resolves by identity (a nav view
+// id) or by prefixing a SECTIONS id with `config:`. Never a second section
+// table — the ids themselves come from SETTINGS_GROUPS / SECTIONS above.
+const SECTION_PARAM_ALIASES: Record<string, SettingsView> = {
+  // QA/docs write the plural for the Model section; the SECTIONS id is `model`.
+  models: 'config:model'
+}
+
+// Resolve a `?section=` deep-link value to a nav view, or null when the value
+// names nothing (the caller then falls back to `?tab=` / the default view
+// instead of rendering a blank pane). Accepted forms:
+//   1. a nav view id            — approvals, submodels, config:model, …
+//   2. a bare SECTIONS id       — model, appearance, workspace, … → config:<id>
+//   3. the documented aliases   — models → config:model
+export function settingsViewFromSection(raw: string | null | undefined): SettingsView | null {
+  if (!raw) {
+    return null
+  }
+
+  if ((SETTINGS_VIEWS as readonly string[]).includes(raw)) {
+    return raw as SettingsView
+  }
+
+  if (SECTION_PARAM_ALIASES[raw]) {
+    return SECTION_PARAM_ALIASES[raw]
+  }
+
+  if (SECTIONS.some(section => section.id === raw)) {
+    return `config:${raw}` as SettingsView
+  }
+
+  return null
+}
+
 export interface ModeOption {
   id: ThemeMode
   label: string

@@ -50,7 +50,7 @@ import { OverlayMain, OverlayNavItem, OverlaySidebar, OverlaySplitLayout } from 
 import { OverlayView } from '../overlays/overlay-view'
 import { SKILLS_ROUTE } from '../routes'
 
-import { SECTIONS, SETTINGS_GROUPS } from './constants'
+import { DEFAULT_SETTINGS_VIEW, SECTIONS, SETTINGS_GROUPS, SETTINGS_VIEWS, settingsViewFromSection } from './constants'
 import { KEYS_VIEWS, type KeysView } from './keys-settings'
 import { SettingsContent, SettingsSkeleton } from './primitives'
 import { PROVIDER_VIEWS, type ProviderView } from './providers-settings'
@@ -115,15 +115,6 @@ const SubmodelsSettings = lazy(async () => ({
 
 const TraySettings = lazy(async () => ({ default: (await import('./tray-settings')).TraySettings }))
 
-// Nav views derive from the Workbench group table (DESIGN_PROPOSAL §5.5) so
-// the rail, the dropdown and the deep-link enum can never drift apart. The
-// legacy `connections` alias is kept resolvable (redirected to gateway below)
-// but has no nav row.
-const SETTINGS_VIEWS: readonly SettingsViewId[] = [
-  ...SETTINGS_GROUPS.flatMap(group => group.views),
-  'connections'
-]
-
 export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: SettingsPageProps) {
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -143,13 +134,59 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     }
   }, [navigate, search])
 
-  const [activeView, setActiveView] = useRouteEnumParam('tab', SETTINGS_VIEWS, 'config:model' as SettingsViewId)
+  const [tabView] = useRouteEnumParam('tab', SETTINGS_VIEWS, DEFAULT_SETTINGS_VIEW as SettingsViewId)
+
+  // `?section=<id>` is the deep-link spelling used by QA and external launchers
+  // (`#/settings?section=approvals`). It is an *inbound alias*, resolved during
+  // render (not in an effect) so the very first committed frame is already the
+  // linked section — no "render Model, then jump". A canonical `?tab=` always
+  // wins, which is what makes a later nav click stick: picks write `tab` and
+  // drop `section`, so the two can never disagree.
+  const sectionView = useMemo(() => {
+    const params = new URLSearchParams(search)
+    const tab = params.get('tab')
+
+    if (tab && (SETTINGS_VIEWS as readonly string[]).includes(tab)) {
+      return null
+    }
+
+    return settingsViewFromSection(params.get('section'))
+  }, [search])
+
+  const activeView: SettingsViewId = sectionView ?? tabView
+
+  // Single writer for the active section. Nav picks push a history entry (so
+  // Back walks the sections the user actually visited); internal normalisation
+  // (e.g. the legacy `connections` alias) replaces instead, or the redirect
+  // would stack an entry on every mount. Any `?section=` alias is stripped on
+  // write — after a pick, `tab` is the only source.
+  const setActiveView = useCallback(
+    (next: SettingsViewId, options?: { replace?: boolean }) => {
+      const params = new URLSearchParams(search)
+      params.delete('section')
+
+      if (next === DEFAULT_SETTINGS_VIEW) {
+        params.delete('tab')
+      } else {
+        params.set('tab', next)
+      }
+
+      // Re-picking the row you are already on is a no-op: it only canonicalises
+      // the URL (e.g. drops a `?section=` alias), so it must not add a history
+      // entry the user would have to press Back through.
+      const replace = options?.replace || next === activeView
+      const qs = params.toString()
+
+      navigate({ hash, pathname, search: qs ? `?${qs}` : '' }, { replace })
+    },
+    [activeView, hash, navigate, pathname, search]
+  )
 
   // Connections merged into the unified Gateways page: land old
   // `?tab=connections` routes/bookmarks there instead of a dead entry.
   useEffect(() => {
     if (activeView === 'connections') {
-      setActiveView('gateway')
+      setActiveView('gateway', { replace: true })
     }
   }, [activeView, setActiveView])
   // Providers subnav (Accounts vs API keys) lives in its own param so each
@@ -164,6 +201,9 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     (tab: SettingsViewId, param: string, value: string, fallback: string) => {
       const params = new URLSearchParams(search)
       params.set('tab', tab)
+      // Same reason as setActiveView: a lingering `?section=` alias must never
+      // outvote the tab this call is setting.
+      params.delete('section')
 
       if (value === fallback) {
         params.delete(param)
