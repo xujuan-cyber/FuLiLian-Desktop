@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 
-import { afterEach, test } from 'vitest'
+import { afterEach, test, vi } from 'vitest'
 
 import {
   isWslBridgeActive,
@@ -63,8 +63,18 @@ test('resolvePickerDefaultPath bridges a WSL cwd but passes Windows paths and em
 
 // ── bridge active / inactive ─────────────────────────────────────────
 
-test('bridge defaults to active', () => {
-  assert.equal(isWslBridgeActive(), true)
+// N1: the module's pristine default is INACTIVE. `import` at the top of this
+// file has already been touched by earlier tests (afterEach sets it active), so
+// this test re-imports a fresh module instance to observe the real default.
+test('bridge defaults to inactive until a profile resolves (N1: no eager wsl.exe)', async () => {
+  vi.resetModules()
+
+  const fresh = await import('./wsl-path-bridge')
+
+  assert.equal(fresh.isWslBridgeActive(), false)
+
+  // A default-inactive bridge must NOT spawn wsl.exe for a POSIX path.
+  assert.equal(fresh.resolveLocalReadPath('/home/alex/proj'), '/home/alex/proj')
 })
 
 test('setWslBridgeActive(false) → resolvePickerDefaultPath passes raw path through without bridging', () => {

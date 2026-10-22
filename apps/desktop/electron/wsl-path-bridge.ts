@@ -20,8 +20,15 @@ let cachedUncBase: null | string = null
  * WSL path eligibility belongs to the backend profile that produced the path.
  * A single desktop process can keep a local primary backend and a remote pool
  * backend alive simultaneously, so a process-global boolean can bleed between
- * them. Unknown profiles retain the historical local default until Electron
- * resolves and records their actual backend mode.
+ * them.
+ *
+ * N1: an UNRESOLVED profile is `false` (no bridge). The previous `?? true`
+ * default treated every profile as WSL before Electron had resolved its backend
+ * mode, which made the very first file read / folder dialog run
+ * `execFileSync('wsl.exe', ['-l','-q'])` (see resolveDefaultWslDistro) — i.e. a
+ * WSL spawn on a cold start that never needs WSL. main.ts keeps seeding the
+ * real answer per profile (`setWslBridgeProfileState(key, mode !== 'remote')`),
+ * so a genuine local-WSL backend still gets the bridge once it is known.
  */
 const DEFAULT_WSL_BRIDGE_PROFILE = 'default'
 const wslBridgeProfiles = new Map<string, boolean>()
@@ -49,7 +56,9 @@ export function setWslBridgeActive(active: boolean): void {
 export function isWslBridgeActive(profile?: null | string): boolean {
   const key = profile == null ? activeWslBridgeProfile : normalizeWslBridgeProfile(profile)
 
-  return wslBridgeProfiles.get(key) ?? true
+  // Fail closed (N1): until a profile's backend mode is known, do NOT touch
+  // wsl.exe. See the DEFAULT_WSL_BRIDGE_PROFILE comment above.
+  return wslBridgeProfiles.get(key) ?? false
 }
 
 /**

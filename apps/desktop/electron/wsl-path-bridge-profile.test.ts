@@ -168,18 +168,17 @@ describe('WSL bridge profile eligibility — selector argument contract', () => 
     assert.equal(resolvePickerDefaultPath('/home/alex', 'Ubuntu'), '\\\\wsl.localhost\\Ubuntu\\home\\alex')
   })
 
-  test('selector with unknown profile → bridge ON (defaults to active for new profiles)', () => {
-    // A profile that has never been seeded should default to the safe
-    // "bridge ON" behaviour so a brand-new local profile isn't accidentally
-    // disabled. The renderer seeds the state at boot; an unknown key here is
-    // either a renderer race or a profile created mid-session.
+  test('selector with unknown profile → bridge OFF (N1: fail closed until resolved)', () => {
+    // A profile that has never been seeded must NOT be assumed to be WSL. The
+    // renderer seeds the real state at boot; between the first read and that
+    // seed, bridging would spawn `wsl.exe -l -q` on every POSIX path — which is
+    // exactly the cold-start WSL touch N1 removes. Unknown keys therefore fail
+    // closed (no bridge, no distro probe).
     setWslBridgeProfileState(PROFILE_PRIMARY, false)
     setActiveGatewayProfile(PROFILE_PRIMARY)
 
-    assert.equal(
-      resolvePickerDefaultPath('/home/alex', 'Ubuntu', 'unknown-profile'),
-      '\\\\wsl.localhost\\Ubuntu\\home\\alex'
-    )
+    assert.equal(resolvePickerDefaultPath('/home/alex', 'Ubuntu', 'unknown-profile'), '/home/alex')
+    assert.equal(resolveLocalReadPath('/home/alex/proj', undefined, 'unknown-profile'), '/home/alex/proj')
   })
 })
 

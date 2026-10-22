@@ -29,8 +29,20 @@ describe('WSL bridge gate on Windows (#66433)', () => {
     Object.defineProperty(process, 'platform', { value: realPlatform, configurable: true })
   })
 
+  test('a pristine module never spawns wsl.exe — unresolved profiles fail closed (N1)', async () => {
+    // No setWslBridgeActive / setWslBridgeProfileState call at all: this is the
+    // cold-start window before Electron resolves the profile's backend mode.
+    const { isWslBridgeActive, resolveLocalReadPath, resolvePickerDefaultPath } = await import('./wsl-path-bridge')
+
+    expect(isWslBridgeActive()).toBe(false)
+    expect(resolveLocalReadPath('/home/ubuntu/project')).toBe('/home/ubuntu/project')
+    expect(resolvePickerDefaultPath('/home/ubuntu')).toBe('/home/ubuntu')
+    expect(execFileSyncMock).not.toHaveBeenCalled()
+  })
+
   test('wsl.exe IS probed for a POSIX path when the bridge is active (control)', async () => {
-    const { resolveLocalReadPath } = await import('./wsl-path-bridge')
+    const { resolveLocalReadPath, setWslBridgeActive } = await import('./wsl-path-bridge')
+    setWslBridgeActive(true)
     resolveLocalReadPath('/home/ubuntu/project')
     expect(execFileSyncMock).toHaveBeenCalled()
     // Sanity: it really was wsl.exe, not some other binary.
