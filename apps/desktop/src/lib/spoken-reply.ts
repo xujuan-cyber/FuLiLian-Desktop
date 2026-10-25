@@ -8,8 +8,12 @@
  * to say the same thing ("Done.").
  *
  * Anchor on the assistant-role ordinal (nth visible assistant bubble). The
- * rewrite keeps that slot; a new turn appends and the ordinal moves.
+ * rewrite keeps that slot; a new turn appends and the ordinal moves. The
+ * assistant-bubble judgment is owned by the projection module
+ * (isVisibleAssistantMessage) — system notice rows are not assistant bubbles.
  */
+
+import { isVisibleAssistantMessage } from './chat-messages/projection'
 
 export interface SpokenReplyAnchor {
   id: string
@@ -38,7 +42,7 @@ export function assistantReplyOrdinal(messages: readonly SpokenReplyMessage[], i
   let ordinal = -1
 
   for (const message of messages) {
-    if (message.role !== 'assistant' || message.hidden) {
+    if (!isVisibleAssistantMessage(message)) {
       continue
     }
 
@@ -53,7 +57,7 @@ export function assistantReplyOrdinal(messages: readonly SpokenReplyMessage[], i
 }
 
 function lastVisibleAssistant(messages: readonly SpokenReplyMessage[]): SpokenReplyMessage | undefined {
-  return messages.findLast(message => message.role === 'assistant' && !message.hidden)
+  return messages.findLast(isVisibleAssistantMessage)
 }
 
 /** If a spoken live-tail row vanished and the same assistant slot now has a

@@ -13,6 +13,15 @@ export {
   textPart
 } from './parts'
 export type { UnspokenTurnSpeech } from './parts'
+export {
+  isSettledToolOnlyAssistant,
+  isVisibleAssistantMessage,
+  MESSAGE_PROJECTION_CLASSES,
+  messageVisibility,
+  projectMessage,
+  projectSessionMessage
+} from './projection'
+export type { AssistantMessageLike, MessageProjection, MessageProjectionClass, SessionMessageProjection, SystemNoticeKind } from './projection'
 export { branchGroupForUser, preserveLocalAssistantErrors } from './reconciliation'
 export {
   restorePendingClarifyToolCall,

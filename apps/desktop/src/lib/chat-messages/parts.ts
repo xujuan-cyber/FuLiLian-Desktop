@@ -1,5 +1,6 @@
 import { mediaDisplayLabel, mediaMarkdownHref } from '@/lib/media'
 
+import { isVisibleAssistantMessage } from './projection'
 import type { ChatMessage, ChatMessagePart } from './types'
 
 export function textPart(text: string, timestamp?: number): ChatMessagePart {
@@ -80,7 +81,7 @@ export function collectUnspokenTurnSpeech(
   const parts: string[] = []
 
   for (const message of messages.slice(spokenIndex + 1)) {
-    if (message.role !== 'assistant' || message.hidden) {
+    if (!isVisibleAssistantMessage(message)) {
       continue
     }
 

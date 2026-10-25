@@ -1,12 +1,16 @@
-import type { ChatMessage } from '@/lib/chat-messages'
+import { type ChatMessage, messageVisibility } from '@/lib/chat-messages'
 
 export type ThreadLoadingState = 'response' | 'session'
 
 export function lastVisibleMessageIsUser(messages: ChatMessage[]): boolean {
-  // Allocation-free reverse scan — runs in a hot $messages computed.
+  // Allocation-free reverse scan — runs in a hot $messages computed. The
+  // visibility judgment lives in the projection module; messageVisibility is
+  // allocation-free by contract, so the scan stays allocation-free too.
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (!messages[i].hidden) {
-      return messages[i].role === 'user'
+    const visibility = messageVisibility(messages[i])
+
+    if (visibility !== 'hiddenSynthetic') {
+      return visibility === 'realUser'
     }
   }
 

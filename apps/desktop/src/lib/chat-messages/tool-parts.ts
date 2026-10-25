@@ -2,6 +2,7 @@ import { firstStringField, normalize } from '@/lib/text'
 import { parseTodos } from '@/lib/todos'
 import type { SessionMessage } from '@/types/fulilian'
 
+import { messageVisibility } from './projection'
 import type { ChatMessage, ChatMessagePart, GatewayEventPayload } from './types'
 
 function toolId(payload: GatewayEventPayload | undefined): string {
@@ -517,7 +518,7 @@ export function restorePendingClarifyToolCall(
   }
 
   const parts = upsertToolPart([], clarifyPayload, 'running', occurredAt)
-  const tailIndex = messages.findLastIndex(message => !message.hidden)
+  const tailIndex = messages.findLastIndex(message => messageVisibility(message) !== 'hiddenSynthetic')
   const tail = messages[tailIndex]
 
   if (tail?.role === 'assistant') {

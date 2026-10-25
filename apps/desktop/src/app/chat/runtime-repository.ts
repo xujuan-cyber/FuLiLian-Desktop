@@ -3,7 +3,7 @@ import type { ExportedMessageRepository, ThreadMessage } from '@assistant-ui/rea
 import { useMemo, useRef } from 'react'
 
 import type { ChatMessage } from '@/lib/chat-messages'
-import { withUniqueToolCallIdsWithinMessage } from '@/lib/chat-messages'
+import { messageVisibility, withUniqueToolCallIdsWithinMessage } from '@/lib/chat-messages'
 import { coalesceToolOnlyAssistants, createToolMergeCache, toRuntimeMessage } from '@/lib/chat-runtime'
 
 // The exact fallback status ExportedMessageRepository.fromBranchableArray uses.
@@ -75,7 +75,7 @@ export function useRuntimeMessageRepository(messages: ChatMessage[]): ExportedMe
 
       items.push({ message: runtimeMessage, parentId })
 
-      if (!message.hidden) {
+      if (messageVisibility(message) !== 'hiddenSynthetic') {
         visibleParentId = message.id
         headId = message.id
       }

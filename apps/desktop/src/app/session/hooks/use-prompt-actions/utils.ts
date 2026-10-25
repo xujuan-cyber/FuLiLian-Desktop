@@ -1,7 +1,7 @@
 import type { AppendMessage } from '@assistant-ui/react'
 
 import { translateNow, type Translations } from '@/i18n'
-import type { ChatMessage } from '@/lib/chat-messages'
+import { type ChatMessage, messageVisibility } from '@/lib/chat-messages'
 import { type CommandsCatalogLike, filterDesktopCommandsCatalog } from '@/lib/desktop-slash-commands'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import type { ComposerAttachment } from '@/store/composer'
@@ -642,9 +642,10 @@ export function appendText(message: AppendMessage): string {
 
 /** The one visible-user filter every user-ordinal computation must share —
  *  truncate ordinals, ordinal→index resolution, and survivor-rowId rebinding
- *  all rely on counting exactly the same turns. */
+ *  all rely on counting exactly the same turns. Judgment owned by the
+ *  projection module: realUser ≡ `role === 'user' && !hidden`. */
 export function isVisibleUserMessage(message: ChatMessage): boolean {
-  return message.role === 'user' && !message.hidden
+  return messageVisibility(message) === 'realUser'
 }
 
 /**

@@ -3,7 +3,7 @@ import type { ThreadMessage } from '@assistant-ui/react'
 import type { QuickModelOption } from '@/app/chat/composer/types'
 import type { ClientSessionState, CommandDispatchResponse } from '@/app/types'
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
-import { type ChatMessage, type ChatMessagePart, chatMessageText, textPart } from '@/lib/chat-messages'
+import { type ChatMessage, type ChatMessagePart, chatMessageText, isSettledToolOnlyAssistant, isVisibleAssistantMessage, textPart } from '@/lib/chat-messages'
 import { normalize } from '@/lib/text'
 import type { ComposerAttachment } from '@/store/composer'
 import type { ModelOptionsResponse, SessionInfo } from '@/types/fulilian'
@@ -501,21 +501,6 @@ export function createToolMergeCache(): ToolMergeCache {
   return new WeakMap()
 }
 
-// A settled assistant message with only tool calls — no prose, no reasoning.
-// The model routinely emits a follow-up batch of calls as its own text-less
-// message; on screen it looks like one continuous run, but assistant-ui can't
-// group tool calls across a message boundary.
-function isToolOnlyAssistant(message: ChatMessage): boolean {
-  return (
-    message.role === 'assistant' &&
-    !message.pending &&
-    !message.error &&
-    !message.hidden &&
-    message.parts.length > 0 &&
-    message.parts.every(part => part.type === 'tool-call')
-  )
-}
-
 /**
  * Concatenate a tool-only follow-up message's parts onto its predecessor's,
  * dropping any incoming `tool-call` part whose `toolCallId` the predecessor
@@ -569,7 +554,7 @@ export function coalesceToolOnlyAssistants(messages: ChatMessage[], cache: ToolM
   for (const message of messages) {
     const prev = out.at(-1)
 
-    if (prev && prev.role === 'assistant' && !prev.pending && !prev.hidden && isToolOnlyAssistant(message)) {
+    if (prev && isVisibleAssistantMessage(prev) && !prev.pending && isSettledToolOnlyAssistant(message)) {
       const cached = cache.get(message)
 
       const merged =

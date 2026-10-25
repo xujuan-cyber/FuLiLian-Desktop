@@ -1,4 +1,5 @@
 import { chatMessageText } from './parts'
+import { isVisibleAssistantMessage, messageVisibility } from './projection'
 import type { ChatMessage, ChatMessagePart } from './types'
 
 const validTimelineBoundary = (value: unknown): value is number =>
@@ -58,14 +59,14 @@ const timelinePartMatch = (stored: ChatMessagePart, local: ChatMessagePart) => {
 
 /** Keep richer live timing when durable hydration has only one timestamp per row. */
 function reconcileLocalAssistantTimeline(nextMessages: ChatMessage[], currentMessages: ChatMessage[]): ChatMessage[] {
-  const localAssistants = currentMessages.filter(message => message.role === 'assistant' && !message.hidden)
+  const localAssistants = currentMessages.filter(isVisibleAssistantMessage)
   const matches = new Map<number, ChatMessage>()
   let localCursor = localAssistants.length - 1
 
   for (let nextIndex = nextMessages.length - 1; nextIndex >= 0; nextIndex -= 1) {
     const message = nextMessages[nextIndex]
 
-    if (message.role !== 'assistant' || message.hidden) {
+    if (!isVisibleAssistantMessage(message)) {
       continue
     }
 
@@ -126,13 +127,13 @@ export function preserveLocalAssistantErrors(
   const localById = new Map(currentMessages.map(message => [message.id, message]))
 
   const mergedNextMessages = nextMessages.map(message => {
-    if (message.role !== 'assistant' || message.error || message.hidden) {
+    if (!isVisibleAssistantMessage(message) || message.error) {
       return message
     }
 
     const local = localById.get(message.id)
 
-    if (!local || local.role !== 'assistant' || !local.error || local.hidden) {
+    if (!local || !isVisibleAssistantMessage(local) || !local.error) {
       return message
     }
 
@@ -146,7 +147,7 @@ export function preserveLocalAssistantErrors(
   const existingIds = new Set(mergedNextMessages.map(message => message.id))
   const preserveIds = new Set<string>()
   const normalize = (value: string) => value.replace(/\s+/g, ' ').trim()
-  const tailUserInNext = [...mergedNextMessages].reverse().find(message => message.role === 'user' && !message.hidden)
+  const tailUserInNext = [...mergedNextMessages].reverse().find(message => messageVisibility(message) === 'realUser')
   const tailUserText = tailUserInNext ? normalize(chatMessageText(tailUserInNext)) : ''
   const tailUserRefs = tailUserInNext ? (tailUserInNext.attachmentRefs ?? []).join('\n') : ''
 
@@ -158,7 +159,7 @@ export function preserveLocalAssistantErrors(
   for (let index = 0; index < currentMessages.length; index += 1) {
     const message = currentMessages[index]
 
-    if (message.role !== 'assistant' || !message.error || message.hidden || existingIds.has(message.id)) {
+    if (!isVisibleAssistantMessage(message) || !message.error || existingIds.has(message.id)) {
       continue
     }
 
@@ -167,11 +168,11 @@ export function preserveLocalAssistantErrors(
     for (let probe = index - 1; probe >= 0; probe -= 1) {
       const candidate = currentMessages[probe]
 
-      if (candidate.hidden) {
+      if (messageVisibility(candidate) === 'hiddenSynthetic') {
         continue
       }
 
-      if (candidate.role === 'user' && !existingIds.has(candidate.id) && !matchesTailUserInNext(candidate)) {
+      if (messageVisibility(candidate) === 'realUser' && !existingIds.has(candidate.id) && !matchesTailUserInNext(candidate)) {
         preserveIds.add(candidate.id)
       }
 

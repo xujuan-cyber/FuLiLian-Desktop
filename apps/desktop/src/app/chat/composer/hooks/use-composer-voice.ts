@@ -2,7 +2,7 @@ import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useI18n } from '@/i18n'
-import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { chatMessageText, collectUnspokenTurnSpeech, isVisibleAssistantMessage } from '@/lib/chat-messages'
 import { triggerHaptic } from '@/lib/haptics'
 import { markAssistantIdSpoken, resolveSpokenReply } from '@/lib/spoken-reply'
 import { clearWakeIndicator, syncWakeIndicatorWithVoice } from '@/lib/wake-indicator'
@@ -76,7 +76,7 @@ export function useComposerVoice({
   /** Auto-speak selector: the latest unspoken reply only — a backlog collapses to the newest. */
   const pendingResponse = () => {
     const messages = $messages.get()
-    const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
+    const last = messages.findLast(isVisibleAssistantMessage)
     const spoken = resolveSpokenReply(sessionId, messages)
 
     if (!last || last.id === spoken?.id) {
@@ -109,7 +109,7 @@ export function useComposerVoice({
 
   const consumePendingResponse = () => {
     const messages = $messages.get()
-    const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
+    const last = messages.findLast(isVisibleAssistantMessage)
 
     if (last) {
       markAssistantIdSpoken(sessionId, messages, last.id)
