@@ -24,6 +24,11 @@ vi.mock('@fulilian/plugin-sdk', async importOriginal => {
 
   return {
     ...sdk,
+    // plugin.js feature-detects optional exports (`sdk.Streamdown` et al.) and
+    // degrades gracefully when absent; the SDK barrel no longer re-exports
+    // Streamdown, but vitest's mock proxy throws on MISSING keys — declare it
+    // explicitly as absent so the feature detection sees `undefined`.
+    Streamdown: undefined,
     host: {
       ...sdk.host,
       listPersistedSessions,
