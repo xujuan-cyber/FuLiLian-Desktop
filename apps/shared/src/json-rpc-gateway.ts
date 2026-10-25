@@ -72,6 +72,18 @@ type PendingCall = {
   timer?: ReturnType<typeof setTimeout>
 }
 
+/** Sessions whose post-reconnect replay window was missing frames. */
+export interface ReplayGapInfo {
+  sessions: string[]
+}
+
+/** Shape of the gateway's `session.events.since` reply we actually consume. */
+interface SessionEventsSinceResult {
+  epoch?: unknown
+  events?: Array<{ payload?: unknown; seq?: number; session_id?: string; type: string }>
+  truncated?: unknown
+}
+
 export interface GatewayClientOptions {
   closedErrorMessage?: string
   connectErrorMessage?: string
@@ -79,6 +91,16 @@ export interface GatewayClientOptions {
   createRequestId?: (nextId: number) => GatewayRequestId
   heartbeatDeadlineMs?: number
   heartbeatIntervalMs?: number
+  /**
+   * Called at most once per replay fetch when the backend reported
+   * `truncated` for any session — its ring evicted frames between our
+   * watermark and the replay window, so the session's stream has an
+   * unrecoverable mid-gap. The watermark intentionally STAYS at the newest
+   * replayed seq: resetting it would re-dispatch the whole ring on the next
+   * reconnect. Consumers needing an exact transcript must refetch
+   * authoritative state (history RPC) for the reported sessions.
+   */
+  onReplayGap?: (info: ReplayGapInfo) => void
   /** Return true to intercept the default closed-state transition. */
   onSocketClose?: (event: CloseEvent) => boolean | void
   requestIdPrefix?: string
@@ -141,6 +163,7 @@ export class JsonRpcGatewayClient {
       heartbeatDeadlineMs: options.heartbeatDeadlineMs ?? DEFAULT_HEARTBEAT_DEADLINE_MS,
       heartbeatIntervalMs: options.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS,
       notConnectedErrorMessage: options.notConnectedErrorMessage ?? 'gateway not connected',
+      onReplayGap: options.onReplayGap ?? (() => undefined),
       onSocketClose: options.onSocketClose ?? (() => false),
       requestIdPrefix: options.requestIdPrefix ?? 'r',
       requestTimeoutMs: options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
@@ -550,24 +573,32 @@ export class JsonRpcGatewayClient {
 
     try {
       const entries = Object.entries(this.getSeqWatermarks())
+      const gapSessions: string[] = []
 
       // One RPC per known session keeps params flat; sessions are few (<20).
       const results = await Promise.allSettled(
         entries.map(([sid, lastSeen]) =>
-          this.request<{ events?: Array<{ type: string; session_id?: string; seq?: number; payload?: unknown }> }>(
+          this.request<SessionEventsSinceResult>(
             'session.events.since',
             { session_id: sid, last_seen: lastSeen },
             REPLAY_REQUEST_TIMEOUT_MS
-          )
+          ).then(value => ({ sid, value }))
         )
       )
 
       for (const result of results) {
-        if (result.status !== 'fulfilled' || !Array.isArray(result.value?.events)) {
+        if (result.status !== 'fulfilled') {
           continue
         }
 
-        const epoch = (result.value as { epoch?: unknown }).epoch
+        const { sid, value } = result.value
+        const events = value.events
+
+        if (!Array.isArray(events)) {
+          continue
+        }
+
+        const epoch = (value as { epoch?: unknown }).epoch
 
         if (typeof epoch === 'string' && epoch && this.replayEpoch && epoch !== this.replayEpoch) {
           // Backend restarted: its seq numbering reset, so our watermarks —
@@ -582,13 +613,27 @@ export class JsonRpcGatewayClient {
           this.replayEpoch = epoch
         }
 
-        for (const event of result.value.events) {
+        if (value.truncated === true) {
+          gapSessions.push(sid)
+        }
+
+        for (const event of events) {
           if (!event?.type) {
             continue
           }
 
           this.dispatchIfNewer(event as GatewayEvent)
         }
+      }
+
+      if (gapSessions.length > 0) {
+        // Ring overflow while we were disconnected: frames between our
+        // watermark and the replay window are gone for good. The watermark
+        // stays put (resetting it would re-dispatch the whole ring on the
+        // next reconnect); surface the gap so a consumer can refetch
+        // authoritative state for the affected sessions.
+        console.warn(`[gateway] replay gap (ring truncated) for sessions: ${gapSessions.join(', ')}`)
+        this.options.onReplayGap({ sessions: gapSessions })
       }
     } catch {
       // Replay is an optimization over lossy-reconnect; never surface errors.

@@ -1,6 +1,5 @@
+import { JsonRpcGatewayClient } from '@fulilian/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { JsonRpcGatewayClient } from './json-rpc-gateway'
 
 /**
  * Minimal EventTarget-based WebSocket stand-in so the seq-tracking and
@@ -40,9 +39,15 @@ class FakeWebSocket extends EventTarget {
   }
 
   lastRequest(): { id: string; method: string; params: Record<string, unknown> } {
-    const last = this.sent[this.sent.length - 1]
+    // client.hello (P1-3 v2 vocabulary negotiation) fires on EVERY open and
+    // races the replay fetch. The replay tests assert on the RPC plane, so
+    // the helper skips it — otherwise lastRequest() pins the hello frame and
+    // every `waitFor(... session.events.since ...)` assertion misfires.
+    const rpcs = this.sent
+      .map(frame => JSON.parse(frame) as { id: string; method: string; params: Record<string, unknown> })
+      .filter(req => req.method !== 'client.hello')
 
-    return JSON.parse(last ?? '{}')
+    return rpcs[rpcs.length - 1] ?? {}
   }
 }
 
@@ -156,13 +161,16 @@ describe('JsonRpcGatewayClient event-seq tracking + replay resume', () => {
     sockets[0].open()
     await p
     // No events ever seen → close+reconnect must NOT fire a replay RPC.
+    // (client.hello still goes out on every open — it is not a replay call.)
     client.invalidate('drop')
     const p2 = client.connect('ws://x')
     sockets[sockets.length - 1].open()
     await p2
     await new Promise(r => setTimeout(r, 20))
 
-    expect(sockets[sockets.length - 1].sent).toHaveLength(0)
+    const replayRequests = sockets[sockets.length - 1].sent.filter(frame => frame.includes('session.events.since'))
+
+    expect(replayRequests).toHaveLength(0)
     client.close()
   })
 
@@ -331,6 +339,63 @@ describe('JsonRpcGatewayClient event-seq tracking + replay resume', () => {
     // New-epoch events build fresh watermarks from scratch.
     sock.serverFrame({ jsonrpc: '2.0', method: 'event', params: { type: 'message.delta', session_id: 's1', seq: 3 } })
     expect(client.getSeqWatermarks()).toEqual({ s1: 3 })
+    client.close()
+  })
+
+  it('surfaces a replay gap when the backend reports the ring truncated (T-F2b)', async () => {
+    const gaps: string[][] = []
+
+    const client = new JsonRpcGatewayClient({
+      socketFactory: url => new FakeWebSocket(url) as unknown as WebSocket,
+      heartbeatIntervalMs: 0,
+      heartbeatDeadlineMs: 0,
+      connectTimeoutMs: 1000,
+      onReplayGap: info => gaps.push(info.sessions)
+    })
+
+    const seen: number[] = []
+    client.on('message.delta', e => seen.push((e as unknown as { seq: number }).seq))
+
+    const first = client.connect('ws://x')
+    let sock = sockets[sockets.length - 1]
+    sock.open()
+    await first
+    sock.serverFrame({ jsonrpc: '2.0', method: 'event', params: { type: 'message.delta', session_id: 's1', seq: 2 } })
+    expect(seen).toEqual([2])
+
+    client.invalidate('drop')
+    const second = client.connect('ws://x')
+    sock = sockets[sockets.length - 1]
+    sock.open()
+    await second
+
+    await vi.waitFor(() => {
+      expect(sock.lastRequest().method).toBe('session.events.since')
+    })
+    const req = sock.lastRequest()
+    // The ring evicted everything below the replay window: the gap between
+    // watermark 2 and the newest frame is unrecoverable, the newest frame
+    // still replays, and the client must SAY SO instead of silently
+    // trusting a gap-free replay.
+    sock.serverFrame({
+      jsonrpc: '2.0',
+      id: req.id,
+      result: {
+        events: [{ type: 'message.delta', session_id: 's1', seq: 9 }],
+        latest_seq: 9,
+        truncated: true,
+        count: 1
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(gaps).toEqual([['s1']])
+    })
+    // The newest replayed frame still dispatches and advances the watermark.
+    // The watermark must NOT reset — a reset would re-dispatch the whole
+    // ring on the next reconnect.
+    expect(seen).toEqual([2, 9])
+    expect(client.getSeqWatermarks().s1).toBe(9)
     client.close()
   })
 })
