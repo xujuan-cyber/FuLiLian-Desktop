@@ -80,6 +80,7 @@ import { windowProfileOverride } from '@/store/windows'
 import type { RpcEvent } from '@/types/fulilian'
 
 import { stashGatewaySurvivor, survivorIsStale, takeGatewaySurvivor } from './gateway-hmr-survivor'
+import { gatewayStateAlgebra } from './request-algebra'
 
 // After the reconnect loop has been failing for this long, raise a NON-blocking
 // warning toast. Full-screen BootFailureOverlay used to lock the user out of
@@ -177,6 +178,15 @@ export function useGatewayBoot({
   useEffect(() => {
     let cancelled = false
     const desktop = window.fulilianDesktop
+
+    // Request algebra (T-F2a): the authoritative flows below (boot, softSwitch,
+    // adoptBoot) each ISSUE a fresh generation on entry, invalidating every
+    // older one. Subordinate async responders (the post-boot reconnect attempt
+    // here, the request-time reconnect in use-gateway-request) capture the
+    // current generation when they START and may only land shared state while
+    // it is still the newest — so a slow reconnect response that resolves
+    // after a newer boot/switch committed is dropped wholesale instead of
+    // clobbering the newer $connection / primary-socket state.
 
     const publish = (next: FulilianConnection | null) => {
       callbacksRef.current.onConnectionReady(next)
@@ -305,6 +315,10 @@ export function useGatewayBoot({
       }
 
       reconnecting = true
+      // Subordinate responder (T-F2a): capture the authoritative generation.
+      // A newer boot/softSwitch that commits while this attempt is in flight
+      // must win; this attempt's late responses are dropped below.
+      const generation = gatewayStateAlgebra.current()
 
       try {
         // Drop a stale REMOTE backend cache before re-dialing. After sleep/wake a
@@ -330,11 +344,15 @@ export function useGatewayBoot({
           'Timed out reconnecting to Fulilian backend'
         )
 
-        setPrimaryGatewayConnection(conn)
-
-        if (cancelled) {
+        // Algebra checkpoint (T-F2a): a newer authoritative flow that committed
+        // while this attempt was in flight owns the state now — drop this
+        // stale response before ANY landing (descriptor publish, re-mint,
+        // re-dial, tile rebinding, resync).
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
           return
         }
+
+        setPrimaryGatewayConnection(conn)
 
         // Only publish the primary descriptor when the primary is active.
         // Otherwise a background-profile view would inherit the primary's
@@ -357,9 +375,19 @@ export function useGatewayBoot({
           'Timed out re-minting the gateway WebSocket URL'
         )
 
+        // Algebra checkpoint (T-F2a) before the re-dial: never race a newer
+        // authoritative switch's own gateway.connect() with the stale URL.
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
+          return
+        }
+
         await gateway.connect(wsUrl)
 
-        if (cancelled) {
+        // Algebra checkpoint (T-F2a): the connect await can outlive a newer
+        // authoritative switch (which re-dials the SAME socket object). Landing
+        // the post-connect resync after that would rebind tiles/guards for the
+        // superseded attempt — drop it.
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
           return
         }
 
@@ -573,6 +601,12 @@ export function useGatewayBoot({
         return
       }
 
+      // Authoritative switch (T-F2a): issue a new generation so any in-flight
+      // boot/reconnect response that resolves mid-switch is dropped instead of
+      // landing over this switch's connection. softSwitch's own writes stay
+      // guarded by its ownsSwitch() token (stronger, switch-scoped).
+      gatewayStateAlgebra.issue()
+
       let switchToken: null | ReturnType<typeof beginGatewaySwitch> = null
 
       try {
@@ -709,7 +743,13 @@ export function useGatewayBoot({
 
     void desktop
       .getBootProgress()
-      .then(snapshot => applyDesktopBootProgress(snapshot))
+      .then(snapshot => {
+        // Late IPC response must not touch the boot overlay after unmount
+        // (T-F2a: every async response landing is generation/cancel guarded).
+        if (!cancelled) {
+          applyDesktopBootProgress(snapshot)
+        }
+      })
       .catch(() => undefined)
 
     setDesktopBootStep({
@@ -970,6 +1010,10 @@ export function useGatewayBoot({
     })
 
     async function boot() {
+      // Authoritative boot attempt (T-F2a): each retry re-issues a fresh
+      // generation, invalidating any older in-flight reconnect responses.
+      const generation = gatewayStateAlgebra.issue()
+
       try {
         // A profile-pinned helper window (the HUD) dials its target profile's
         // backend directly — ensureBackend spawns/reuses it from the pool.
@@ -984,7 +1028,11 @@ export function useGatewayBoot({
           'Timed out connecting to Fulilian backend'
         )
 
-        if (cancelled) {
+        // Algebra checkpoint (T-F2a): a softSwitch that started while this
+        // boot was waiting on main owns the state now — this boot's stale
+        // descriptor must not publish over it (the switch completes its own
+        // boot overlay + bootCompleted).
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
           return
         }
 
@@ -1022,9 +1070,17 @@ export function useGatewayBoot({
           'Timed out minting the gateway WebSocket URL'
         )
 
+        // Algebra checkpoint (T-F2a) before the re-dial: never race a newer
+        // authoritative switch's own gateway.connect() with the stale URL.
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
+          return
+        }
+
         await gateway.connect(wsUrl)
 
-        if (cancelled) {
+        // Algebra checkpoint (T-F2a): same ownership rule after the connect
+        // await — a newer authoritative switch wins the socket + state.
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
           return
         }
 
@@ -1058,7 +1114,10 @@ export function useGatewayBoot({
           })
         ])
 
-        if (cancelled) {
+        // Algebra checkpoint (T-F2a): the concurrent refresh fan-out can
+        // outlive a newer authoritative switch; only the newest generation
+        // commits boot completion.
+        if (cancelled || !gatewayStateAlgebra.isLatest(generation)) {
           return
         }
 
@@ -1104,6 +1163,9 @@ export function useGatewayBoot({
     // dismiss any boot overlay. This is what keeps a live, mid-stream session
     // intact across an HMR update.
     async function adoptBoot() {
+      // Authoritative HMR adoption (T-F2a): invalidate older in-flight
+      // responses from the pre-update effect's flows.
+      gatewayStateAlgebra.issue()
       bootCompleted = true
       completeDesktopBoot()
 

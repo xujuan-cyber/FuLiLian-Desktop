@@ -8,6 +8,8 @@ import { $gateway, ensureActiveGatewayOpen, isActivePrimary } from '@/store/gate
 import { $activeGatewayProfile } from '@/store/profile'
 import { $gatewayState, setConnection } from '@/store/session'
 
+import { gatewayStateAlgebra } from './request-algebra'
+
 export function useGatewayRequest() {
   const gatewayState = useStore($gatewayState)
   // Reactive companion to `gatewayRef`. The ref exists so `requestGateway`
@@ -64,6 +66,13 @@ export function useGatewayRequest() {
     reconnectingRef.current = (async () => {
       const desktop = window.fulilianDesktop
 
+      // Subordinate responder (T-F2a request algebra): capture the gateway
+      // state generation. A boot/softSwitch that commits while these IPC
+      // round-trips are in flight is newer — this stale response must then be
+      // dropped wholesale (no setConnection, no stale re-dial) instead of
+      // clobbering the newer connection state or socket.
+      const generation = gatewayStateAlgebra.current()
+
       if (!desktop) {
         return null
       }
@@ -85,6 +94,12 @@ export function useGatewayRequest() {
           'Timed out reconnecting to Fulilian backend'
         )
 
+        // Algebra checkpoint (T-F2a): drop the stale descriptor before ANY
+        // landing once a newer authoritative flow has committed.
+        if (!gatewayStateAlgebra.isLatest(generation)) {
+          return null
+        }
+
         connectionRef.current = conn
         setConnection(conn)
 
@@ -100,6 +115,13 @@ export function useGatewayRequest() {
           'Timed out re-minting the gateway WebSocket URL'
         )
 
+        // Algebra checkpoint (T-F2a) before the re-dial: a newer
+        // authoritative switch may already have re-dialed this SAME socket
+        // object to its own URL — never race it with the stale one.
+        if (!gatewayStateAlgebra.isLatest(generation)) {
+          return null
+        }
+
         await existing.connect(wsUrl)
 
         return existing
@@ -109,7 +131,13 @@ export function useGatewayRequest() {
         }
 
         connectionRef.current = null
-        setConnection(null)
+
+        // Algebra checkpoint (T-F2a): a null connection is a state landing
+        // too — a newer authoritative flow's published connection must not be
+        // wiped by this stale failure.
+        if (gatewayStateAlgebra.isLatest(generation)) {
+          setConnection(null)
+        }
 
         return null
       } finally {

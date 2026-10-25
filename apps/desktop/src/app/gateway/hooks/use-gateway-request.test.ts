@@ -62,6 +62,7 @@ import {
 import { $activeGatewayProfile } from '@/store/profile'
 import { $connection, $gatewayState } from '@/store/session'
 
+import { gatewayStateAlgebra } from './request-algebra'
 import { useGatewayRequest } from './use-gateway-request'
 
 interface TestGateway {
@@ -388,5 +389,75 @@ describe('useGatewayRequest', () => {
     // settling.
     await vi.advanceTimersByTimeAsync(20_000)
     await pending
+  })
+
+  it('request algebra (T-F2a): a stale request-time reconnect cannot land state after a newer authority commits', async () => {
+    // Repro: a request lands on a dropped socket, the transport-error catch
+    // starts the request-time reconnect, and its getConnection() IPC round
+    // -trip hangs. While it hangs, an authoritative flow (boot / softSwitch in
+    // use-gateway-boot.ts) commits by issuing a new generation. When the slow
+    // response finally arrives it is STALE — it must be dropped wholesale: no
+    // setConnection, no re-dial of the stale wsUrl, and the original transport
+    // error still surfaces to the caller.
+    vi.useFakeTimers()
+
+    const staleConn = {
+      authMode: 'token' as const,
+      baseUrl: 'http://127.0.0.1:5151',
+      mode: 'local' as const,
+      profile: 'default',
+      token: 'stale-token',
+      wsUrl: 'ws://127.0.0.1:5151/api/ws?token=stale'
+    }
+
+    let resolveSlow: (value: typeof staleConn) => void = () => undefined
+
+    const getConnection = vi.fn(
+      () =>
+        new Promise<typeof staleConn>(resolve => {
+          resolveSlow = resolve
+        })
+    )
+
+    ;(window as unknown as { fulilianDesktop: unknown }).fulilianDesktop = { getConnection }
+
+    const dropped = {
+      connect: vi.fn(async () => undefined),
+      connectionState: 'closed',
+      request: vi.fn().mockRejectedValue(new Error('connection closed'))
+    } as unknown as FulilianGateway
+
+    $gateway.set(dropped)
+
+    const { result } = renderHook(() => useGatewayRequest())
+
+    const outcome = result.current.requestGateway('some.method').then(
+      () => 'resolved' as const,
+      (error: unknown) => error
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(getConnection).toHaveBeenCalledTimes(1)
+
+    // The authoritative flow commits while the reconnect response is in flight.
+    act(() => {
+      gatewayStateAlgebra.issue()
+    })
+
+    // The slow response arrives late carrying the stale connection.
+    await act(async () => {
+      resolveSlow(staleConn)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    // Stale landing is dropped: $connection untouched, no stale re-dial, and
+    // the original transport error still surfaces to the caller.
+    expect($connection.get()).toBeNull()
+    expect(dropped.connect).not.toHaveBeenCalled()
+    await expect(outcome).resolves.toMatchObject({ message: 'connection closed' })
   })
 })

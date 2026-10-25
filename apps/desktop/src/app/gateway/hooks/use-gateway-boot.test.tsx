@@ -1784,3 +1784,61 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     expect($gatewayState.get()).toBe('open')
   })
 })
+
+// T-F2a request algebra: the authoritative gateway flows (boot / softSwitch /
+// adoptBoot) issue a fresh generation on entry; the subordinate post-boot
+// reconnect attempt captures the current generation and may only land state
+// while it is still the newest. A slow reconnect response that resolves after
+// a newer switch committed is dropped WHOLESALE — no publish, no re-dial —
+// instead of clobbering the newer connection state with the stale descriptor.
+describe('request algebra (T-F2a): stale async gateway responses are dropped', () => {
+  it('a slow reconnect that resolves after a newer soft switch commits cannot publish its stale connection', async () => {
+    const desktop = fakeDesktop()
+
+    ;(window as { fulilianDesktop?: unknown }).fulilianDesktop = desktop
+
+    render(<Harness />)
+    await flushAsync()
+    expect($gatewayState.get()).toBe('open')
+
+    // Request A (slow): the post-boot reconnect loop's getConnection() hangs.
+    let resolveSlowReconnect: (value: typeof primaryConn) => void = () => undefined
+
+    desktop.getConnection.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveSlowReconnect = resolve
+        })
+    )
+
+    act(() => FakeWebSocket.instances[0]?.drop())
+    await advanceBackoff()
+    expect(desktop.getConnection).toHaveBeenCalledTimes(2)
+
+    // Request B (fast): a Settings apply runs softSwitch, which commits a NEW
+    // connection under a NEW generation.
+    const switchConn = {
+      ...primaryConn,
+      baseUrl: 'https://switch.example.com',
+      connectionId: 'switch-now',
+      wsUrl: 'wss://switch.example.com/api/ws?token=t'
+    }
+
+    desktop.getConnection.mockImplementationOnce(async () => switchConn)
+    act(() => connectionApplied?.())
+    await flushAsync()
+    expect($connection.get()?.connectionId).toBe('switch-now')
+    expect($gatewayState.get()).toBe('open')
+
+    // Request A's slow response arrives late, carrying the STALE connection.
+    // The algebra must drop it wholesale: $connection keeps the switch's
+    // descriptor and no third socket is dialed for the dead connection.
+    await act(async () => {
+      resolveSlowReconnect(primaryConn)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect($connection.get()?.connectionId).toBe('switch-now')
+    expect(FakeWebSocket.instances).toHaveLength(2)
+  })
+})
