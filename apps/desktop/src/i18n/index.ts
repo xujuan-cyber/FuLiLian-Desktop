@@ -10,8 +10,10 @@ export {
   type I18nConfigClient,
   type I18nContextValue,
   I18nProvider,
+  type I18nStatusValue,
   LOCALE_META,
   useI18n,
+  useI18nStatus,
   withConfigDisplayLanguage
 } from './context'
 export {

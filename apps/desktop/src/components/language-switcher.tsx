@@ -5,7 +5,7 @@ import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { type Locale, LOCALE_META, useI18n } from '@/i18n'
+import { type Locale, LOCALE_META, useI18n, useI18nStatus } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, ChevronDown, Globe } from '@/lib/icons'
 import { normalize } from '@/lib/text'
@@ -29,7 +29,8 @@ interface LanguageCommandProps {
 }
 
 export function LanguageSwitcher({ className, collapsed = false, dropUp = false }: LanguageSwitcherProps) {
-  const { isSavingLocale, locale, setLocale, t } = useI18n()
+  const { locale, setLocale, t } = useI18n()
+  const { isSavingLocale } = useI18nStatus()
   const [open, setOpen] = useState(false)
   const isMobile = useIsMobile()
   const useMobileSheet = Boolean(dropUp && isMobile)

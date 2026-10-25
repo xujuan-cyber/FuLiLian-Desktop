@@ -66,22 +66,34 @@ function applyDocumentLocale(locale: Locale) {
   document.documentElement.dir = localeDir(locale)
 }
 
-export interface I18nContextValue {
+export interface I18nStatusValue {
   configLoadError: Error | null
   isLoadingConfig: boolean
   isSavingLocale: boolean
-  locale: Locale
   saveError: Error | null
+}
+
+export interface I18nContextValue {
+  locale: Locale
   setLocale: (next: Locale) => Promise<void>
   t: Translations
 }
 
-const I18nContext = createContext<I18nContextValue>({
+// N-4: the transient save/config flags live in a SECOND context. They flip
+// twice around every `setLocale` (saving on/off) and at boot (config load);
+// their only consumers are the language switcher UI. Before the split they
+// rode the same context value as `t`, so every flag toggle re-rendered all
+// ~220 translation consumers — 2 extra full-tree renders per switch on top of
+// the single swap render P16 already committed to.
+const I18nStatusContext = createContext<I18nStatusValue>({
   configLoadError: null,
   isLoadingConfig: false,
   isSavingLocale: false,
+  saveError: null
+})
+
+const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
-  saveError: null,
   setLocale: async () => {},
   t: getTranslations(DEFAULT_LOCALE)
 })
@@ -238,22 +250,26 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
   // lands) re-runs this render and re-reads the catalog for the same `locale`.
   const t = getTranslations(locale)
 
-  const value = useMemo<I18nContextValue>(
-    () => ({
-      configLoadError,
-      isLoadingConfig,
-      isSavingLocale,
-      locale,
-      saveError,
-      setLocale,
-      t
-    }),
-    [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale, t]
+  const value = useMemo<I18nContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t])
+
+  const statusValue = useMemo<I18nStatusValue>(
+    () => ({ configLoadError, isLoadingConfig, isSavingLocale, saveError }),
+    [configLoadError, isLoadingConfig, isSavingLocale, saveError]
   )
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+  return (
+    <I18nStatusContext.Provider value={statusValue}>
+      <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+    </I18nStatusContext.Provider>
+  )
 }
 
 export function useI18n(): I18nContextValue {
   return useContext(I18nContext)
+}
+
+/** Transient save/config flags. Changes up to twice per language switch —
+ *  read this ONLY from switcher chrome, never from translation consumers. */
+export function useI18nStatus(): I18nStatusValue {
+  return useContext(I18nStatusContext)
 }

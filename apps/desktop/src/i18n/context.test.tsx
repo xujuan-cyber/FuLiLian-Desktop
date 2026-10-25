@@ -3,11 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { FulilianConfigRecord } from '@/fulilian'
 
-import { type I18nConfigClient, I18nProvider, useI18n } from './context'
+import { type I18nConfigClient, I18nProvider, useI18n, useI18nStatus } from './context'
 import type { Locale } from './types'
 
 function LanguageProbe({ target = 'zh' }: { target?: Locale }) {
-  const { isLoadingConfig, isSavingLocale, locale, saveError, setLocale, t } = useI18n()
+  const { locale, setLocale, t } = useI18n()
+  const { isLoadingConfig, isSavingLocale, saveError } = useI18nStatus()
 
   return (
     <div>

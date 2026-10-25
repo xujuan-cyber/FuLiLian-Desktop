@@ -7,7 +7,7 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import type { DesktopMarketplaceSearchItem } from '@/global'
-import { useI18n } from '@/i18n'
+import { useI18n, useI18nStatus } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
 import { selectableCardClass } from '@/lib/selectable-card'
@@ -354,7 +354,9 @@ function GlassRow({ children, label }: GlassRowProps) {
 }
 
 export function AppearanceSettings() {
-  const { t, isSavingLocale } = useI18n()
+  const { t } = useI18n()
+  const { isSavingLocale } = useI18nStatus()
+
   const {
     textInk,
     textScale,

@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CatalogModule from './catalog'
-import { type I18nConfigClient, I18nProvider, useI18n } from './context'
+import { type I18nConfigClient, I18nProvider, useI18n, useI18nStatus } from './context'
 import { getRuntimeI18nLocale, translateNow } from './runtime'
 import type { Locale } from './types'
 
@@ -40,7 +40,8 @@ vi.mock('./catalog', async importOriginal => {
 })
 
 function TransitionProbe({ target = 'zh' }: { target?: Locale }) {
-  const { locale, saveError, setLocale, t } = useI18n()
+  const { locale, setLocale, t } = useI18n()
+  const { saveError } = useI18nStatus()
   const renders = useRef(0)
   renders.current += 1
 
