@@ -144,7 +144,18 @@ export function OverlayView({
         {/* Sibling of the card, not a child: the card clips its own overflow
             (rounded corners), and the badge deliberately straddles the top
             border — half above, half below. */}
-        {edgeBadge && <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">{edgeBadge}</div>}
+        {/* N-3 (v1.4.1): the badge's lower half overlaps the card's
+            `-webkit-app-region: drag` strip (measured 117×11px on the settings
+            search pill at 1440×900). Chromium subtracts only elements marked
+            `no-drag` from the draggable region, so unmarked pixels inside the
+            strip's box drag the window instead of clicking the badge — the top
+            control "misses". The strip cannot subtract it either: the badge is
+            a later sibling, outside the strip's subtree. */}
+        {edgeBadge && (
+          <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 [-webkit-app-region:no-drag]">
+            {edgeBadge}
+          </div>
+        )}
       </div>
     </div>
   )

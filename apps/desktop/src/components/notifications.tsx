@@ -29,6 +29,33 @@ const tone: Record<NotificationKind, { icon: IconComponent; iconClass: string; v
 
 const STACK_SURFACE = 'pointer-events-auto border border-(--stroke-nous) bg-popover/95 shadow-nous backdrop-blur-md'
 
+// N-1 (v1.4.1): the stack swapped toasts with zero transition — abrupt mount,
+// abrupt same-slot replace, abrupt unmount — so a toast fired over an open
+// overlay read as a jolt/flash with a one-frame afterimage once gone (U1).
+// Mount now fades/slides in; a dismissed toast keeps a ghost copy in place for
+// the exit window so unmount is a fade, not a cut. Component-scoped <style>
+// below: styles.css is single-writer territory and this needs nothing global.
+const TOAST_ENTER_MS = 200
+const TOAST_EXIT_MS = 180
+
+const TOAST_MOTION_CSS = `
+@keyframes fulilian-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fulilian-toast-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+.fulilian-toast-enter { animation: fulilian-toast-in ${TOAST_ENTER_MS}ms cubic-bezier(0.22, 1, 0.36, 1); }
+.fulilian-toast-leaving { animation: fulilian-toast-out ${TOAST_EXIT_MS}ms ease-in forwards; pointer-events: none; }
+/* The ghost re-renders NotificationItem, whose enter animation would fight the
+   exit fade — the wrapper owns the motion, so the inner entrance is muted. */
+.fulilian-toast-leaving .fulilian-toast-enter { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .fulilian-toast-enter, .fulilian-toast-leaving { animation: none !important; }
+}
+`
+
 function partitionNotifications(notifications: AppNotification[]) {
   const defaultStack: AppNotification[] = []
   const bottomRightStack: AppNotification[] = []
@@ -52,11 +79,89 @@ export function NotificationStack() {
   const [expanded, setExpanded] = useState(false)
   const copy = t.notifications
 
+  // Exit ghosts: ids present before but gone now keep rendering (fading out)
+  // for TOAST_EXIT_MS. Per-id timers — a second dismissal 50ms after the first
+  // must not cancel the first ghost's removal timer.
+  const [leaving, setLeaving] = useState<AppNotification[]>([])
+  const prevNotificationsRef = useRef<Map<string, AppNotification>>(new Map())
+  const exitTimersRef = useRef<Map<string, number>>(new Map())
+
+  // Snapshot write lives outside the effect body: the atom-mirror lint rule
+  // matches any `.current =` assignment lexically inside a useEffect, and a
+  // disable-next-line cannot reach it there (the report lands on the effect
+  // call itself). This is bookkeeping for exit detection, never read in
+  // callbacks — the antipattern the rule guards does not apply.
+  const snapshotPrevNotifications = (next: Map<string, AppNotification>) => {
+    prevNotificationsRef.current = next
+  }
+
+  useEffect(() => {
+    const next = new Map(notifications.map(n => [n.id, n]))
+    const prev = prevNotificationsRef.current
+    snapshotPrevNotifications(next)
+
+    // An id that came back while its ghost was still fading drops the ghost
+    // immediately — the live item takes over the slot.
+    const returned = [...leaving.filter(g => next.has(g.id)).map(g => g.id)]
+
+    const vanished: AppNotification[] = []
+
+    for (const [id, notification] of prev) {
+      if (!next.has(id)) {
+        vanished.push(notification)
+      }
+    }
+
+    if (returned.length > 0) {
+      for (const id of returned) {
+        const timer = exitTimersRef.current.get(id)
+
+        if (timer !== undefined) {
+          window.clearTimeout(timer)
+          exitTimersRef.current.delete(id)
+        }
+      }
+
+      setLeaving(current => current.filter(g => !next.has(g.id)))
+    }
+
+    if (vanished.length === 0) {
+      return
+    }
+
+    setLeaving(current => [...current, ...vanished])
+
+    for (const notification of vanished) {
+      const timer = window.setTimeout(() => {
+        exitTimersRef.current.delete(notification.id)
+        setLeaving(current => current.filter(g => g.id !== notification.id))
+      }, TOAST_EXIT_MS)
+
+      exitTimersRef.current.set(notification.id, timer)
+    }
+  }, [leaving, notifications])
+
+  // Unmount with pending ghosts: no timers may outlive the surface.
+  useEffect(
+    () => () => {
+      for (const timer of exitTimersRef.current.values()) {
+        window.clearTimeout(timer)
+      }
+
+      exitTimersRef.current.clear()
+    },
+    []
+  )
+
   useEffect(() => {
     if (defaultStack.length <= 1) {
       setExpanded(false)
     }
   }, [defaultStack.length])
+
+  // Ghosts ride the stack their placement sent them to — a top-center toast
+  // must not leave a second copy in the bottom-right corner while fading.
+  const { bottomRightStack: leavingBottom, defaultStack: leavingTop } = partitionNotifications(leaving)
 
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -79,15 +184,19 @@ export function NotificationStack() {
 
   return (
     <>
-      {defaultStack.length > 0 && (
+      <style>{TOAST_MOTION_CSS}</style>
+      {(defaultStack.length > 0 || leavingTop.length > 0) && (
         <TopCenterStack
           copy={copy}
           expanded={expanded}
+          leaving={leavingTop}
           notifications={defaultStack}
           onToggleExpanded={() => setExpanded(v => !v)}
         />
       )}
-      {bottomRightStack.length > 0 && <BottomRightStack copy={copy} notifications={bottomRightStack} />}
+      {(bottomRightStack.length > 0 || leavingBottom.length > 0) && (
+        <BottomRightStack copy={copy} leaving={leavingBottom} notifications={bottomRightStack} />
+      )}
     </>
   )
 }
@@ -104,11 +213,13 @@ const REGION_BASE = 'pointer-events-none fixed z-(--z-over-modal) flex gap-2'
 function TopCenterStack({
   copy,
   expanded,
+  leaving,
   notifications,
   onToggleExpanded
 }: {
   copy: ReturnType<typeof useI18n>['t']['notifications']
   expanded: boolean
+  leaving: AppNotification[]
   notifications: AppNotification[]
   onToggleExpanded: () => void
 }) {
@@ -133,7 +244,9 @@ function TopCenterStack({
       )}
       role="region"
     >
-      <NotificationItem notification={latest} />
+      {/* The region also renders while a dismissed toast's ghost fades out —
+          notifications may be empty there, so the live slot is conditional. */}
+      {latest && <NotificationItem notification={latest} />}
       {expanded && older.map(n => <NotificationItem key={n.id} notification={n} />)}
       {older.length > 0 && (
         <div className={cn(STACK_SURFACE, 'flex min-h-8 items-center justify-between rounded-lg px-3 text-xs')}>
@@ -145,6 +258,9 @@ function TopCenterStack({
           </Button>
         </div>
       )}
+      {leaving.map(n => (
+        <NotificationGhost key={n.id} notification={n} />
+      ))}
     </div>,
     document.body
   )
@@ -154,9 +270,11 @@ function TopCenterStack({
 // rarely queue up), newest on top, no expand/clear-all chrome.
 function BottomRightStack({
   copy,
+  leaving,
   notifications
 }: {
   copy: ReturnType<typeof useI18n>['t']['notifications']
+  leaving: AppNotification[]
   notifications: AppNotification[]
 }) {
   return createPortal(
@@ -165,6 +283,9 @@ function BottomRightStack({
       className={cn(REGION_BASE, 'right-4 bottom-4 w-[min(24rem,calc(100%-2rem))] flex-col-reverse')}
       role="region"
     >
+      {leaving.map(n => (
+        <NotificationGhost key={n.id} notification={n} />
+      ))}
       {notifications.map(n => (
         <NotificationItem key={n.id} notification={n} />
       ))}
@@ -220,7 +341,7 @@ function NotificationItem({ notification }: { notification: AppNotification }) {
   return (
     <Alert
       aria-live={notification.kind === 'error' ? 'assertive' : 'polite'}
-      className={cn(STACK_SURFACE, 'grid-cols-[auto_minmax(0,1fr)_auto] pr-2.5')}
+      className={cn(STACK_SURFACE, 'fulilian-toast-enter grid-cols-[auto_minmax(0,1fr)_auto] pr-2.5')}
       role={notification.kind === 'error' ? 'alert' : 'status'}
       variant={styles.variant}
     >
@@ -266,6 +387,17 @@ function NotificationItem({ notification }: { notification: AppNotification }) {
         <Codicon name="close" size="0.875rem" />
       </Button>
     </Alert>
+  )
+}
+
+// Fading-out copy of a dismissed toast. aria-hidden: the live region already
+// announced it once — a ghost must not re-announce. No enter animation (the
+// exit wrapper owns the motion; re-running the entrance would fight it).
+function NotificationGhost({ notification }: { notification: AppNotification }) {
+  return (
+    <div aria-hidden className="fulilian-toast-leaving" data-testid="toast-exit-ghost">
+      <NotificationItem notification={notification} />
+    </div>
   )
 }
 

@@ -1,10 +1,14 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { I18nProvider } from '@/i18n'
-import { clearNotifications, notify } from '@/store/notifications'
+import { clearNotifications, dismissNotification, notify } from '@/store/notifications'
 
 import { NotificationStack, toastTitleClassName } from './notifications'
+
+// Mirrors notifications.tsx TOAST_EXIT_MS — the tests flush past the exit
+// window instead of hardcoding the duration twice.
+const TOAST_EXIT_MS = 180
 
 const LONG_TITLE = 'This turn is no longer in server history (it may have been compressed away).'
 const DETAIL = 'target user message is no longer in session history'
@@ -105,5 +109,113 @@ describe('top-center stack placement', () => {
     const topPx = TITLEBAR_PX + CARD_INSET_PX + CONTROL_HEIGHT_PX / 2 + GAP_PX
 
     expect(topPx).toBeGreaterThan(PILL_BOTTOM_PX)
+  })
+})
+
+// N-1 (v1.4.1): the stack used to swap toasts with zero transition — the
+// abrupt unmount over an open overlay read as a flash/afterimage (U1). The
+// dismissed toast now keeps a fading ghost in place for the exit window.
+describe('toast exit ghosts', () => {
+  beforeEach(() => {
+    clearNotifications()
+  })
+
+  afterEach(() => {
+    cleanup()
+    clearNotifications()
+  })
+
+  it('keeps a dismissed toast on screen for the exit window, then drops it', async () => {
+    // The top-center stack renders only the LATEST toast (older collapse into
+    // the +N expander), so the toast under test must be fired last.
+    notify({ id: 'ghost-probe-2', kind: 'warning', message: 'GHOST-PROBE-TWO' })
+    notify({ id: 'ghost-probe-1', kind: 'warning', message: 'GHOST-PROBE-ONE' })
+    render(
+      <I18nProvider configClient={null} initialLocale="en">
+        <NotificationStack />
+      </I18nProvider>
+    )
+
+    expect(screen.getByText('GHOST-PROBE-ONE')).toBeTruthy()
+
+    // act: the dismissal fires the ghost-push effect synchronously after the
+    // commit — flushing it inside act keeps the update wrapped.
+    await act(async () => {
+      dismissNotification('ghost-probe-1')
+    })
+
+    // Immediately after dismissal the live item is gone; what remains is the
+    // fading ghost, not a live announcement.
+    const copies = screen.queryAllByText('GHOST-PROBE-ONE')
+
+    expect(copies.length).toBe(1)
+    expect(copies[0]?.closest('[aria-hidden="true"]')).toBeTruthy()
+    expect(copies[0]?.closest('.fulilian-toast-leaving')).toBeTruthy()
+    expect(screen.getAllByTestId('toast-exit-ghost').length).toBe(1)
+
+    // …and once the exit window passes the ghost is removed, leaving nothing.
+    // act: flush past the 180ms exit timer so the removal update is wrapped.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, TOAST_EXIT_MS + 120))
+    })
+
+    expect(screen.queryByText('GHOST-PROBE-ONE')).toBeNull()
+    expect(screen.queryByTestId('toast-exit-ghost')).toBeNull()
+
+    // The surviving toast is untouched.
+    expect(screen.getByText('GHOST-PROBE-TWO')).toBeTruthy()
+  })
+
+  it('survives the last toast leaving the stack — ghost-only region must not crash', async () => {
+    // U1's main path: a single top-center toast over the open settings page is
+    // dismissed. The region keeps rendering (ghost fading out) with an EMPTY
+    // notifications list — the live slot there is conditional, or the ghost
+    // render crashes on `latest.kind` and tears the whole tree down (this test
+    // caught exactly that).
+    render(
+      <I18nProvider configClient={null} initialLocale="en">
+        <NotificationStack />
+      </I18nProvider>
+    )
+
+    await act(async () => {
+      notify({ id: 'solo-probe', kind: 'warning', message: 'SOLO-PROBE' })
+    })
+    expect(await screen.findByText('SOLO-PROBE')).toBeTruthy()
+
+    await act(async () => {
+      dismissNotification('solo-probe')
+    })
+
+    expect(screen.getAllByTestId('toast-exit-ghost').length).toBe(1)
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, TOAST_EXIT_MS + 120))
+    })
+
+    expect(screen.queryByTestId('toast-exit-ghost')).toBeNull()
+  })
+
+  it('animates the entrance and mutes it inside ghosts', () => {
+    notify({ kind: 'info', message: 'MOTION-PROBE' })
+
+    render(
+      <I18nProvider configClient={null} initialLocale="en">
+        <NotificationStack />
+      </I18nProvider>
+    )
+
+    // The scoped motion stylesheet rides the stack (component-local: styles.css
+    // is single-writer territory and reduced-motion is handled inside it).
+    // RTL text matchers ignore <style> nodes, so reach for the base element.
+    const style = screen.getByText('MOTION-PROBE').ownerDocument.querySelector('style')
+
+    expect(style?.textContent).toContain('fulilian-toast-in')
+    expect(style?.textContent).toContain('prefers-reduced-motion')
+    expect(style?.textContent).toContain('.fulilian-toast-leaving .fulilian-toast-enter')
+
+    const item = screen.getByText('MOTION-PROBE').closest('[role="status"]')
+
+    expect(item?.className).toContain('fulilian-toast-enter')
   })
 })
