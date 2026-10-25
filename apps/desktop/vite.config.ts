@@ -63,6 +63,19 @@ const debugEntry = (command: string, env: Record<string, string>) =>
     ? path.resolve(__dirname, './src/debug/dev-only.ts')
     : path.resolve(__dirname, './src/debug/dev-only.noop.ts')
 
+// T-F3 (frontend iteration): the E2E store diagnostics bridge follows the
+// same swap-out discipline as dev-only. Store files import it statically and
+// can't be trusted to tree-shake, so any build that did not opt in with
+// FULILIAN_DESKTOP_E2E_STORE_BRIDGE=1 gets the noop module instead — the
+// real bridge (`src/app/diagnostics/store-bridge.ts`) never enters the
+// module graph. The `define` below additionally bakes the switch as a
+// compile-time boolean so the guarded registration calls (and their
+// snapshot closures) dead-code-eliminate from the shipped entry.
+const bridgeEntry = (env: Record<string, string>) =>
+  env.FULILIAN_DESKTOP_E2E_STORE_BRIDGE === '1'
+    ? path.resolve(__dirname, './src/app/diagnostics/store-bridge.ts')
+    : path.resolve(__dirname, './src/app/diagnostics/store-bridge.noop.ts')
+
 // The emoji picker (frimousse) fetches `<emojibaseUrl>/<locale>/data.json` at
 // runtime. Its default is a CDN; Electron must work offline, so serve the
 // bundled emojibase-data package at a stable local path instead — middleware
@@ -177,6 +190,9 @@ const prepaintColors = (): Plugin => ({
 
 export default defineConfig(({ command }) => ({
   base: './',
+  define: {
+    __FULILIAN_E2E_STORE_BRIDGE__: JSON.stringify(process.env.FULILIAN_DESKTOP_E2E_STORE_BRIDGE === '1')
+  },
   plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets(), fontPreload(), prepaintColors()],
   css: {
     // Pin an explicit (empty) PostCSS config. Tailwind is handled entirely by
@@ -283,6 +299,9 @@ export default defineConfig(({ command }) => ({
   },
   resolve: {
     alias: {
+      // Must sit ABOVE the bare `@` key: object aliases match in order and
+      // `@` would otherwise swallow the more specific id first.
+      '@/app/diagnostics/store-bridge': bridgeEntry(process.env as Record<string, string>),
       '@/debug/dev-only': debugEntry(command, process.env as Record<string, string>),
       '@': path.resolve(__dirname, './src'),
       '@fulilian/plugin-sdk': path.resolve(__dirname, './src/sdk/index.ts'),

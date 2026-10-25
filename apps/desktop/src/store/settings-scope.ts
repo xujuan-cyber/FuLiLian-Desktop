@@ -1,5 +1,6 @@
 import { atom, computed } from 'nanostores'
 
+import { registerDiagnostics } from '@/app/diagnostics/store-bridge'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 
 // ── Shared settings "Applies to" scope ──────────────────────────────────────
@@ -56,3 +57,14 @@ $activeGatewayProfile.subscribe(value => {
     $settingsScopeOverride.set(null)
   }
 })
+
+// T-F3: read-only diagnostics mirror (snapshots only).
+if (typeof __FULILIAN_E2E_STORE_BRIDGE__ !== 'undefined' && __FULILIAN_E2E_STORE_BRIDGE__) {
+  registerDiagnostics({
+    stores: {
+      'settings.$settingsRequestProfile': () => $settingsRequestProfile.get(),
+      'settings.$settingsScopeOverride': () => $settingsScopeOverride.get(),
+      'settings.$settingsScopeProfile': () => $settingsScopeProfile.get()
+    }
+  })
+}

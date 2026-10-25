@@ -1,6 +1,7 @@
 import { type ConnectionState, type GatewayEvent, registryBackendScopeKey, resolveGatewayWsUrl } from '@fulilian/shared'
 import { atom } from 'nanostores'
 
+import { registerDiagnostics } from '@/app/diagnostics/store-bridge'
 import { FulilianGateway, setApiRequestConnection } from '@/fulilian'
 import type { FulilianConnection } from '@/global'
 import { reconnectBackoffDelayMs } from '@/lib/reconnect-backoff'
@@ -1756,4 +1757,15 @@ export function disposeSecondariesForConnection(connectionId: string, opts: { re
 // survive the swap. Dev-only: production strips import.meta.hot.
 if (import.meta.hot) {
   import.meta.hot.accept()
+}
+
+// T-F3: read-only diagnostics mirror (snapshots only — the socket instances
+// are not serializable and must never escape through the bridge).
+if (typeof __FULILIAN_E2E_STORE_BRIDGE__ !== 'undefined' && __FULILIAN_E2E_STORE_BRIDGE__) {
+  registerDiagnostics({
+    stores: {
+      'gateway.$activeGatewayRoute': () => $activeGatewayRoute.get(),
+      'gateway.$gateway': () => $gateway.get()?.connectionState ?? null
+    }
+  })
 }

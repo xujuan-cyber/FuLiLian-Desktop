@@ -1,6 +1,7 @@
 import { atom } from 'nanostores'
 
 import { resetLiveRuntimeTracking } from '@/app/contrib/hooks/use-background-sync'
+import { registerDiagnostics } from '@/app/diagnostics/store-bridge'
 import { resetSidebarBatchCapability } from '@/fulilian'
 import { invalidateProfileScopedQueries } from '@/lib/query-client'
 import { clearArtifactRegistry } from '@/store/artifacts'
@@ -229,4 +230,9 @@ export function wipeSessionListsForGatewaySwitch(): void {
   // Narrowed: account/marketplace/onboarding caches are global, not gateway-
   // scoped, so a mode swap must not refetch them.
   invalidateProfileScopedQueries()
+}
+
+// T-F3: read-only diagnostics mirror (snapshots only).
+if (typeof __FULILIAN_E2E_STORE_BRIDGE__ !== 'undefined' && __FULILIAN_E2E_STORE_BRIDGE__) {
+  registerDiagnostics({ stores: { 'gateway-switch.$switching': () => $gatewaySwitching.get() } })
 }

@@ -2,6 +2,7 @@ import type { ConnectionState } from '@fulilian/shared'
 import { atom, computed } from 'nanostores'
 
 import { lastVisibleMessageIsUser } from '@/app/chat/thread-loading'
+import { registerDiagnostics } from '@/app/diagnostics/store-bridge'
 import type { ContextSuggestion } from '@/app/types'
 import type { FulilianConnection } from '@/global'
 import type { ChatMessage } from '@/lib/chat-messages'
@@ -1254,3 +1255,22 @@ export const setIntroSeed = (next: Updater<number>) => updateAtom($introSeed, ne
 export const setContextSuggestions = (next: Updater<ContextSuggestion[]>) => updateAtom($contextSuggestions, next)
 export const setModelPickerOpen = (next: Updater<boolean>) => updateAtom($modelPickerOpen, next)
 export const setSessionPickerOpen = (next: Updater<boolean>) => updateAtom($sessionPickerOpen, next)
+
+// T-F3: read-only diagnostics mirror — snapshots expose scalar/identity
+// fields only (never the message bodies or full session rows); counters are
+// the list gauges e2e waits on.
+if (typeof __FULILIAN_E2E_STORE_BRIDGE__ !== 'undefined' && __FULILIAN_E2E_STORE_BRIDGE__) {
+  registerDiagnostics({
+    stores: {
+      'session.$activeSessionId': () => $activeSessionId.get(),
+      'session.$awaitingResponse': () => $awaitingResponse.get(),
+      'session.$busy': () => $busy.get(),
+      'session.$connection': () => $connection.get()?.connectionId ?? null,
+      'session.$gatewayState': () => $gatewayState.get()
+    },
+    counters: {
+      'session.$messages.length': () => $messages.get().length,
+      'session.$sessions.length': () => $sessions.get().length
+    }
+  })
+}
