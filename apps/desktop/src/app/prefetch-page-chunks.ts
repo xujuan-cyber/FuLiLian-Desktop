@@ -22,6 +22,17 @@
  */
 
 const PAGE_MODULES: Array<() => Promise<unknown>> = [
+  // Settings' DEFAULT tab (`config:model`) is itself a lazy() child INSIDE the
+  // settings page module, so warming `@/app/settings` alone still left the
+  // first open paying the config chunk's fetch + parse + eval behind the inner
+  // skeleton — measured (N-5) as cold interactive ~3.1s vs 593ms warm, the
+  // delta being ~150 KB / ~18 files of chunk closure read cold off disk
+  // (low-end disks and AV scanners pay per file). The settings pair leads the
+  // chain so the most-used overlay is warm before the user reaches for it;
+  // the chain only starts after boot settles, so cold-start metrics are
+  // untouched.
+  () => import('@/app/settings'),
+  () => import('@/app/settings/config-settings'),
   () => import('@/app/agents'),
   () => import('@/app/artifacts'),
   () => import('@/app/case-timeline'),
@@ -30,7 +41,6 @@ const PAGE_MODULES: Array<() => Promise<unknown>> = [
   () => import('@/app/cron'),
   () => import('@/app/messaging'),
   () => import('@/app/profiles'),
-  () => import('@/app/settings'),
   () => import('@/app/skills'),
   () => import('@/app/starmap'),
   () => import('@/app/webhooks')

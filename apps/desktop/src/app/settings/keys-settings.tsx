@@ -9,12 +9,12 @@ import { useEnvCredentials } from './env-credentials'
 import { asText } from './helpers'
 import { SettingsContent, SettingsSkeleton } from './primitives'
 import { SettingsProfileScope } from './profile-scope'
+import { type KeysView } from './subnav-views'
 import { useDeepLinkHighlight } from './use-deep-link-highlight'
 
-// Sub-views surfaced as sidebar subnav under Tools & Keys (see settings/index.tsx).
-export const KEYS_VIEWS = ['tools', 'settings'] as const
-
-export type KeysView = (typeof KEYS_VIEWS)[number]
+// Enum lives in ./subnav-views (see that file for why the split exists);
+// re-exported so the long-standing `./keys-settings` import path keeps working.
+export { KEYS_VIEWS, type KeysView } from './subnav-views'
 
 // Providers live on their own page; messaging-platform credentials live on the
 // dedicated Messaging page (and are hidden here via `channel_managed`). This

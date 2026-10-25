@@ -31,6 +31,7 @@ import { CustomEndpointsSettings } from './custom-endpoints-settings'
 import { SettingsCategoryHeading, useEnvCredentials } from './env-credentials'
 import { providerGroup, providerMeta, providerPriority } from './helpers'
 import { SettingsContent } from './primitives'
+import type { ProviderView } from './subnav-views'
 
 // The embedded terminal (and thus the "run disconnect command" path) only
 // exists in the Electron desktop shell, not the web dashboard.
@@ -46,10 +47,10 @@ function GroupLabel({ children }: { children: ReactNode }) {
   )
 }
 
-// Sub-views surfaced as a sidebar subnav: account sign-in vs raw API keys.
-export const PROVIDER_VIEWS = ['accounts', 'keys', 'custom-endpoints'] as const
-
-export type ProviderView = (typeof PROVIDER_VIEWS)[number]
+// Enum lives in ./subnav-views (see that file for why the split exists);
+// re-exported so the long-standing `./providers-settings` import path keeps
+// working (settings/index.tsx's lazy pair and its tests).
+export { PROVIDER_VIEWS, type ProviderView } from './subnav-views'
 
 // Group the env catalog by provider — one ListRow per vendor plus optional
 // advanced overrides (base URL, region, etc.). Groups without a key field are

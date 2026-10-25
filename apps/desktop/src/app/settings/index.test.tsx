@@ -195,11 +195,16 @@ describe('SettingsView tab shell (step 17 · P3b)', () => {
     expect(src).toContain("import('./keys-settings')")
     expect(src).toContain("import('./providers-settings')")
 
-    // The enum-bearing modules must stay *statically* imported too: their
-    // exports are used synchronously for nav, so a lazy-only import would
-    // break the enum surface (and P3b's A5④ pin). Both forms coexist.
-    expect(src).toMatch(/^import \{[^}]*KEYS_VIEWS[^}]*\} from '\.\/keys-settings'$/m)
-    expect(src).toMatch(/^import \{[^}]*PROVIDER_VIEWS[^}]*\} from '\.\/providers-settings'$/m)
+    // The nav enums must be eager — but sourced from ./subnav-views, NOT from
+    // the component modules. A static `import { KEYS_VIEWS } from
+    // './keys-settings'` pulls the whole component closure into the entry
+    // chunk (providers drags @/components/onboarding), silently defeating the
+    // lazy pair above (N-5). The component modules re-export the enums, so a
+    // regression to the old import paths is what this pins against.
+    expect(src).toMatch(/^import \{[^}]*KEYS_VIEWS[^}]*\} from '\.\/subnav-views'$/m)
+    expect(src).toMatch(/^import \{[^}]*PROVIDER_VIEWS[^}]*\} from '\.\/subnav-views'$/m)
+    expect(src).not.toMatch(/import \{[^}]*KEYS_VIEWS[^}]*\} from '\.\/keys-settings'/)
+    expect(src).not.toMatch(/import \{[^}]*PROVIDER_VIEWS[^}]*\} from '\.\/providers-settings'/)
 
     // The split is pointless without a boundary holding the swap inside the
     // pane: the shell's own <Suspense> around `activeSettingsContent`.

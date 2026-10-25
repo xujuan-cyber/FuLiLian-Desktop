@@ -51,9 +51,8 @@ import { OverlayView } from '../overlays/overlay-view'
 import { SKILLS_ROUTE } from '../routes'
 
 import { DEFAULT_SETTINGS_VIEW, SECTIONS, SETTINGS_GROUPS, SETTINGS_VIEWS, settingsViewFromSection } from './constants'
-import { KEYS_VIEWS, type KeysView } from './keys-settings'
 import { SettingsContent, SettingsSkeleton } from './primitives'
-import { PROVIDER_VIEWS, type ProviderView } from './providers-settings'
+import { KEYS_VIEWS, type KeysView, PROVIDER_VIEWS, type ProviderView } from './subnav-views'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 
 // Step 17 · P3b: the twelve-plus child views are lazy so opening Settings only
@@ -65,9 +64,12 @@ import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 // PROVIDER_VIEWS (sub-nav enum params) and SettingsContent (a trivial wrapper)
 // must be resolvable on the very first frame, before any child chunk lands.
 //
-// `./keys-settings` and `./providers-settings` each mix a static enum with the
-// component, so they split: the enum imports above stay eager, the component
-// is pulled by the lazy pair below.
+// `./keys-settings` and `./providers-settings` used to mix the static enum
+// with the component, so the eager enum import here dragged BOTH component
+// closures (providers pulls `@/components/onboarding`) into this entry chunk —
+// silently defeating the lazy pair below. The enums now live in
+// `./subnav-views` (eager, trivial); the component modules re-export them for
+// compatibility, and only the lazy pair below pulls component code.
 const AboutSettings = lazy(async () => ({ default: (await import('./about-settings')).AboutSettings }))
 
 const ApprovalsPermissionsSettings = lazy(async () => ({
