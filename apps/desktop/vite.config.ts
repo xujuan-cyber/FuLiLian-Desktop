@@ -236,11 +236,29 @@ export default defineConfig(({ command }) => ({
               name: 'vendor-md',
               test: /node_modules[\\/](property-information|hast-util-[^\\/]+|mdast-util-[^\\/]+|micromark[^\\/]*|unist-util-[^\\/]+|vfile[^\\/]*|unified|stringify-entities|space-separated-tokens|comma-separated-tokens|zwitch|html-void-elements|devlop|style-to-js|style-to-object)[\\/]/
             },
-            // Shared utility packages the entry ALSO uses — kept out of the
-            // heavy groups for the same boot-path reason.
+            // G1 (first-frame diet): the two vendor-util members that the boot
+            // graph genuinely needs get their OWN groups, so the rest of that
+            // bucket stops riding into `modulepreload` with them.
+            //
+            // Measured before this split: `vendor-util` was 133,258 B on the
+            // preload list, reached by 8 first-frame chunks, yet the boot graph
+            // only imports two members —
+            //   · `clsx`      via src/lib/utils.ts (`cn()`), used by every
+            //                 primitive, so it must stay on the boot path;
+            //   · `dompurify` via src/lib/local-preview.ts (+ preview-artifact /
+            //                 svg-embed), the only sanitizer on the boot path.
+            // Everything else in that bucket (lodash-es, es-toolkit, uuid,
+            // dayjs, d3-*, stylis) is lazy-only; it was pulled in purely by
+            // group membership. Splitting it out is a pure grouping change —
+            // no module moves between eager and lazy.
+            { name: 'vendor-micro', test: /node_modules[\\/](clsx|tailwind-merge)[\\/]/ },
+            { name: 'vendor-dompurify', test: /node_modules[\\/]dompurify[\\/]/ },
+            // Lazy-only utility libraries: same group as before, minus the two
+            // members above. No `$initial` tag, so this chunk only ships with
+            // the lazy views that import it.
             {
               name: 'vendor-util',
-              test: /node_modules[\\/](lodash-es|es-toolkit|uuid|dayjs|d3-array|d3-color|d3-force|d3-interpolate|d3-time[^\\/]*|dompurify|stylis|clsx)[\\/]/
+              test: /node_modules[\\/](lodash-es|es-toolkit|uuid|dayjs|d3-array|d3-color|d3-force|d3-interpolate|d3-time[^\\/]*|stylis)[\\/]/
             },
             // One chunk per heavyweight, lazy-only library family.
             // @streamdown/code lives WITH shiki because it statically imports
@@ -262,6 +280,23 @@ export default defineConfig(({ command }) => ({
             // list. Pin it to its own group so it loads only with its lazy
             // consumers.
             { name: 'katex-memo', test: /katex-memo/ },
+            // G1 (second lever) — EVALUATED AND REJECTED, kept as a note so
+            // nobody re-runs the experiment blind.
+            //
+            // The idea was to collapse the 88 sub-5 KB app chunks into one
+            // `app-shell` group to cut file round-trips on the `file://` path:
+            //
+            //   { name: 'app-shell', test: /[\\/]apps[\\/]desktop[\\/]src[\\/]/,
+            //     tags: ['$initial'], maxModuleSize: 8192 }
+            //
+            // Measured (HEAD 318a6bb + vendor split): preload links 126 → 5,
+            // but the entry chunk emptied out (2,005,467 → 702 B) and its whole
+            // first-frame graph reappeared as ONE 3.44 MB `app-shell` chunk.
+            // `maxModuleSize` does NOT bound the group's total size — lowering
+            // it to 1024 still produced 3.43 MB. So the option does not merge
+            // "the small chunks"; it renames the entry and forfeits parallel
+            // parse. Net: byte total flat (−51 KB), single-blob regression.
+            // Rejected on structure, not on bytes.
             // P9 (step 17): collapse the swarm of tiny shared chunks the
             // automatic splitter emits — one per tabler icon, one per radix
             // primitive — into a single `vendor-shared` chunk. Only modules

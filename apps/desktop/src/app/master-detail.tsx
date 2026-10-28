@@ -257,12 +257,19 @@ export function DetailPane({
     const max = Math.round(window.innerHeight * DETAIL_PANE_MAX_VH)
     setDragging(true)
 
+    // Same coalescing as the horizontal sash above: pointermove can outpace
+    // 60fps (high-refresh displays, trackpads) and every apply re-lays out the
+    // chat column above, so commit at most one height per frame and flush the
+    // final value on pointerup — otherwise the pane settles one frame stale.
+    const resize = rafCoalesce((next: number) => setPaneHeightOverride(id, next))
+
     const onMove = (move: globalThis.PointerEvent) => {
-      setPaneHeightOverride(id, Math.min(max, Math.max(0, Math.round(startHeight + (startY - move.clientY)))))
+      resize.push(Math.min(max, Math.max(0, Math.round(startHeight + (startY - move.clientY)))))
     }
 
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
+      resize.finish()
       setDragging(false)
     }
 
