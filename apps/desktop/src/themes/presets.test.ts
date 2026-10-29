@@ -4,6 +4,7 @@ import {
   apricotTheme,
   BUILTIN_THEME_LIST,
   BUILTIN_THEMES,
+  deepseekHarnessTheme,
   DEFAULT_SKIN_NAME,
   DEFAULT_TYPOGRAPHY,
   EMOJI_FALLBACK,
@@ -165,5 +166,77 @@ describe('skins declaring typography use the shared Fulilian chain (step 13 v1.1
     ['nous', nousTheme]
   ])('%s: keeps its existing Google Fonts fontUrl', (_name, theme) => {
     expect(theme.typography?.fontUrl).toBe(COURIER_PRIME_URL)
+  })
+})
+
+// step 18 · D1 — DeepSeek Harness, the dsh-style migration skin. These are
+// structural assertions: the slot-by-slot dsh mapping (design-platform.css)
+// is frozen by the D0 translation list, and the spot values below anchor the
+// load-bearing rulings (blue in skin-owned slots, dark canvas, tail order).
+describe('deepseek-harness is the dsh-migration skin (step 18 · D1)', () => {
+  it('is registered at the tail of the gallery order, not the default', () => {
+    expect(BUILTIN_THEMES['deepseek-harness']).toBe(deepseekHarnessTheme)
+    expect(BUILTIN_THEMES['deepseek-harness']?.label).toBe('DeepSeek Harness')
+    expect(BUILTIN_THEME_LIST[BUILTIN_THEME_LIST.length - 1]).toBe(deepseekHarnessTheme)
+    expect(DEFAULT_SKIN_NAME).toBe('fulilian-workbench')
+    expect(BUILTIN_THEME_LIST[0]).toBe(workbenchTheme)
+  })
+
+  // The 19 required slots must be present in both appearances — a missing one
+  // would fall back to whatever the stylesheet constant paints, silently
+  // breaking the dsh look instead of failing loudly here.
+  const DSH_REQUIRED_SLOTS = [
+    'background',
+    'foreground',
+    'card',
+    'cardForeground',
+    'muted',
+    'mutedForeground',
+    'popover',
+    'popoverForeground',
+    'primary',
+    'primaryForeground',
+    'secondary',
+    'secondaryForeground',
+    'accent',
+    'accentForeground',
+    'border',
+    'input',
+    'ring',
+    'destructive',
+    'destructiveForeground'
+  ] as const
+
+  it.each(DSH_REQUIRED_SLOTS)('fills the required slot %s in both appearances', slot => {
+    expect(typeof deepseekHarnessTheme.colors[slot]).toBe('string')
+    expect(typeof deepseekHarnessTheme.darkColors?.[slot]).toBe('string')
+  })
+
+  it('ships a hand-tuned dark palette on the neutral-bluish-950 canvas', () => {
+    expect(deepseekHarnessTheme.colors.background).toBe('#FFFFFF')
+    expect(deepseekHarnessTheme.darkColors?.background).toBe('#151517')
+    expect(deepseekHarnessTheme.darkColors?.card).toBe('#2C2C2E')
+    expect(deepseekHarnessTheme.darkColors?.sidebarBackground).toBe('#232324')
+  })
+
+  // D7 ruling: the dsh blue is skin-owned only. `accentBright` is the signal
+  // slot and must declare it explicitly — the context fallback would
+  // otherwise paint Workbench orange. The global `--v3-accent` literal in
+  // styles.css is not asserted here because it is not a skin field.
+  it('carries the DeepSeek blue in the skin-owned signal slots', () => {
+    expect(deepseekHarnessTheme.colors.accent).toBe('#4176E6')
+    expect(deepseekHarnessTheme.darkColors?.accent).toBe('#7AAAFF')
+    expect(deepseekHarnessTheme.colors.accentBright).toBe('#4176E6')
+    expect(deepseekHarnessTheme.darkColors?.accentBright).toBe('#7AAAFF')
+    expect(deepseekHarnessTheme.colors.midground).toBe('#4176E6')
+    expect(deepseekHarnessTheme.darkColors?.midground).toBe('#7AAAFF')
+    expect(deepseekHarnessTheme.colors.userBubble).toBe('#EDF3FE')
+    expect(deepseekHarnessTheme.darkColors?.userBubble).toBe('#2C2C2E')
+  })
+
+  // Ruling #4: fonts do not migrate. Same rule as workbench/apricot above —
+  // inheriting the merged Fulilian chain beats a third drifting copy.
+  it('declares no typography override, inheriting the merged chain', () => {
+    expect(BUILTIN_THEMES['deepseek-harness'].typography).toBeUndefined()
   })
 })

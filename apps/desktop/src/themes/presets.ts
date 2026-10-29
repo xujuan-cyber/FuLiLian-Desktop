@@ -1127,6 +1127,108 @@ export const workbenchTheme: DesktopTheme = {
   }
 }
 
+/**
+ * DeepSeek Harness — the dsh-style migration skin (step 18 · D1).
+ *
+ * Palette transcribed from the DeepSeek Harness design platform
+ * (`deepseek-harness` v0.2.1-alpha.1,
+ * `packages/client/ui-theme/src/styles/design-platform.css`) — the neutral
+ * ladders are its `neutral-bluish` statics, and the blue signal family is
+ * DeepSeek 500 `#4176E6` in light / 400 `#7AAAFF` in dark
+ * (`--dsw-alias-state-business-primary`).
+ *
+ * Ruling constraints (D0 §0, do not revisit):
+ *   · The blue lives in skin-owned slots only — `accentBright` leads, with
+ *     `info` / `midground` / `composerRing` / `accent` / `ring` / the bubble
+ *     pair carrying it too. The global `--v3-accent` literal in `styles.css`
+ *     is NOT a skin field and stays green/untouched.
+ *   · Fonts do not migrate: like workbench and apricot this skin declares no
+ *     `typography`, so it inherits the merged Fulilian chain
+ *     (`FULILIAN_SANS` / `FULILIAN_MONO` via DEFAULT_TYPOGRAPHY +
+ *     nousTheme.typography).
+ *   · Not the default: registered at the tail of `BUILTIN_THEMES`.
+ *
+ * Hand-authored from the dsh alias layer, so like `nous-alt` / `apricot` /
+ * `workbench` it writes its hexes directly. Slot-by-slot source lines are
+ * recorded in the step 18 D1 execution receipt
+ * (`协同编程/front-iter-D1-执行者回执.md`).
+ *
+ * The borders keep dsh's alpha-string values (`rgba(...)`) rather than being
+ * flattened to hex — the aliases are literally `border-l3` / `border-l4`.
+ * Dark is hand-tuned against the `neutral-bluish-950` canvas, not a synth
+ * pass: surfaces ride the dsh dark layer ladder (950 canvas / 875 sidebar /
+ * 850 card & popover) and the blue lifts to DeepSeek 400 for legibility.
+ */
+export const deepseekHarnessTheme: DesktopTheme = {
+  name: 'deepseek-harness',
+  label: 'DeepSeek Harness',
+  description: 'DeepSeek Harness neutrals with a blue signal accent',
+  colors: {
+    background: '#FFFFFF',
+    foreground: '#0F1115',
+    card: '#FFFFFF',
+    cardForeground: '#0F1115',
+    muted: '#F9FAFB',
+    mutedForeground: '#61666B',
+    popover: '#FFFFFF',
+    popoverForeground: '#0F1115',
+    primary: '#0F1115',
+    primaryForeground: '#FFFFFF',
+    secondary: '#EBEEF2',
+    secondaryForeground: '#0F1115',
+    accent: '#4176E6',
+    accentForeground: '#FFFFFF',
+    border: 'rgba(0, 0, 0, 0.12)',
+    input: 'rgba(0, 0, 0, 0.16)',
+    ring: '#4176E6',
+    midground: '#4176E6',
+    midgroundForeground: '#FFFFFF',
+    composerRing: '#4176E6',
+    destructive: '#EC1313',
+    destructiveForeground: '#FFFFFF',
+    sidebarBackground: '#FFFFFF',
+    sidebarBorder: 'rgba(0, 0, 0, 0.12)',
+    userBubble: '#EDF3FE',
+    userBubbleBorder: '#D3E2FF',
+    accentBright: '#4176E6',
+    info: '#4176E6',
+    success: '#22C55E',
+    warning: '#F59E0B'
+  },
+  darkColors: {
+    background: '#151517',
+    foreground: '#F9FAFB',
+    card: '#2C2C2E',
+    cardForeground: '#F9FAFB',
+    muted: '#232324',
+    mutedForeground: '#CFD3D6',
+    popover: '#2C2C2E',
+    popoverForeground: '#F9FAFB',
+    primary: '#F9FAFB',
+    primaryForeground: '#0F1115',
+    secondary: '#43454A',
+    secondaryForeground: '#F9FAFB',
+    accent: '#7AAAFF',
+    accentForeground: '#0F1115',
+    border: 'rgba(255, 255, 255, 0.16)',
+    input: 'rgba(255, 255, 255, 0.2)',
+    ring: '#7AAAFF',
+    midground: '#7AAAFF',
+    midgroundForeground: '#0F1115',
+    composerRing: '#7AAAFF',
+    destructive: '#F25A5A',
+    destructiveForeground: '#FFFFFF',
+    sidebarBackground: '#232324',
+    sidebarBorder: 'rgba(255, 255, 255, 0.16)',
+    userBubble: '#2C2C2E',
+    userBubbleBorder: '#43454A',
+    accentBright: '#7AAAFF',
+    info: '#7AAAFF',
+    success: '#4ED17E',
+    warning: '#F7AD31'
+  }
+}
+
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   // The shipped default leads the list: `BUILTIN_THEME_LIST` is the order the
   // settings gallery and `/skin` cycling read, and the skin the app ships with
@@ -1143,7 +1245,9 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   ember: emberTheme,
   mono: monoTheme,
   slate: slateTheme,
-  cyberpunk: cyberpunkTheme
+  cyberpunk: cyberpunkTheme,
+  // Step 18 · D1 migration skin — appended at the tail, never leading.
+  'deepseek-harness': deepseekHarnessTheme
 }
 
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
