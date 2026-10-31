@@ -25,7 +25,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -79,16 +79,18 @@ vi.mock('./tray-settings', () => ({ TraySettings: () => <div data-view="tray" />
 //
 // `query` is the raw search string (no `?`), so a test can mount the shell with
 // either the canonical `?tab=` or the documented `?section=` deep-link form.
+// `locale` picks the copy the search field filters against — the catalog is
+// built from the active translations, so a Chinese query needs a Chinese mount.
 // Returns the render container: rail rows are read from it rather than from the
 // `document` global (banned by the repo's no-restricted-globals rule).
-async function mountShell(query?: string, viewLabel = 'config:model') {
+async function mountShell(query?: string, viewLabel = 'config:model', locale: 'en' | 'zh' = 'en') {
   const { SettingsView } = await import('./index')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   const { container } = render(
     <MemoryRouter initialEntries={[query ? `/settings?${query}` : '/settings']}>
       <QueryClientProvider client={client}>
-        <I18nProvider configClient={null} initialLocale="en">
+        <I18nProvider configClient={null} initialLocale={locale}>
           <LocationProbe />
           {/* data-view rides a shell-owned wrapper rather than the view modules
               themselves: it survives the view's own root markup and lets the
@@ -328,5 +330,62 @@ describe('SettingsView section deep links (D3)', () => {
     root = await mountShell('tab=audit&section=approvals', 'audit')
     await waitFor(() => expect(resolvedMarker()).toBe('audit'))
     expect(railIsActive('audit')).toBe(true)
+  })
+})
+
+// P0-1: search is a real field in the rail now. The old affordance was an
+// `edgeBadge` — a `<button>` dressed as a pill, pinned as the overlay card's
+// sibling and translated half off its top edge, so it floated over the card's
+// own toolbar. These pin the two halves of the replacement: typing filters the
+// shared catalog, and picking a hit writes the same `?tab=` the ⌘K palette does.
+describe('SettingsView rail search (P0-1)', () => {
+  function searchField(): HTMLInputElement {
+    return screen.getByRole('combobox') as HTMLInputElement
+  }
+
+  it('lists matching settings as the user types', async () => {
+    // Chinese query on a Chinese mount: the catalog labels/contexts come from
+    // the active translations, so this also proves the field is not wired to a
+    // hardcoded English row list.
+    root = await mountShell(undefined, 'config:model', 'zh')
+
+    fireEvent.change(searchField(), { target: { value: '外观' } })
+
+    const list = await screen.findByRole('listbox')
+    const hits = within(list).getAllByRole('option')
+
+    expect(hits.length).toBeGreaterThan(0)
+    // Every appearance control carries the section name as its context line,
+    // so the group — not a single lucky row — is what the query matched.
+    expect(within(list).getAllByText('外观')).toHaveLength(hits.length)
+  })
+
+  it('navigates to the hit’s ?tab= when a result is clicked', async () => {
+    root = await mountShell(undefined, 'config:model', 'zh')
+
+    fireEvent.change(searchField(), { target: { value: '外观' } })
+
+    const list = await screen.findByRole('listbox')
+    fireEvent.click(within(list).getAllByRole('option')[0])
+
+    await waitFor(() => {
+      const params = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '')
+
+      expect(params.get('tab')).toBe('config:appearance')
+      expect(params.get('setting')).toBeTruthy()
+    })
+
+    // The pane follows too — a URL-only change would leave the old page up.
+    await waitFor(() => expect(resolvedMarker()).toBe('appearance'))
+  })
+
+  it('hands the palette chord to the rail field instead of the palette', async () => {
+    root = await mountShell()
+
+    // `metaKey` folds to `mod` on every platform, which is what the palette's
+    // default binding is spelled as.
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+
+    await waitFor(() => expect(searchField().ownerDocument.activeElement).toBe(searchField()))
   })
 })

@@ -1,12 +1,11 @@
-import { useStore } from '@nanostores/react'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { codiconIcon } from '@/components/ui/codicon'
-import { KbdCombo } from '@/components/ui/kbd'
 import { TabDropdown } from '@/components/ui/tab-dropdown'
 import { Tip } from '@/components/ui/tooltip'
 import { getFulilianConfigDefaults, getFulilianConfigRecord, saveFulilianConfig } from '@/fulilian'
+import { matchesQuery } from '@/hooks/use-media-query'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import {
@@ -36,10 +35,10 @@ import {
   Users,
   Zap
 } from '@/lib/icons'
-import { isEditableTarget } from '@/lib/keybinds/combo'
+import { canonicalizeCombo, comboFromEvent, isEditableTarget } from '@/lib/keybinds/combo'
 import { typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
 import { cn } from '@/lib/utils'
-import { $commandPaletteOpen, openCommandPalettePage } from '@/store/command-palette'
+import { $commandPaletteOpen, closeCommandPalette, openCommandPalettePage } from '@/store/command-palette'
 import { confirm } from '@/store/confirm'
 import { bindingsFor } from '@/store/keybinds'
 import { notifyError } from '@/store/notifications'
@@ -52,6 +51,7 @@ import { SKILLS_ROUTE } from '../routes'
 
 import { DEFAULT_SETTINGS_VIEW, SECTIONS, SETTINGS_GROUPS, SETTINGS_VIEWS, settingsViewFromSection } from './constants'
 import { SettingsContent, SettingsSkeleton } from './primitives'
+import { SettingsSearchField, type SettingsSearchFieldHandle } from './settings-search-field'
 import { KEYS_VIEWS, type KeysView, PROVIDER_VIEWS, type ProviderView } from './subnav-views'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 
@@ -116,6 +116,10 @@ const SubmodelsSettings = lazy(async () => ({
 }))
 
 const TraySettings = lazy(async () => ({ default: (await import('./tray-settings')).TraySettings }))
+
+// Same breakpoint OverlaySplitLayout swaps the rail for the titlebar dropdown
+// at — below it the rail (and the search field it holds) is off screen.
+const NARROW_RAIL_QUERY = '(max-width: 47.5rem)'
 
 export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: SettingsPageProps) {
   const { t } = useI18n()
@@ -227,6 +231,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
   const openKeysView = useCallback((view: KeysView) => openSubView('keys', 'kview', view, 'tools'), [openSubView])
 
   const importInputRef = useRef<HTMLInputElement | null>(null)
+  const searchFieldRef = useRef<SettingsSearchFieldHandle | null>(null)
 
   const exportConfig = async () => {
     try {
@@ -423,11 +428,38 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
   )
 
   // Type-to-search: printable keystrokes on the Settings surface (outside any
-  // field) open the settings-scoped palette, seeded with the character — same
-  // reflex as the chat surface's type-to-focus, pointed at search instead.
+  // field) go into the rail's search box, seeded with the character — same
+  // reflex as the chat surface's type-to-focus, pointed at search instead. On
+  // narrow windows the rail is off screen, so the settings-scoped palette takes
+  // the keystroke exactly as it used to.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ($commandPaletteOpen.get() || isEditableTarget(event.target)) {
+      if (isEditableTarget(event.target)) {
+        return
+      }
+
+      // The settings-scoped palette's chord belongs to the inline field on wide
+      // windows. The global dispatcher listens on window *capture*, so it has
+      // already opened that palette by the time this bubble-phase handler runs —
+      // claim the chord back and release the palette. Checked before the
+      // palette-open guard below for exactly that reason. The live binding (not
+      // a hardcoded ⌘K) is what the field's own hint renders, so a rebind moves
+      // both together.
+      const combo = comboFromEvent(event)
+
+      if (combo && bindingsFor('nav.commandPalette').some(binding => canonicalizeCombo(binding) === combo)) {
+        if (matchesQuery(NARROW_RAIL_QUERY)) {
+          return
+        }
+
+        event.preventDefault()
+        closeCommandPalette()
+        searchFieldRef.current?.focusWith()
+
+        return
+      }
+
+      if ($commandPaletteOpen.get()) {
         return
       }
 
@@ -438,40 +470,18 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       }
 
       event.preventDefault()
-      openCommandPalettePage('settings', char)
+
+      if (matchesQuery(NARROW_RAIL_QUERY)) {
+        openCommandPalettePage('settings', char)
+      } else {
+        searchFieldRef.current?.focusWith(char)
+      }
     }
 
     window.addEventListener('keydown', onKeyDown)
 
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
-
-  // Fake search pill riding the card's top edge, dead-center and half off it.
-  // Clicking (or just typing) opens the ⌘K palette scoped to settings; while
-  // the palette is up the pill hands over to it — grows slightly and fades,
-  // then fades back when the palette closes. It renders as chrome, not an
-  // input — no border, recessed fill, live ⌘K hint.
-  const searchCombo = bindingsFor('nav.commandPalette')[0]
-  const paletteOpen = useStore($commandPaletteOpen)
-
-  const searchPill = (
-    <button
-      className={cn(
-        'flex h-(--titlebar-control-height) items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-surface-background) px-2.5 text-(--ui-text-tertiary) shadow-sm transition-all duration-200 ease-out hover:text-foreground motion-reduce:transition-none',
-        paletteOpen && 'pointer-events-none scale-110 opacity-0'
-      )}
-      onClick={() => {
-        triggerHaptic('open')
-        openCommandPalettePage('settings')
-      }}
-      tabIndex={paletteOpen ? -1 : undefined}
-      type="button"
-    >
-      <Search className="size-3" />
-      <span className="text-xs">{t.settings.search.pill}</span>
-      {searchCombo && <KbdCombo combo={searchCombo} size="sm" variant="ghost" />}
-    </button>
-  )
 
   const navFooter = (
     <>
@@ -571,13 +581,14 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     )
 
   return (
-    <OverlayView closeLabel={t.settings.closeSettings} edgeBadge={searchPill} onClose={onClose}>
+    <OverlayView closeLabel={t.settings.closeSettings} onClose={onClose}>
       <OverlaySplitLayout>
         {/* Wide rail: the six Workbench groups with header rows (§5.5).
             Rendered here rather than via the shared OverlayNav because the
             group headers are settings-specific — rows still go through the
             shared OverlayNavItem so tour handles keep working. */}
         <OverlaySidebar className="max-[47.5rem]:hidden">
+          <SettingsSearchField className="pb-1" ref={searchFieldRef} />
           {navGroups.map(group => (
             <Fragment key={group.id}>
               <div
@@ -652,14 +663,27 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
             />
           </div>
           <div className="pointer-events-auto flex shrink-0 items-center gap-1 [-webkit-app-region:no-drag]">
+            {/* The rail's search field is off screen at this width, so search
+                falls back to the settings-scoped palette rather than mounting a
+                second, competing search state in the titlebar strip. */}
+            <Tip label={t.settings.search.pill}>
+              <OverlayIconButton
+                onClick={() => {
+                  triggerHaptic('open')
+                  openCommandPalettePage('settings')
+                }}
+              >
+                <Search />
+              </OverlayIconButton>
+            </Tip>
             {navFooter}
           </div>
         </div>
 
         {/* Inner Suspense (step 17 · P3b): the child views above are lazy, so
             the *first* visit to a tab suspends while its chunk downloads. This
-            boundary keeps that swap inside the main pane — the rail, the
-            search pill and the titlebar strip stay mounted, and wiring.tsx's
+            boundary keeps that swap inside the main pane — the rail (with its
+            search field) and the titlebar strip stay mounted, and wiring.tsx's
             outer `<Suspense fallback={<SettingsSkeleton />}>` (which owns the
             one-time "Settings module itself is loading" case) never re-fires
             on a tab switch. Without this, a tab switch would bubble up to that
