@@ -31,6 +31,7 @@ export const SIDEBAR_FILTERED_PAGE_SIZE = 300
 const SIDEBAR_PINNED_STORAGE_KEY = 'fulilian.desktop.pinnedSessions'
 const SIDEBAR_AGENTS_GROUPED_STORAGE_KEY = 'fulilian.desktop.agentsGroupedByWorkspace'
 const SIDEBAR_CRON_OPEN_STORAGE_KEY = 'fulilian.desktop.sidebarCronOpen'
+const SIDEBAR_NAV_MORE_OPEN_STORAGE_KEY = 'fulilian.desktop.sidebarNavMoreOpen'
 const SIDEBAR_MESSAGING_OPEN_STORAGE_KEY = 'fulilian.desktop.sidebarMessagingOpen'
 const SIDEBAR_SESSION_ORDER_STORAGE_KEY = 'fulilian.desktop.sessionOrder'
 const SIDEBAR_SESSION_ORDER_MANUAL_STORAGE_KEY = 'fulilian.desktop.sessionOrder.manual'
@@ -212,6 +213,11 @@ export const $sidebarRecentsOpen = atom(true)
 // default (it only renders at all when cron sessions exist) so the
 // scheduler's `[IMPORTANT: …]` first-message previews don't spam recents.
 export const $sidebarCronOpen = persistentAtom(SIDEBAR_CRON_OPEN_STORAGE_KEY, false, Codecs.bool)
+// The sidebar's secondary nav rows (artifacts / scheduled jobs / command center
+// / messaging / settings) fold into one "More" row, collapsed by default. Eight
+// always-on 30px rows pushed the session list ~340px down — nearly half a
+// laptop viewport — so only the work surfaces stay expanded.
+export const $sidebarNavMoreOpen = persistentAtom(SIDEBAR_NAV_MORE_OPEN_STORAGE_KEY, false, Codecs.bool)
 // Messaging platform sections collapse by default (they can be numerous and
 // tall). We persist the ids the user has *explicitly expanded*, so the default
 // stays collapsed unless they've opened a platform before.

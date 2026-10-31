@@ -42,6 +42,7 @@ import {
   $sidebarFiltersActive,
   $sidebarGrouping,
   $sidebarMessagingOpenIds,
+  $sidebarNavMoreOpen,
   $sidebarOrdering,
   $sidebarPinsOpen,
   $sidebarPrDataWanted,
@@ -210,6 +211,16 @@ const SIDEBAR_NAV_ICONS = {
 
 const icon = (name: string) => (props: { className?: string }) => <Codicon name={name} {...props} />
 
+// Which nav rows stay visible. Eight always-on 30px rows took 342px of a 724px
+// viewport (47%) and pushed the session list nearly to the fold; the work
+// surfaces stay out, everything else folds into one "More" row (collapsed by
+// default, see $sidebarNavMoreOpen). Settings is not listed here because the
+// window titlebar already carries a permanent "open settings" button.
+const PRIMARY_NAV_IDS: ReadonlySet<string> = new Set(['agents', 'skills', 'connectors'])
+
+// Synthetic row id for the "More" toggle. Never collides with a real nav id.
+const MORE_NAV_ID = 'nav-more'
+
 
 // The primary「新建任务」button forwards this nav item, so the parent's
 // onNavigate contract (action: 'new-session') is unchanged.
@@ -375,6 +386,7 @@ export function ChatSidebar({
 
   const panesFlipped = useStore($panesFlipped)
   const grouping = useStore($sidebarGrouping)
+  const navMoreOpen = useStore($sidebarNavMoreOpen)
   const ordering = useStore($sidebarOrdering)
   const statusFilter = useStore($sidebarStatusFilter)
   const projectFilter = useStore($sidebarProjectFilter)
@@ -1480,11 +1492,54 @@ export function ChatSidebar({
               </button>
             </Tip>
 
-            {/* §8.2 C 导航 — 30px rows, 16px glyph, 8px gap. Bots/消息 is one of
-                them. */}
+            {/* §8.2 C 导航 — 30px rows, 16px glyph, 8px gap. The work surfaces
+                (agents / capabilities / connectors) stay expanded; the rest fold
+                into one "More" row so the session list is not pushed down. */}
             <SidebarMenu className="mt-3 gap-0.5">
-              {[...navItems, ...contributedNav].map(item => {
-                const isInteractive = Boolean(item.action) || Boolean(item.route)
+              {(() => {
+                const primary = navItems.filter(item => PRIMARY_NAV_IDS.has(item.id))
+
+                const overflow = [
+                  ...navItems.filter(item => !PRIMARY_NAV_IDS.has(item.id)),
+                  ...contributedNav
+                ]
+
+                const rows = navMoreOpen
+                  ? [...primary, { id: MORE_NAV_ID } as SidebarNavItem, ...overflow]
+                  : [...primary, { id: MORE_NAV_ID } as SidebarNavItem]
+
+                return rows.map(item => {
+                  if (item.id === MORE_NAV_ID) {
+                    return (
+                      <SidebarMenuItem key={MORE_NAV_ID}>
+                        <SidebarMenuButton
+                          aria-expanded={navMoreOpen}
+                          className="flex h-[30px] w-full justify-start gap-2 rounded-[6px] px-2.5 text-left text-[13px] font-normal text-(--v3-ink-2) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-hover) hover:text-(--v3-ink) hover:transition-none"
+                          data-tip-region=""
+                          onClick={() => $sidebarNavMoreOpen.set(!navMoreOpen)}
+                          tooltip={s.nav.more}
+                          type="button"
+                        >
+                          <Codicon
+                            className={cn(
+                              'size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)] transition-transform duration-150 ease-out',
+                              navMoreOpen && 'rotate-90'
+                            )}
+                            name="chevron-right"
+                          />
+                          <span className="min-w-0 truncate">{s.nav.more}</span>
+                          {/* A count, not a list: it says "there is more here"
+                              without costing a row. Hidden once open — the rows
+                              below already say it. */}
+                          {!navMoreOpen && overflow.length > 0 && (
+                            <span className="ms-auto text-[11px] tabular-nums opacity-55">{overflow.length}</span>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  const isInteractive = Boolean(item.action) || Boolean(item.route)
 
                 const active =
                   (item.id === 'skills' && currentView === 'skills') ||
@@ -1561,7 +1616,8 @@ export function ChatSidebar({
                     )}
                   </SidebarMenuItem>
                 )
-              })}
+                })
+              })()}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

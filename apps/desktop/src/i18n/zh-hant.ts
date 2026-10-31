@@ -440,7 +440,7 @@ export const zhHant = defineLocale({
       afternoon: '午安',
       evening: '晚安'
     },
-    lede: '把目標、證據，或是一段還沒想清楚的思路丟進來。我先看清脈絡，再給出下一步。',
+    lede: '把目標、一段程式碼，或是一段還沒想清楚的思路丟進來。我先看清脈絡，再給出下一步。',
     chips: {
       programming: '繼續上次工作',
       programmingTip: '聚焦輸入框，接著往下說',
@@ -2676,6 +2676,7 @@ export const zhHant = defineLocale({
       messaging: '訊息平台',
       artifacts: '成品',
       commandCenter: '命令中心',
+      more: '更多',
       cron: '排程工作'
     },
     searchAria: '搜尋工作階段',

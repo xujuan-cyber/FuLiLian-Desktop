@@ -449,7 +449,7 @@ export const ja = defineLocale({
       afternoon: 'こんにちは',
       evening: 'こんばんは'
     },
-    lede: '目的でも、証拠でも、まとまっていない考えでも。まず文脈を読み、次の一歩を提案します。',
+    lede: '目的でも、コードでも、まとまっていない考えでも。まず文脈を読み、次の一歩を提案します。',
     chips: {
       programming: '前回の続きから',
       programmingTip: '入力欄にフォーカスして続きを入力します',
@@ -2742,6 +2742,7 @@ export const ja = defineLocale({
       messaging: 'メッセージング',
       artifacts: 'アーティファクト',
       commandCenter: 'コマンドセンター',
+      more: 'その他',
       cron: 'スケジュール済みジョブ'
     },
     searchAria: 'セッションを検索',

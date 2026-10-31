@@ -451,7 +451,7 @@ export const en: Translations = {
       afternoon: 'Good afternoon',
       evening: 'Good evening'
     },
-    lede: 'A goal, a piece of evidence, or a half-formed idea. I read the context first, then take the next step.',
+    lede: 'A goal, a piece of code, or a half-formed idea. I read the context first, then take the next step.',
     chips: {
       programming: 'Continue where you left off',
       programmingTip: 'Focus the composer and pick up where you left off',
@@ -2510,6 +2510,7 @@ export const en: Translations = {
       messaging: 'Messaging',
       artifacts: 'Artifacts',
       commandCenter: 'Command Center',
+      more: 'More',
       cron: 'Scheduled jobs'
     },
     searchAria: 'Search sessions',

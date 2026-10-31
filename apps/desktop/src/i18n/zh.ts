@@ -443,7 +443,7 @@ export const zh: Translations = {
       afternoon: '下午好',
       evening: '晚上好'
     },
-    lede: '把目标、证据，或者一段还没想清楚的思路丢进来。我先看清上下文，再给出下一步。',
+    lede: '把目标、一段代码，或者还没想清楚的思路丢进来。我先看清上下文，再给出下一步。',
     chips: {
       programming: '继续上次工作',
       programmingTip: '聚焦输入框，接着往下说',
@@ -2682,6 +2682,7 @@ export const zh: Translations = {
       messaging: '消息平台',
       artifacts: '产物',
       commandCenter: '命令中心',
+      more: '更多',
       cron: '定时任务'
     },
     searchAria: '搜索会话',
