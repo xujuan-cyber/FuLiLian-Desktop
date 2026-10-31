@@ -13,25 +13,23 @@ const TOAST_EXIT_MS = 180
 const LONG_TITLE = 'This turn is no longer in server history (it may have been compressed away).'
 const DETAIL = 'target user message is no longer in session history'
 
-// The top-center stack's pill-clearance rule (P5), spelled out numerically so
-// the test documents the geometry rather than a magic string alone: the
-// overlay chrome's centered edge pill (settings' search pill, `edgeBadge` in
-// app/overlays/overlay-view.tsx) hangs below the card's top edge — its center
-// at titlebar + 0.875rem, half a --titlebar-control-height tall — so its
-// bottom edge is 34 + 14 + 12 = 60px. The stack must open below that band.
+// The top-center stack's offset. It used to sit ~12px lower to clear the
+// overlay chrome's centered edge pill (the settings search pill, `edgeBadge`);
+// P1 replaced that pill with a real field in the settings rail, so the stack
+// returned to the plain titlebar + 0.75rem slot. These constants spell the
+// geometry out numerically so the test documents the reasoning, not a magic
+// string.
 const TITLEBAR_PX = 34
-const CARD_INSET_PX = 14 // 0.875rem — the overlay card's ≥sm inset
-const CONTROL_HEIGHT_PX = 24 // --titlebar-control-height
-const PILL_BOTTOM_PX = TITLEBAR_PX + CARD_INSET_PX + CONTROL_HEIGHT_PX / 2
-const GAP_PX = 8 // 0.5rem breathing gap below the pill's bottom edge
+const STACK_OFFSET_PX = 12 // 0.75rem below the titlebar
 
-// The class as written in notifications.tsx (Tailwind underscores = spaces).
-const TOP_CENTER_OFFSET_CLASS =
+// The class as written in notifications.tsx (Tailwind underscores = spaces;
+// this calc has no spaces, so none are needed).
+const TOP_CENTER_OFFSET_CLASS = 'top-[calc(var(--titlebar-height,34px)+0.75rem)]'
+
+// The retired pill-clearance slot: titlebar + 0.875rem + half the control
+// height + a 0.5rem gap = 68px, ~22px lower than needed once the pill was gone.
+const RETIRED_PILL_CLEARANCE_CLASS =
   'top-[calc(var(--titlebar-height,34px)_+_0.875rem_+_var(--titlebar-control-height,24px)/2_+_0.5rem)]'
-
-// The retired slot: opened at titlebar + 0.75rem = 46px, directly on the pill
-// band (36–60px) — the "toast covers the top-center pill" overlap.
-const RETIRED_COLLIDING_CLASS = 'top-[calc(var(--titlebar-height,34px)+0.75rem)]'
 
 describe('toast titles', () => {
   beforeEach(() => {
@@ -83,7 +81,7 @@ describe('top-center stack placement', () => {
     clearNotifications()
   })
 
-  it('offsets below the centered edge pill instead of opening on top of it', () => {
+  it('opens at the plain titlebar offset, not the retired pill-clearance slot', () => {
     // Errors/warnings are the noisy top-center surface (the bottom-right
     // ambient stack is untouched by this rule).
     notify({ kind: 'error', message: 'placement probe' })
@@ -100,15 +98,14 @@ describe('top-center stack placement', () => {
     // Still the horizontally centered top stack…
     expect(className).toContain('left-1/2')
     expect(className).toContain('-translate-x-1/2')
-    // …but at the computed below-the-pill offset, never the retired slot.
-    expect(className).not.toContain(RETIRED_COLLIDING_CLASS)
+    // …at the plain slot, never the pill-era clearance that pushed it ~22px
+    // lower for a pill that no longer exists.
+    expect(className).not.toContain(RETIRED_PILL_CLEARANCE_CLASS)
     expect(className).toContain(TOP_CENTER_OFFSET_CLASS)
 
-    // The offset must clear the worst-case pill bottom with the breathing gap:
-    // 34px titlebar + 0.875rem(14px) + half control(12px) + 0.5rem(8px) = 68px.
-    const topPx = TITLEBAR_PX + CARD_INSET_PX + CONTROL_HEIGHT_PX / 2 + GAP_PX
-
-    expect(topPx).toBeGreaterThan(PILL_BOTTOM_PX)
+    // 34px titlebar + 0.75rem(12px) = 46px: below the traffic lights, and at
+    // the card's top edge where nothing else is drawn.
+    expect(TITLEBAR_PX + STACK_OFFSET_PX).toBe(46)
   })
 })
 

@@ -120,6 +120,22 @@ describe('buildPageZoneGroups (T8 页面区)', () => {
     expect(ids).toContain('nav-command-center')
   })
 
+  it('never points at a route that no longer exists (reverse check)', () => {
+    // The check above proves every route HAS a row. This is the other
+    // direction: a row must not outlive its route. P1 deleted /cases and the
+    // `nav-cases` row went with it — nothing here should drift back in, and no
+    // future route removal may leave a dead palette entry behind.
+    const routeIds = new Set<string>(APP_ROUTES.map(route => route.id))
+    // Rows that are actions or nested palette pages, not route destinations.
+    const nonRouteRows = new Set(['nav-new', 'nav-new-window', 'nav-search-sessions'])
+
+    const orphaned = ids
+      .filter(id => id.startsWith('nav-') && !nonRouteRows.has(id))
+      .filter(id => !routeIds.has(id.slice('nav-'.length)))
+
+    expect(orphaned).toEqual([])
+  })
+
   it('keeps the nested search-sessions page reachable via `to`', () => {
     const search = group!.items.find(item => item.id === 'nav-search-sessions')!
 

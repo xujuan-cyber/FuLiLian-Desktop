@@ -4,6 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const getConnectionConfig = vi.fn()
 const saveConnectionConfig = vi.fn()
 
+// This file's cases wait on the connection-config round trip and take 5–7s
+// each; under the parallel full-suite run they brushed the 15s default and
+// failed on load, not on behaviour. Give this file its own budget.
+vi.setConfig({ testTimeout: 30_000 })
+
 // This test owns the machine-level GatewaySettings contract. The managed SSH
 // update section mounted below the registry has its own focused coverage
 // (store/managed-updates.test.ts); keep its store subscriptions out of this

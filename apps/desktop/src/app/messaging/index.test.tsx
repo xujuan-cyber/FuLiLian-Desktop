@@ -5,6 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MessagingPlatformInfo } from '@/types/fulilian'
 
+// These cases mount the whole Messaging surface and run 5–7s each; under the
+// parallel full-suite run they brushed the 15s default and failed on load, not
+// on behaviour. Give this file its own budget so the suite's colour stops
+// depending on what else happens to be running.
+vi.setConfig({ testTimeout: 30_000 })
+
 const getMessagingPlatforms = vi.fn()
 const updateMessagingPlatform = vi.fn()
 const getPairing = vi.fn()
