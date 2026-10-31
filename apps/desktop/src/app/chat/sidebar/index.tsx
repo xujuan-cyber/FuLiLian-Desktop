@@ -464,8 +464,6 @@ export function ChatSidebar({
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
-  const paletteCombo = useStore($bindings)['nav.commandPalette']?.[0]
-  const paletteKbd = paletteCombo ? comboTokens(paletteCombo) : []
   const [newSessionKbdFlash, setNewSessionKbdFlash] = useState(false)
   const [messagingLoadMorePending, setMessagingLoadMorePending] = useState<Record<string, boolean>>({})
   const [recentsLoadMorePending, setRecentsLoadMorePending] = useState(false)
@@ -1439,58 +1437,62 @@ export function ChatSidebar({
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5 pt-3">
         <SidebarGroup className="shrink-0 p-0">
           <SidebarGroupContent>
-            {/* §8.2 A 主操作 — the sidebar's only solid button, 36px, ink on
-                canvas. Context menu keeps "open in split" on the same target. */}
-            <ContextMenu>
-              <ContextMenuTrigger asChild>
-                <SidebarMenuButton
-                  aria-label={s.newTask}
-                  className="flex h-9 w-full justify-start gap-2 rounded-[7px] bg-(--v3-ink) px-2.5 text-left text-[13px] font-medium text-(--v3-canvas) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-ink) hover:text-(--v3-canvas) hover:opacity-90 hover:transition-none"
+            {/* §8.2 A 主操作 — the sidebar's only solid button, 32px, ink on
+                canvas. Context menu keeps "open in split" on the same target.
+
+                The magnifier rides this row instead of owning one: the search
+                used to be a full-width 32px field below this button, which cost
+                the session list a whole entry on a laptop viewport. It is still
+                a door (opens the command palette), just a smaller one. */}
+            <div className="flex items-center gap-1.5">
+              <div className="min-w-0 flex-1">
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <SidebarMenuButton
+                      aria-label={s.newTask}
+                      className="flex h-8 w-full justify-start gap-2 rounded-[7px] bg-(--v3-ink) px-2.5 text-left text-[13px] font-medium text-(--v3-canvas) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-ink) hover:text-(--v3-canvas) hover:opacity-90 hover:transition-none"
+                      data-tip-region=""
+                      data-tour="sidebar-nav-new-session"
+                      onClick={() => {
+                        // A plain new session lands in whatever profile the live
+                        // gateway is on (= the active switcher context). null →
+                        // no swap. The switcher header is the single place to
+                        // change which profile that is.
+                        $newChatProfile.set(null)
+                        onNavigate(NEW_SESSION_NAV_ITEM)
+                      }}
+                      tooltip={<TipKeybindLabel actionId="session.new" text={s.newTask} />}
+                      type="button"
+                    >
+                      <Codicon className="size-4 shrink-0 opacity-80" name="add" />
+                      <span className="min-w-0 truncate" data-tip-arrow-only="">
+                        {s.newTask}
+                      </span>
+                      <KbdGroup
+                        className={cn('ms-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
+                        keys={newSessionKbd}
+                        size="sm"
+                      />
+                    </SidebarMenuButton>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent aria-label={s.newTask}>
+                    <SplitSubmenu kit={CONTEXT_SPLIT_KIT} label={s.row.openInSplit} onSplit={onNewSessionSplit} />
+                  </ContextMenuContent>
+                </ContextMenu>
+              </div>
+
+              <Tip label={<TipKeybindLabel actionId="nav.commandPalette" text={s.searchCommandPalette} />}>
+                <button
+                  aria-label={s.searchAria}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-[7px] border border-(--v3-line-strong) bg-(--v3-surface) text-(--v3-ink-3) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:border-(--v3-line) hover:text-(--v3-ink-2) hover:transition-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--v3-line-strong)"
                   data-tip-region=""
-                  data-tour="sidebar-nav-new-session"
-                  onClick={() => {
-                    // A plain new session lands in whatever profile the live
-                    // gateway is on (= the active switcher context). null →
-                    // no swap. The switcher header is the single place to
-                    // change which profile that is.
-                    $newChatProfile.set(null)
-                    onNavigate(NEW_SESSION_NAV_ITEM)
-                  }}
-                  tooltip={<TipKeybindLabel actionId="session.new" text={s.newTask} />}
+                  onClick={toggleCommandPalette}
                   type="button"
                 >
-                  <Codicon className="size-4 shrink-0 opacity-80" name="add" />
-                  <span className="min-w-0 truncate" data-tip-arrow-only="">
-                    {s.newTask}
-                  </span>
-                  <KbdGroup
-                    className={cn('ms-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
-                    keys={newSessionKbd}
-                    size="sm"
-                  />
-                </SidebarMenuButton>
-              </ContextMenuTrigger>
-              <ContextMenuContent aria-label={s.newTask}>
-                <SplitSubmenu kit={CONTEXT_SPLIT_KIT} label={s.row.openInSplit} onSplit={onNewSessionSplit} />
-              </ContextMenuContent>
-            </ContextMenu>
-
-            {/* §8.2 B 检索 — a 32px field-shaped button: white surface, one
-                hairline, the palette's own shortcut. It is a field in form and
-                a door in behavior; no rule under it. */}
-            <Tip label={s.searchCommandPalette}>
-              <button
-                aria-label={s.searchAria}
-                className="mt-2 flex h-8 w-full items-center gap-2 rounded-[7px] border border-(--v3-line-strong) bg-(--v3-surface) px-2.5 text-[12px] text-(--v3-ink-3) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:border-(--v3-line) hover:text-(--v3-ink-2) hover:transition-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-(--v3-line-strong)"
-                data-tip-region=""
-                onClick={toggleCommandPalette}
-                type="button"
-              >
-                <Codicon className="shrink-0 opacity-70" name="search" size="0.875rem" />
-                <span className="min-w-0 flex-1 truncate text-start">{s.searchPlaceholder}</span>
-                <KbdGroup className="shrink-0 opacity-70" keys={paletteKbd} size="sm" />
-              </button>
-            </Tip>
+                  <Codicon name="search" size="0.9375rem" />
+                </button>
+              </Tip>
+            </div>
 
             {/* §8.2 C 导航 — 30px rows, 16px glyph, 8px gap. The work surfaces
                 (agents / capabilities / connectors) stay expanded; the rest fold
@@ -1514,7 +1516,7 @@ export function ChatSidebar({
                       <SidebarMenuItem key={MORE_NAV_ID}>
                         <SidebarMenuButton
                           aria-expanded={navMoreOpen}
-                          className="flex h-[30px] w-full justify-start gap-2 rounded-[6px] px-2.5 text-left text-[13px] font-normal text-(--v3-ink-2) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-hover) hover:text-(--v3-ink) hover:transition-none"
+                          className="flex h-[26px] w-full justify-start gap-2 rounded-[6px] px-2.5 text-left text-[13px] font-normal text-(--v3-ink-2) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-hover) hover:text-(--v3-ink) hover:transition-none"
                           data-tip-region=""
                           onClick={() => $sidebarNavMoreOpen.set(!navMoreOpen)}
                           tooltip={s.nav.more}
@@ -1561,7 +1563,7 @@ export function ChatSidebar({
                       // resolved region has been observed to swallow clicks on the
                       // top rows. Same carve-out as USER_BUBBLE_BASE_CLASS in
                       // thread.tsx.
-                      'flex h-[30px] w-full justify-start gap-2 rounded-[6px] px-2.5 text-left text-[13px] font-normal text-(--v3-ink-2) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-hover) hover:text-(--v3-ink) hover:transition-none',
+                      'flex h-[26px] w-full justify-start gap-2 rounded-[6px] px-2.5 text-left text-[13px] font-normal text-(--v3-ink-2) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--v3-hover) hover:text-(--v3-ink) hover:transition-none',
                       active && 'bg-(--v3-selected) font-medium text-(--v3-ink)',
                       !isInteractive && 'cursor-default hover:bg-transparent hover:text-inherit'
                     )}
