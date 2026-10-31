@@ -218,6 +218,12 @@ export const $sidebarCronOpen = persistentAtom(SIDEBAR_CRON_OPEN_STORAGE_KEY, fa
 // always-on 30px rows pushed the session list ~340px down — nearly half a
 // laptop viewport — so only the work surfaces stay expanded.
 export const $sidebarNavMoreOpen = persistentAtom(SIDEBAR_NAV_MORE_OPEN_STORAGE_KEY, false, Codecs.bool)
+// The Projects section's own fold. Projects and Sessions are two separate
+// sections now (a project is a workspace holding many task windows; a session is
+// one task window), so each needs its own open state — folding one must not fold
+// the other.
+const SIDEBAR_PROJECTS_OPEN_STORAGE_KEY = 'fulilian.desktop.sidebarProjectsOpen'
+export const $sidebarProjectsOpen = persistentAtom(SIDEBAR_PROJECTS_OPEN_STORAGE_KEY, true, Codecs.bool)
 // Messaging platform sections collapse by default (they can be numerous and
 // tall). We persist the ids the user has *explicitly expanded*, so the default
 // stays collapsed unless they've opened a platform before.

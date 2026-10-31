@@ -425,21 +425,15 @@ export function SidebarSessionsSection({
   } else if (showEmptyState) {
     inner = emptyState
   } else if (projectOverview?.length) {
-    // Two blocks, one section: the sessions that belong to no project read as
-    // plain flat rows at the top (no folder, because they ARE the single
-    // tasks), then a divider hands over to the workspaces, each a folder with
-    // its sessions nested. Home used to be rendered as a project row here,
-    // which made the catch-all bucket look like just another workspace.
-    const home = projectOverview[0]?.isNoProject ? projectOverview[0] : undefined
-    const sortableProjects = home ? projectOverview.slice(1) : projectOverview
+    // The model is already ordered (then the default sort groups
+    // explicit-before-auto, with a manual drag-order winning when present).
+    // Render in that order and make rows drag-to-reorder when a handler is
+    // wired. Sessions that belong to NO project are a separate section above
+    // this one (see the sidebar's two-section split), so nothing loose lands
+    // here.
+    const sortableProjects = projectOverview
     const projectsDraggable = sortableProjects.length > 1 && !!onReorderProjects
     const Row = projectsDraggable ? SortableProjectOverviewRow : ProjectOverviewRow
-
-    // The bucket's sessions come from the live overlay, not the backend tree —
-    // `projectOverviewPreviews` is the same list the Home row used to render,
-    // so flattening it keeps the rows identical (same cap as every project
-    // preview, same live updates for a just-created session).
-    const looseSessions = home ? (projectOverviewPreviews?.[home.id] ?? []) : []
 
     const projectRow = (project: SidebarProjectTree, Component: typeof ProjectOverviewRow) => (
       <Component
@@ -457,24 +451,16 @@ export function SidebarSessionsSection({
 
     inner = (
       <>
-        {looseSessions.length > 0 && renderRows(looseSessions)}
-        {sortableProjects.length > 0 && (
-          <>
-            {looseSessions.length > 0 && (
-              <SidebarDateDivider label={t.sidebar.projects.sectionLabel} />
-            )}
-            {projectsDraggable && onReorderProjects ? (
-              <ReorderableList
-                ids={sortableProjects.map(project => project.id)}
-                onReorder={onReorderProjects}
-                sensors={dndSensors}
-              >
-                {rows}
-              </ReorderableList>
-            ) : (
-              rows
-            )}
-          </>
+        {projectsDraggable && onReorderProjects ? (
+          <ReorderableList
+            ids={sortableProjects.map(project => project.id)}
+            onReorder={onReorderProjects}
+            sensors={dndSensors}
+          >
+            {rows}
+          </ReorderableList>
+        ) : (
+          rows
         )}
       </>
     )

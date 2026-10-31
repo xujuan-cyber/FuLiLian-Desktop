@@ -48,6 +48,7 @@ import {
   $sidebarPrDataWanted,
   $sidebarPrFilter,
   $sidebarProfileFilter,
+  $sidebarProjectsOpen,
   $sidebarProjectFilter,
   $sidebarProjectOrderIds,
   $sidebarRecentsOpen,
@@ -387,6 +388,7 @@ export function ChatSidebar({
   const panesFlipped = useStore($panesFlipped)
   const grouping = useStore($sidebarGrouping)
   const navMoreOpen = useStore($sidebarNavMoreOpen)
+  const projectsOpen = useStore($sidebarProjectsOpen)
   const ordering = useStore($sidebarOrdering)
   const statusFilter = useStore($sidebarStatusFilter)
   const projectFilter = useStore($sidebarProjectFilter)
@@ -1108,23 +1110,10 @@ export function ChatSidebar({
 
   // The Sessions section is a project switcher in grouped mode: its label reads
   // "Sessions" when flat, "Projects" at the overview, and the project's name
-  // once you've entered one.
-  //
-  // In the project view the section holds BOTH blocks — the loose sessions (flat,
-  // no folder) and then the workspaces (folders). It only earns the "Sessions"
-  // title when there is something loose to head; with every session filed under
-  // a project the list is purely folders, so it keeps the "Projects" title and
-  // skips the inner divider.
-  const hasLooseSessions =
-    (overviewPreviews[projectModel.find(project => project.isNoProject)?.id ?? ''] ?? []).length > 0
+  // once you've entered one. (The overview's two-section split overrides the
+  // overview case — that section becomes the Projects half.)
   const sessionsLabel =
-    inProject && enteredProject
-      ? enteredProject.label
-      : worktreeGroupingActive
-        ? hasLooseSessions
-          ? s.sessions
-          : s.projects.sectionLabel
-        : s.sessions
+    inProject && enteredProject ? enteredProject.label : worktreeGroupingActive ? s.projects.sectionLabel : s.sessions
 
   // Mirror the section's skeleton gate (projectsLoading + nothing to show yet):
   // while the skeleton is up there's no point also spinning the header count.
@@ -1263,6 +1252,53 @@ export function ChatSidebar({
   // The flat Sessions list always shows ALL recent sessions; Projects is a
   // parallel grouped view, not a filter on this one — nothing is hidden here.
   const displayAgentSessions = agentSessions
+
+  // ── Projects vs Sessions: two sections, one exact split ───────────────────
+  // A project is a workspace that accumulates many task windows; a session is
+  // one task window. The backend tree is the authority for the project half —
+  // every session it files under a real project belongs there. Whatever it does
+  // NOT file is a loose session (the no-project bucket gets its membership from
+  // the live overlay, so it can't be enumerated from the tree).
+  // The backend tree carries counts and previews, NOT the session arrays — the
+  // live membership is overlaid from `$sessions` (same `overlayLiveLanes` the
+  // entered-project view uses). So the split has to run that overlay per
+  // project; reading `repos[].groups[].sessions` straight off the tree returns
+  // empty and would leave every session looking loose.
+  const projectSessionIds = useMemo(() => {
+    const ids = new Set<string>()
+
+    for (const project of projectModel) {
+      if (project.isNoProject) {
+        continue
+      }
+
+      const filled = overlayLiveLanes(project, agentSessions, removedSessionIds)
+
+      for (const repo of filled.repos) {
+        for (const group of repo.groups) {
+          for (const session of group.sessions) {
+            ids.add(session.id)
+          }
+        }
+      }
+    }
+
+    return ids
+  }, [projectModel, agentSessions, removedSessionIds])
+
+  const looseSessions = useMemo(
+    () => displayAgentSessions.filter(session => !projectSessionIds.has(session.id)),
+    [displayAgentSessions, projectSessionIds]
+  )
+
+  const realProjectOverview = useMemo(
+    () => projectOverview?.filter(project => !project.isNoProject),
+    [projectOverview]
+  )
+
+  // Only split when there is something to put in each half; with no real
+  // projects the section falls back to the flat list it always rendered.
+  const projectsSplitActive = Boolean(worktreeGroupingActive && !inProject && realProjectOverview?.length)
 
   // Pagination is scope-aware. In "All profiles" mode it tracks the global
   // unified set; scoped to one profile it tracks that profile's own truncation
@@ -1674,6 +1710,33 @@ export function ChatSidebar({
               />
             )}
 
+            {/* Sessions — one task window each. Its own section, its own fold:
+                collapsing Projects must never collapse this, and vice versa. */}
+            {projectsSplitActive && looseSessions.length > 0 && (
+              <SidebarSessionsSection
+                activeSessionId={activeSidebarSessionId}
+                contentClassName="flex flex-col gap-0.5 pb-2"
+                dndSensors={dndSensors}
+                emptyState={null}
+                label={s.sessions}
+                onArchiveSession={onArchiveSession}
+                onBranchSession={onBranchSession}
+                onDeleteSession={onDeleteSession}
+                onNewSessionInWorkspace={onNewSessionInWorkspace}
+                onReorderSessions={showAllProfiles ? undefined : reorderSessions}
+                onResumeSession={onResumeSession}
+                onToggle={() => setSidebarRecentsOpen(!agentsOpen)}
+                onTogglePin={pinSession}
+                onToggleUnread={toggleUnread}
+                open={agentsOpen}
+                pinned={false}
+                rootClassName="shrink-0 p-0"
+                sessions={looseSessions}
+                showProfileTags={showAllProfiles}
+                sortable={!showAllProfiles && looseSessions.length > 1}
+              />
+            )}
+
             <SidebarSessionsSection
               activeProjectId={activeProjectId}
               activeSessionId={activeSidebarSessionId}
@@ -1817,7 +1880,7 @@ export function ChatSidebar({
                   )}
                 </div>
               }
-              label={sessionsLabel}
+              label={projectsSplitActive ? s.projects.sectionLabel : sessionsLabel}
               labelMeta={
                 worktreeGroupingActive ? (
                   reposScanning && !projectsSkeletonVisible ? (
@@ -1838,16 +1901,18 @@ export function ChatSidebar({
               onReorderProjects={showAllProfiles ? undefined : reorderProjects}
               onReorderSessions={showAllProfiles ? undefined : reorderSessions}
               onResumeSession={onResumeSession}
-              onToggle={() => setSidebarRecentsOpen(!agentsOpen)}
+              onToggle={() =>
+                projectsSplitActive ? $sidebarProjectsOpen.set(!projectsOpen) : setSidebarRecentsOpen(!agentsOpen)
+              }
               onTogglePin={pinSession}
               onToggleUnread={toggleUnread}
-              open={agentsOpen}
+              open={projectsSplitActive ? projectsOpen : agentsOpen}
               pinned={false}
               projectBackRow={
                 inProject ? <ProjectBackRow label={s.projects.back} onClick={exitProjectScope} /> : undefined
               }
               projectContent={inProject ? enteredProjectContent : undefined}
-              projectOverview={projectOverview}
+              projectOverview={projectsSplitActive ? realProjectOverview : projectOverview}
               projectOverviewPreviews={overviewPreviews}
               projectRepoWorktrees={inProject ? scopedRepoWorktrees : undefined}
               projectsLoading={worktreeGroupingActive ? projectTreeLoading : false}
@@ -1856,7 +1921,7 @@ export function ChatSidebar({
                 'min-h-32 flex-1 overflow-hidden p-0',
                 !recentsVirtualizes && 'compact:min-h-0 compact:flex-none compact:overflow-visible'
               )}
-              sessions={displayAgentSessions}
+              sessions={projectsSplitActive ? [] : displayAgentSessions}
               sortable={!showAllProfiles && agentSessions.length > 1}
             />
 
