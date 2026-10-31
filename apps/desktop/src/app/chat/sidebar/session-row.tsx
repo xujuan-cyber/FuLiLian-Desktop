@@ -376,8 +376,9 @@ function SidebarSessionRowImpl({
           card && SIDEBAR_ROW_CARD_MIN_H,
           // Density-aware minimum heights for the inline (non-card) row: the
           // metadata / preview lines below need the extra rows (#68119). The
-          // one-line row is v3's 32px.
-          !card && 'h-8',
+          // one-line row is 26px — 32px of chrome per session pushed a laptop
+          // viewport down to ~4 visible rows.
+          !card && 'h-[26px]',
           !card && density === 'detailed' && 'min-h-[3.875rem]',
           isSelected && 'bg-(--v3-selected)',
           // Open in another pane: the SAME band, just weaker. Its own mixed

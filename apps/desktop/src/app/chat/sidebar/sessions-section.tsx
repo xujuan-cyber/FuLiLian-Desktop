@@ -93,10 +93,10 @@ function SidebarSectionHeader({
   )
 
   return (
-    // Same rhythm as every other group title: 20px above, 6px below, zero
-    // rules. The hint (drag / shift-click) rides the label as a tooltip
-    // instead of a standing sentence under the list.
-    <div className="group/section mb-1.5 mt-5 flex h-6 shrink-0 items-center justify-between gap-1">
+    // Group title rhythm: 8px above, 4px below, zero rules. It used to carry
+    // 20px above / 6px below / 24px tall — with 3+ date groups that alone ate
+    // ~150px of the list, more than the sessions themselves.
+    <div className="group/section mb-1 mt-2 flex h-5 shrink-0 items-center justify-between gap-1">
       {collapsible ? (
         hint ? (
           <Tip label={hint}>{toggle}</Tip>

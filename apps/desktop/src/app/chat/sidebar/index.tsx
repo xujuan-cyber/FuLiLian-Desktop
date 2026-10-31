@@ -1632,7 +1632,7 @@ export function ChatSidebar({
 
         {showSessionSections && (
           <div
-            className={cn('flex min-h-0 flex-1 flex-col gap-2 pb-1.75', SCROLL_Y, SCROLL_GUTTER)}
+            className={cn('flex min-h-0 flex-1 flex-col gap-1 pb-1.75', SCROLL_Y, SCROLL_GUTTER)}
             data-sessions-mode={sessionsMode}
             data-sessions-project={inProject ? (enteredProjectId ?? undefined) : undefined}
           >

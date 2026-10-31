@@ -44,7 +44,7 @@ const rowInset = cn(rowPadX, rowGap, 'flex h-full min-w-0 items-center self-stre
 // Windows is ~1.33em — gets shaved. 1.35 leaves room; the shell still owns
 // row height, so the extra leading just centers.
 export const SIDEBAR_TRUNCATED_LEADING = 'leading-[1.35]' as const
-const rowLabel = cn('min-w-0 truncate text-[13px] text-(--ui-text-secondary)', SIDEBAR_TRUNCATED_LEADING)
+const rowLabel = cn('min-w-0 truncate text-[12.5px] text-(--ui-text-secondary)', SIDEBAR_TRUNCATED_LEADING)
 
 /** Inbox-style card (workspace + age, title + preview, model + size). */
 export const SIDEBAR_ROW_CARD_MIN_H = 'min-h-[3.375rem]' as const
@@ -80,7 +80,7 @@ export function SidebarDateDivider({
     // so it borrows the header's hover-revealed "+" verbatim.
     <div
       className={cn(
-        'group/workspace mb-1.5 mt-5 flex select-none items-center gap-2 px-2.5 text-[11px] font-semibold leading-[1.2] text-(--v3-ink-3)',
+        'group/workspace mb-0.5 mt-2 flex select-none items-center gap-2 px-2.5 text-[11px] font-semibold leading-[1.2] text-(--v3-ink-3)',
         className
       )}
       {...props}
