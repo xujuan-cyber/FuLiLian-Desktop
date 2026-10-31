@@ -175,6 +175,10 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
       <Route element={page(chatView)} index />
       <Route element={page(chatView)} path=":sessionId" />
       <Route element={page(<SkillsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="skills" />
+      {/* /connectors is the sidebar's first-class door to MCP. It reuses the
+          Capabilities view pinned to the MCP tab rather than duplicating the
+          surface — zero new components. P1 decides whether it earns a page. */}
+      <Route element={page(<SkillsView initialTab="mcp" />)} path="connectors" />
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
       <Route element={page(<CaseTimelineView />)} path="cases/:caseId/timeline" />

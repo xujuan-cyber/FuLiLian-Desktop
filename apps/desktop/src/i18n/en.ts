@@ -2763,9 +2763,12 @@ export const en: Translations = {
   sidebar: {
     nav: {
       'new-session': 'New session',
+      agents: 'Agents',
       skills: 'Capabilities',
+      connectors: 'Connectors',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
+      commandCenter: 'Command Center',
       cron: 'Scheduled jobs'
     },
     searchAria: 'Search sessions',

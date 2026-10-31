@@ -49,6 +49,7 @@ import {
   Package,
   Palette,
   PawPrint,
+  Plug,
   Plus,
   RefreshCw,
   Search,
@@ -103,6 +104,7 @@ import {
   ARTIFACTS_ROUTE,
   CASES_ROUTE,
   COMMAND_CENTER_ROUTE,
+  CONNECTORS_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
   navigateToWorkspacePage,
@@ -658,6 +660,13 @@ export function buildPageZoneGroups({
           keywords: ['skills', 'tools', 'toolsets', 'mcp', 'capabilities'],
           label: cc.nav.skills.title,
           run: go(SKILLS_ROUTE)
+        },
+        {
+          icon: Plug,
+          id: 'nav-connectors',
+          keywords: ['connectors', 'mcp', 'servers', 'integrations', 'tools'],
+          label: t.sidebar.nav.connectors,
+          run: go(CONNECTORS_ROUTE)
         },
         {
           action: 'nav.messaging',

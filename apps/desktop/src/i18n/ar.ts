@@ -2921,10 +2921,12 @@ export const ar = defineLocale({
     nav: {
       'new-session': 'جلسة جديدة',
       skills: 'المهارات',
+      connectors: 'الموصلات',
       messaging: 'المراسلة',
       artifacts: 'العناصر',
       chat: 'المحادثة',
       settings: 'الإعدادات',
+      commandCenter: 'مركز الأوامر',
       cron: 'المهام المجدولة',
       agents: 'الوكلاء'
     },

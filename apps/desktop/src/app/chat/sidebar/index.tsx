@@ -133,7 +133,11 @@ import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
 import {
+  AGENTS_ROUTE,
   type AppView,
+  ARTIFACTS_ROUTE,
+  COMMAND_CENTER_ROUTE,
+  CONNECTORS_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
   SETTINGS_ROUTE,
@@ -144,9 +148,9 @@ import {
 import type { SidebarNavItem } from '../../types'
 
 import { SidebarKindGroups } from './container-groups'
-import { type ContainerKindFilter, kindGroupsVisible } from './container-kind'
+import { kindGroupsVisible } from './container-kind'
 import { SidebarCronJobsSection } from './cron-jobs-section'
-import { SidebarFilterMenu, SidebarKindFilterRow } from './filter-menu'
+import { SidebarFilterMenu } from './filter-menu'
 import { SidebarGatewayStatusRow } from './gateway-status-row'
 import { SidebarLoadMoreRow } from './load-more-row'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
@@ -188,14 +192,18 @@ const NON_SESSION_LOAD_STEP = 10
 // screen — has the connection to itself first.
 const PROJECT_TREE_WARM_MS = 2_000
 
-// The §8.2 nav rows: 定时任务 / 技能与工具 / 消息 / 设置. Every row is a plain
-// destination — the three work surfaces plus Settings. Labels resolve through
-// `sidebar.nav.*` (settings borrows the command center's title until W4 lands
-// the sidebar key) so no user-visible word is written in this file.
+// The §8.2 nav rows: the work surfaces (agents / capabilities / connectors /
+// artifacts), the runtime surfaces (scheduled jobs / command center), messaging,
+// then Settings. Labels resolve through `sidebar.nav.*` so no user-visible word
+// is written in this file. Order is the grouping — there are no group headers.
 //
 // Bots/消息 is a ROW, not a toolbar icon: the messaging platform list is a
 // first-class page (/messaging) and has to stay one click away.
 const SIDEBAR_NAV_ICONS = {
+  agents: 'organization',
+  artifacts: 'archive',
+  commandCenter: 'pulse',
+  connectors: 'plug',
   cron: 'watch',
   messaging: 'comment-discussion',
   settings: 'settings-gear',
@@ -323,13 +331,32 @@ export function ChatSidebar({
       (s.nav as Record<string, string | undefined>).settings ?? t.commandCenter.nav.settings.title
 
     return [
-      { id: 'cron', icon: icon(SIDEBAR_NAV_ICONS.cron), keybindActionId: 'nav.cron', label: s.nav.cron, route: CRON_ROUTE },
+      { id: 'agents', icon: icon(SIDEBAR_NAV_ICONS.agents), label: s.nav.agents, route: AGENTS_ROUTE },
       {
         id: 'skills',
         icon: icon(SIDEBAR_NAV_ICONS.skills),
         keybindActionId: 'nav.skills',
         label: s.nav.skills,
         route: SKILLS_ROUTE
+      },
+      {
+        id: 'connectors',
+        icon: icon(SIDEBAR_NAV_ICONS.connectors),
+        label: s.nav.connectors,
+        route: CONNECTORS_ROUTE
+      },
+      {
+        id: 'artifacts',
+        icon: icon(SIDEBAR_NAV_ICONS.artifacts),
+        label: s.nav.artifacts,
+        route: ARTIFACTS_ROUTE
+      },
+      { id: 'cron', icon: icon(SIDEBAR_NAV_ICONS.cron), keybindActionId: 'nav.cron', label: s.nav.cron, route: CRON_ROUTE },
+      {
+        id: 'command-center',
+        icon: icon(SIDEBAR_NAV_ICONS.commandCenter),
+        label: s.nav.commandCenter,
+        route: COMMAND_CENTER_ROUTE
       },
       {
         id: 'messaging',
@@ -429,11 +456,11 @@ export function ChatSidebar({
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
   const paletteCombo = useStore($bindings)['nav.commandPalette']?.[0]
   const paletteKbd = paletteCombo ? comboTokens(paletteCombo) : []
-  // §4.3 kind chips (全部|取证|CTF|项目). View-local state on purpose: the
-  // kind metadata has no store this round (src/store/ is out of scope), and a
-  // filter over an empty data layer has nothing worth persisting.
-  const [kindFilter, setKindFilter] = useState<ContainerKindFilter>('all')
-  const kindVisible = kindGroupsVisible(kindFilter)
+  // The kind chips row is gone: `sessionContainerKind()` is a constant
+  // `'project'`, so the forensics/CTF chips could only ever filter into empty
+  // groups. The pinned filter keeps every `kindVisible.*` read below at its
+  // long-standing value.
+  const kindVisible = kindGroupsVisible('project')
   const [newSessionKbdFlash, setNewSessionKbdFlash] = useState(false)
   const [messagingLoadMorePending, setMessagingLoadMorePending] = useState<Record<string, boolean>>({})
   const [recentsLoadMorePending, setRecentsLoadMorePending] = useState(false)
@@ -1546,19 +1573,16 @@ export function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* §8.2 D 工作区 — a group title (20px above, 6px below) over the 28px
-            segmented control. The control degrades to a dropdown when the four
-            labels can't fit; its filter semantics are untouched. */}
+        {/* The forensics/CTF container groups are SIDEBAR STRUCTURE, not
+            session-area content: they render even when the gateway is offline
+            and the session area collapses to its blank state — an honestly
+            empty group IS the body there. Pinned to the only kind that exists
+            today (`sessionContainerKind()` is a constant `'project'`), so they
+            render nothing; the wrapper keeps the section break the removed
+            kind-chips row used to carry. */}
         <div className="mt-5 shrink-0">
-          <SidebarKindFilterRow onChange={setKindFilter} value={kindFilter} />
+          <SidebarKindGroups filter="project" />
         </div>
-
-        {/* §4.3 kind chips + forensics/CTF container groups are SIDEBAR
-            STRUCTURE, not session-area content: they render even when the
-            gateway is offline and the session area collapses to its blank
-            state — an honestly empty group IS the body there. */}
-        <SidebarKindGroups filter={kindFilter} />
-
 
         {showSessionSections && (
           <div

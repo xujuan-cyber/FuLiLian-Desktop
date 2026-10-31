@@ -12,6 +12,7 @@ export const SETTINGS_ROUTE = '/settings'
 export const COMMAND_CENTER_ROUTE = '/command-center'
 export const SKILLS_ROUTE = '/skills'
 export const MESSAGING_ROUTE = '/messaging'
+export const CONNECTORS_ROUTE = '/connectors'
 export const WEBHOOKS_ROUTE = '/webhooks'
 export const ARTIFACTS_ROUTE = '/artifacts'
 export const CRON_ROUTE = '/cron'
@@ -44,6 +45,7 @@ export type AppView =
   | 'cases'
   | 'chat'
   | 'command-center'
+  | 'connectors'
   | 'cron'
   // A contributed (plugin) full page at its own route — NOT chat. Without this
   // distinction contributed paths fell through appViewForPath's 'chat' default,
@@ -62,6 +64,7 @@ export type AppRouteId =
   | 'artifacts'
   | 'cases'
   | 'command-center'
+  | 'connectors'
   | 'cron'
   | 'messaging'
   | 'new'
@@ -82,6 +85,7 @@ export const APP_ROUTES = [
   { id: 'settings', path: SETTINGS_ROUTE, view: 'settings' },
   { id: 'command-center', path: COMMAND_CENTER_ROUTE, view: 'command-center' },
   { id: 'skills', path: SKILLS_ROUTE, view: 'skills' },
+  { id: 'connectors', path: CONNECTORS_ROUTE, view: 'connectors' },
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
   { id: 'cases', path: CASES_ROUTE, view: 'cases' },
   { id: 'webhooks', path: WEBHOOKS_ROUTE, view: 'webhooks' },

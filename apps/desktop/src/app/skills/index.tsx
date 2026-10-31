@@ -209,19 +209,23 @@ interface SkillsViewProps extends React.ComponentProps<'section'> {
    *  remote-target door — a bot living on another registered gateway gets the
    *  live surface pointed at ITS backend. Ignored without `fixedProfile`. */
   fixedConnection?: string
+  /** Which tab this door opens on. `/connectors` pins it to MCP; omitted, the
+   *  view follows the route's own `?tab=` (falling back to Skills). */
+  initialTab?: (typeof SKILLS_MODES)[number]
 }
 
 export function SkillsView({
   embedded = false,
   fixedConnection,
   fixedProfile,
+  initialTab,
   setStatusbarItemGroup: _setStatusbarItemGroup,
   ...props
 }: SkillsViewProps) {
   const { t } = useI18n()
   // Both hooks run unconditionally (rules of hooks); embedded picks the local
   // one so tab clicks inside a dialog don't rewrite the page URL.
-  const routeTab = useRouteEnumParam('tab', SKILLS_MODES, 'skills')
+  const routeTab = useRouteEnumParam('tab', SKILLS_MODES, initialTab ?? 'skills')
   const localTab = useState<(typeof SKILLS_MODES)[number]>('skills')
   const [mode, setMode] = embedded ? localTab : routeTab
   // $gateway only feeds the MCP tab — gate the subscription so Skills/Toolsets
