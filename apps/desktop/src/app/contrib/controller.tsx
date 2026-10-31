@@ -61,7 +61,8 @@ import {
   FILE_BROWSER_MIN_WIDTH,
   setFileBrowserOpen,
   setSidebarOpen,
-  SIDEBAR_MAX_WIDTH
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH
 } from '@/store/layout'
 import { runExportProfileFlow, runImportProfileFlow } from '@/store/profile-share'
 import {
@@ -196,7 +197,11 @@ registry.registerMany([
       // (zone menu Show/Hide rows + the auto-registered ⌘K toggle below).
       hideOnly: true,
       width: '240px',
-      minWidth: '240px',
+      // The sash reads these back as its drag floor/cap, so the rail has to
+      // declare the SAME bounds the store clamps to — a wider minWidth here
+      // silently pins the rail (it was 240px, above the 237 default, which is
+      // why the sidebar could only ever grow).
+      minWidth: `${SIDEBAR_MIN_WIDTH}px`,
       maxWidth: `${SIDEBAR_MAX_WIDTH}px`
     },
     render: () => <WiredPane part="sidebar" />
