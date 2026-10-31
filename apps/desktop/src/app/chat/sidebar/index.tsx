@@ -1109,8 +1109,22 @@ export function ChatSidebar({
   // The Sessions section is a project switcher in grouped mode: its label reads
   // "Sessions" when flat, "Projects" at the overview, and the project's name
   // once you've entered one.
+  //
+  // In the project view the section holds BOTH blocks — the loose sessions (flat,
+  // no folder) and then the workspaces (folders). It only earns the "Sessions"
+  // title when there is something loose to head; with every session filed under
+  // a project the list is purely folders, so it keeps the "Projects" title and
+  // skips the inner divider.
+  const hasLooseSessions =
+    (overviewPreviews[projectModel.find(project => project.isNoProject)?.id ?? ''] ?? []).length > 0
   const sessionsLabel =
-    inProject && enteredProject ? enteredProject.label : worktreeGroupingActive ? s.projects.sectionLabel : s.sessions
+    inProject && enteredProject
+      ? enteredProject.label
+      : worktreeGroupingActive
+        ? hasLooseSessions
+          ? s.sessions
+          : s.projects.sectionLabel
+        : s.sessions
 
   // Mirror the section's skeleton gate (projectsLoading + nothing to show yet):
   // while the skeleton is up there's no point also spinning the header count.
