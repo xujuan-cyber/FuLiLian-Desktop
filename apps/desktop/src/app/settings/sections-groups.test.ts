@@ -27,16 +27,11 @@ const EXPECTED_PAGE_VIEWS = [
   'notifications',
   'keybinds',
   'tray',
-  // Work modes
-  'forensics',
-  'ctf',
+  // Agent
+  'submodels',
+  'profiles',
   // Security & compliance
   'approvals',
-  'evidence-protection',
-  'audit',
-  'sensitive-info',
-  // Models & capabilities
-  'submodels',
   // Connection & data
   'providers',
   'gateway',
@@ -91,7 +86,7 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
   it('orders the six groups exactly as designed', () => {
     expect(SETTINGS_GROUPS.map(group => group.id)).toEqual([
       'basics',
-      'work-mode',
+      'agent',
       'model-capabilities',
       'security-compliance',
       'connection-data',
@@ -110,29 +105,26 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
   it('places each view in its §5.5 group', () => {
     const groupOf = new Map(SETTINGS_GROUPS.flatMap(group => group.views.map(view => [view, group.id])))
 
-    // Basics
+    // Basics (the workspace page folded in once the work-mode group went away)
     expect(groupOf.get('config:chat')).toBe('basics')
     expect(groupOf.get('config:appearance')).toBe('basics')
     expect(groupOf.get('notifications')).toBe('basics')
     expect(groupOf.get('keybinds')).toBe('basics')
-    // Work modes (programming = the existing workspace page, relinked here)
-    expect(groupOf.get('forensics')).toBe('work-mode')
-    expect(groupOf.get('ctf')).toBe('work-mode')
-    expect(groupOf.get('config:workspace')).toBe('work-mode')
+    expect(groupOf.get('tray')).toBe('basics')
+    expect(groupOf.get('config:workspace')).toBe('basics')
+    // Agent
+    expect(groupOf.get('submodels')).toBe('agent')
+    expect(groupOf.get('profiles')).toBe('agent')
     // Models & capabilities
     expect(groupOf.get('config:model')).toBe('model-capabilities')
     expect(groupOf.get('providers')).toBe('model-capabilities')
-    expect(groupOf.get('submodels')).toBe('model-capabilities')
     expect(groupOf.get('config:memory')).toBe('model-capabilities')
     expect(groupOf.get('config:voice')).toBe('model-capabilities')
     expect(groupOf.get('config:browser')).toBe('model-capabilities')
     expect(groupOf.get('config:advanced')).toBe('model-capabilities')
-    // Security & compliance: safety migrates in + the four new sections
+    // Security & compliance
     expect(groupOf.get('config:safety')).toBe('security-compliance')
     expect(groupOf.get('approvals')).toBe('security-compliance')
-    expect(groupOf.get('evidence-protection')).toBe('security-compliance')
-    expect(groupOf.get('audit')).toBe('security-compliance')
-    expect(groupOf.get('sensitive-info')).toBe('security-compliance')
     // Connection & data
     expect(groupOf.get('keys')).toBe('connection-data')
     expect(groupOf.get('gateway')).toBe('connection-data')
@@ -159,7 +151,7 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
       expect(views).toContain(page)
     }
 
-    // 9 config sections + 20 page views = 29 rows in the regrouped nav.
+    // 9 config sections + 17 page views = 26 rows in the regrouped nav.
     expect(views.length).toBe(SECTIONS.length + EXPECTED_PAGE_VIEWS.length)
   })
 })
@@ -189,7 +181,7 @@ describe('settings section deep-link resolver (D3)', () => {
     // QA/docs spell the Model section in the plural.
     expect(settingsViewFromSection('models')).toBe('config:model')
     expect(settingsViewFromSection('approvals')).toBe('approvals')
-    expect(settingsViewFromSection('audit')).toBe('audit')
+    expect(settingsViewFromSection('profiles')).toBe('profiles')
     expect(settingsViewFromSection('submodels')).toBe('submodels')
     expect(settingsViewFromSection('providers')).toBe('providers')
     // Unknown / empty → null, so the shell falls back instead of blanking.

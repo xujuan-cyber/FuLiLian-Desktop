@@ -27,7 +27,6 @@ import {
   AppWindow,
   Archive,
   BarChart3,
-  Bug,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -75,7 +74,7 @@ import {
   closeCommandPalette,
   setCommandPaletteOpen
 } from '@/store/command-palette'
-import { startNewSessionWithKind, type PaletteSessionKind } from '@/store/command-palette-kind'
+import { startNewSession } from '@/store/command-palette-session'
 import { $bindings, bindingsFor } from '@/store/keybinds'
 import { $dismissedAutoProjectIds, filterVisibleProjects } from '@/store/layout'
 import { openPetGenerate } from '@/store/pet-generate'
@@ -102,7 +101,6 @@ import { openSession, openSessionIntentFromModifiers } from '../open-session'
 import {
   AGENTS_ROUTE,
   ARTIFACTS_ROUTE,
-  CASES_ROUTE,
   COMMAND_CENTER_ROUTE,
   CONNECTORS_ROUTE,
   CRON_ROUTE,
@@ -124,7 +122,7 @@ import { HighlightWatcher } from './highlight-watcher'
 import { MarketplaceThemePage } from './marketplace-theme-page'
 import { PetInlineToggle, PetPalettePage } from './pet-palette-page'
 import { runSecurityAuditFromPalette } from './security-audit-action'
-import { SessionKindBadge, sessionBadgeKind, sessionLeadNode } from './session-marks'
+import { sessionLeadNode } from './session-marks'
 import { StatusRow } from './status-row'
 
 // Exported for the zone/keyboard fixture tests (hub-groups.test.tsx) — the
@@ -134,9 +132,6 @@ export interface PaletteItem {
   action?: string
   /** Renders a trailing check: this row IS the current setting (theme, mode). */
   active?: boolean
-  /** §4.3 mode badge after the label — forensics/CTF kind markers only (the
-   *  T8 会话 zone; `sessionBadgeKind` keeps project rows unmarked). */
-  badge?: 'ctf' | 'forensics'
   /** Static trailing combo hint for a modifier-variant select (e.g. `mod+enter`). */
   comboHint?: string
   /** Short note beside the label — state the row acts on (a version, a count). */
@@ -387,7 +382,6 @@ const PaletteRow = memo(function PaletteRow({
           <HighlightMatches query={search.split(/\s+/)} text={item.label} />
         )}
       </span>
-      {item.badge && <SessionKindBadge kind={item.badge} />}
       {item.detail && (
         <span className={cn(HUD_NOTE, HUD_NOTE_VARIANT[item.detailVariant ?? 'muted'])}>{item.detail}</span>
       )}
@@ -502,17 +496,16 @@ const RECENT_ZONE_LIMIT = 8
 const REMOTE_ROOT_LIMIT = 8
 
 /**
- * 动作 zone: the work-mode new-session trio (the T6/T7 kind payload口径 —
- * kind rides as recorded intent, never a fabricated container) plus the
- * security-audit run. 「切换主题」 lives in the Appearance zone below, where
- * the theme pickers already rank for theme queries.
+ * 动作 zone: the new-session action plus the security-audit run. 「切换主题」
+ * lives in the Appearance zone below, where the theme pickers already rank for
+ * theme queries.
  */
 export function buildActionZoneGroups({
   onNewSession,
   onRunSecurityAudit,
   t
 }: {
-  onNewSession: (kind: PaletteSessionKind) => void
+  onNewSession: () => void
   onRunSecurityAudit: () => void
   t: Translations
 }): PaletteGroup[] {
@@ -523,25 +516,11 @@ export function buildActionZoneGroups({
       heading: cc.zones.actions,
       items: [
         {
-          icon: Search,
-          id: 'action-new-forensics',
-          keywords: ['forensics', 'case', 'new', '取證', '取证'],
-          label: cc.newForensics,
-          run: () => onNewSession('forensics')
-        },
-        {
-          icon: Bug,
-          id: 'action-new-ctf',
-          keywords: ['ctf', 'challenge', 'new'],
-          label: cc.newCtf,
-          run: () => onNewSession('ctf')
-        },
-        {
           icon: Terminal,
           id: 'action-new-coding',
           keywords: ['coding', 'project', 'programming', 'new', 'task'],
           label: cc.newCodingTask,
-          run: () => onNewSession('project')
+          run: () => onNewSession()
         },
         {
           icon: Clipboard,
@@ -557,11 +536,8 @@ export function buildActionZoneGroups({
 
 /**
  * 会话 zone on the empty palette: the most recent sessions, each row led by
- * the ONE SessionStatusDot primitive (same as sidebar rows / pane tiles) and
- * badged by kind. Honest by construction: the badge comes from
- * `sessionContainerKind`, which answers 'project' until the kind column
- * lands — so today NO row paints a 取证/CTF badge, and `sessionBadgeKind`
- * keeps it that way. No sessions → no zone (no fabricated rows).
+ * the ONE SessionStatusDot primitive (same as sidebar rows / pane tiles).
+ * No sessions → no zone (no fabricated rows).
  */
 export function buildRecentSessionGroups({
   heading,
@@ -584,7 +560,6 @@ export function buildRecentSessionGroups({
     {
       heading,
       items: recent.map(session => ({
-        badge: sessionBadgeKind(session) ?? undefined,
         detail: session.preview ?? undefined,
         icon: MessageCircle,
         id: `zone-session-${session.id}`,
@@ -714,17 +689,6 @@ export function buildPageZoneGroups({
           keywords: ['command center', 'panel', 'system'],
           label: cc.commandCenter,
           run: go(COMMAND_CENTER_ROUTE)
-        },
-        {
-          // T14: /cases is a real workspace page now — the T8-4 honest
-          // placeholder becomes a plain navigation row (a dead link is still
-          // not an option; the route is registered in APP_ROUTES).
-          action: 'nav.cases',
-          icon: FileText,
-          id: 'nav-cases',
-          keywords: ['cases', 'overview', '案件'],
-          label: cc.casesOverview,
-          run: go(CASES_ROUTE)
         }
       ]
     }
@@ -732,11 +696,9 @@ export function buildPageZoneGroups({
 }
 
 /**
- * 容器 zone: the work containers (§4.1). The kind data layer does not exist
- * yet (T8-4), so the zone lists only REAL container sources — the "open
- * folder" upsert and the project tree. No 案件/赛题 container is ever
- * fabricated here; when the kind column lands, forensics/CTF container rows
- * join through `sessionContainerKind`.
+ * 容器 zone: the work containers (§4.1). The zone lists only REAL container
+ * sources — the "open folder" upsert and the project tree. Nothing is
+ * fabricated here: a container row exists only when the thing it names does.
  */
 export function buildContainerZoneGroups({
   onOpenFolder,
@@ -1122,8 +1084,8 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   }, [configQuery.data])
 
   const sessions = useMemo(() => (sessionsQuery.data?.sessions ?? []).map(toSessionEntry), [sessionsQuery.data])
-  // Full rows for the 会话 zone — the dot and the kind badge need more fields
-  // than the SessionEntry projection holds.
+  // Full rows for the 会话 zone — the dot needs more fields than the
+  // SessionEntry projection holds.
   const rawSessions = useMemo(() => sessionsQuery.data?.sessions ?? [], [sessionsQuery.data])
   const sessionInfoById = useMemo(() => new Map(rawSessions.map(session => [session.id, session])), [rawSessions])
   const archivedSessions = useMemo(() => (archivedQuery.data?.sessions ?? []).map(toSessionEntry), [archivedQuery.data])
@@ -1268,7 +1230,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     // appearance / settings below).
     return [
       ...buildActionZoneGroups({
-        onNewSession: startNewSessionWithKind,
+        onNewSession: startNewSession,
         onRunSecurityAudit: () => void runSecurityAuditFromPalette(),
         t
       }),
@@ -1600,7 +1562,6 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       result.push({
         heading: t.commandCenter.sections.sessions,
         items: sessions.map(session => ({
-          badge: sessionBadgeKind(sessionInfoById.get(session.id)) ?? undefined,
           icon: MessageCircle,
           id: `session-${session.id}`,
           keywords: [
@@ -1620,8 +1581,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     // doesn't hold, capped for the root (the search-sessions page keeps the
     // full set). Same row shape as buildSessionSearchGroups' remote rows —
     // excerpt label, relative-age detail — led by the same status dot. The
-    // dot resolves the live state from the stored id alone; no SessionInfo
-    // exists for these, so no kind badge (honest, per T8-4).
+    // dot resolves the live state from the stored id alone.
     const localIds = new Set(sessions.map(session => session.id))
     const remoteHits = (sessionSearchQuery.data?.results ?? [])
       .filter(hit => !localIds.has(hit.session_id))

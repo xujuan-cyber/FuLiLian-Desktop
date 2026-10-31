@@ -57,7 +57,7 @@ export interface DesktopThemeColors {
    * `DESIGN.md` §"Workbench palette & mode colours".
    */
   accentBright?: string
-  /** Forensics marker, links, running status dot. */
+  /** Links, running status dot. */
   info?: string
   /** Validation passed, correct flag, programming marker. */
   success?: string

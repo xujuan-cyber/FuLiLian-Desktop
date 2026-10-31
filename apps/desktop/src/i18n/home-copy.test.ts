@@ -25,16 +25,10 @@ function renderedHome(t: Translations): Record<string, string> {
     lede: h.lede,
     'chips.programming': h.chips.programming,
     'chips.programmingTip': h.chips.programmingTip,
-    'chips.forensics': h.chips.forensics,
-    'chips.ctf': h.chips.ctf,
     'chips.idle': h.chips.idle,
     'chips.placeholderTip': h.chips.placeholderTip,
     'section.title': h.section.title,
     'section.more': h.section.more,
-    'modeCards.forensics': h.modeCards.forensics,
-    'modeCards.forensicsDesc': h.modeCards.forensicsDesc,
-    'modeCards.ctf': h.modeCards.ctf,
-    'modeCards.ctfDesc': h.modeCards.ctfDesc,
     'modeCards.project': h.modeCards.project,
     'modeCards.projectDesc': h.modeCards.projectDesc
   }

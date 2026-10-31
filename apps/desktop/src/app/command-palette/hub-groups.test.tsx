@@ -20,7 +20,6 @@ import {
   tabCompletionValue,
   type PaletteItem
 } from './index'
-import { sessionBadgeKind } from './session-marks'
 
 // Step 16 · T8 (方案 §3-T8): the four work-hub zones + keyboard conventions +
 // the three states. Assertions run against the REAL exported builders the
@@ -52,21 +51,18 @@ describe('buildActionZoneGroups (T8 动作区)', () => {
   const [group] = buildActionZoneGroups({ onNewSession, onRunSecurityAudit, t })
   const byId = (id: string): PaletteItem => group!.items.find(item => item.id === id)!
 
-  it('heads the palette with the actions zone and the three work-mode rows', () => {
+  it('heads the palette with the actions zone and the work-mode row', () => {
     expect(group!.heading).toBe(cc.zones.actions)
-    expect(byId('action-new-forensics').label).toBe(cc.newForensics)
-    expect(byId('action-new-ctf').label).toBe(cc.newCtf)
     expect(byId('action-new-coding').label).toBe(cc.newCodingTask)
   })
 
-  it('wires the three-mode rows through the kind-payload seam', () => {
-    byId('action-new-forensics').run!()
-    byId('action-new-ctf').run!()
+  it('wires the new-session row to the new-session action', () => {
     byId('action-new-coding').run!()
 
-    expect(onNewSession).toHaveBeenNthCalledWith(1, 'forensics')
-    expect(onNewSession).toHaveBeenNthCalledWith(2, 'ctf')
-    expect(onNewSession).toHaveBeenNthCalledWith(3, 'project')
+    // The row used to carry a work-mode `kind` ('project'); the modes were
+    // removed in P1 and nothing consumed the payload, so the action is a plain
+    // no-argument call now.
+    expect(onNewSession).toHaveBeenCalledWith()
   })
 
   it('offers the REAL audit action (run + tail), never a fabricated export', () => {
@@ -100,18 +96,6 @@ describe('buildRecentSessionGroups (T8 会话区, empty palette)', () => {
     expect((group!.items[0]!.lead as { type: unknown }).type).toBe(SessionStatusDot)
   })
 
-  it('paints NO kind badge while the kind data layer is missing (honest, T8-4)', () => {
-    // The seam answers 'project' for everything today; the badge must be
-    // absent — a 取证/CTF badge on a kind-less session would be fabricated.
-    expect(sessionBadgeKind(session({}))).toBeNull()
-
-    const [group] = buildRecentSessionGroups({ heading: cc.zones.sessions, openSession, sessions })
-
-    for (const item of group!.items) {
-      expect(item.badge).toBeUndefined()
-    }
-  })
-
   it('renders no zone at all when there is nothing to list (no fabricated rows)', () => {
     expect(buildRecentSessionGroups({ heading: cc.zones.sessions, openSession, sessions: [] })).toEqual([])
   })
@@ -134,21 +118,6 @@ describe('buildPageZoneGroups (T8 页面区)', () => {
 
     expect(ids).toContain('nav-webhooks')
     expect(ids).toContain('nav-command-center')
-  })
-
-  it('lands the /cases overview as a REAL link since T14 — navigates to the registered route', () => {
-    const cases = group!.items.find(item => item.id === 'nav-cases')!
-
-    // T14 promoted the T8-4 disabled placeholder: the row now carries the
-    // registered /cases route as its run action — never a dead link, in
-    // either direction (disabled placeholder OR unregistered route).
-    expect(cases.disabled).toBeUndefined()
-    expect(cases.detail).toBeUndefined()
-    expect(cases.run).toBeTypeOf('function')
-    cases.run!()
-
-    expect(go).toHaveBeenCalledWith('/cases')
-    expect(cases.to).toBeUndefined()
   })
 
   it('keeps the nested search-sessions page reachable via `to`', () => {

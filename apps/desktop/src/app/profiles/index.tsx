@@ -39,7 +39,22 @@ interface ProfilesViewProps {
   onClose: () => void
 }
 
+// Overlay page (`/profiles`): the shared Panel shell plus the content below.
 export function ProfilesView({ onClose }: ProfilesViewProps) {
+  const { t } = useI18n()
+
+  return (
+    <Panel closeLabel={t.profiles.close} onClose={onClose}>
+      <ProfilesContent />
+    </Panel>
+  )
+}
+
+// The page body, shell-free so Settings can mount it as a sub-page
+// (`/settings?tab=profiles`). `embedded` only changes the layout wrapper: the
+// settings pane scrolls the page instead of clipping it to a fixed overlay
+// height, so the master/detail body needs a height to flex against.
+export function ProfilesContent({ embedded = false }: { embedded?: boolean }) {
   const { t } = useI18n()
   const p = t.profiles
   const [profiles, setProfiles] = useState<null | ProfileInfo[]>(null)
@@ -103,7 +118,7 @@ export function ProfilesView({ onClose }: ProfilesViewProps) {
   )
 
   return (
-    <Panel closeLabel={p.close} onClose={onClose}>
+    <div className={embedded ? 'flex min-h-[32rem] flex-col pt-4' : 'contents'}>
       {!profiles ? (
         <PageLoader label={p.loading} />
       ) : profiles.length === 0 ? (
@@ -186,7 +201,7 @@ export function ProfilesView({ onClose }: ProfilesViewProps) {
         open={pendingDelete !== null}
         profile={pendingDelete}
       />
-    </Panel>
+    </div>
   )
 }
 

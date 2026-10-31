@@ -14,9 +14,7 @@ const TONE_BG: Record<StatusTone, string> = {
 
 /** The Workbench status vocabulary (DESIGN_PROPOSAL §3.5). Every surface
  *  paints a status from this one table — a per-page dot that disagrees with
- *  its neighbours is a bug, not a style. Mode colours (forensics=info,
- *  CTF=accentBright, project=success) ride the same 6px size but are kind
- *  markers, not states; they never replace a status state. */
+ *  its neighbours is a bug, not a style. */
 export type StatusDotState = 'background' | 'failed' | 'needs-input' | 'running' | 'stalled'
 
 export const STATUS_DOT_STATE_CLASS: Record<StatusDotState, string> = {

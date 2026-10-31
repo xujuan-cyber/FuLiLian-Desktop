@@ -147,10 +147,7 @@ import {
 } from '../../routes'
 import type { SidebarNavItem } from '../../types'
 
-import { SidebarKindGroups } from './container-groups'
-import { kindGroupsVisible } from './container-kind'
 import { SidebarCronJobsSection } from './cron-jobs-section'
-import { SidebarFilterMenu } from './filter-menu'
 import { SidebarGatewayStatusRow } from './gateway-status-row'
 import { SidebarLoadMoreRow } from './load-more-row'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
@@ -177,6 +174,7 @@ import {
 } from './projects'
 import { WorktreeDialog } from './projects/worktree-dialog'
 import { SidebarBlankState, SidebarSessionSkeletons } from './section-states'
+import { SidebarFilterMenu } from './session-filter-menu'
 import { buildSessionByAnyId, resolvePinnedSessions } from './session-index'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 import { CONTEXT_SPLIT_KIT, SplitSubmenu } from './split-submenu'
@@ -456,11 +454,6 @@ export function ChatSidebar({
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
   const paletteCombo = useStore($bindings)['nav.commandPalette']?.[0]
   const paletteKbd = paletteCombo ? comboTokens(paletteCombo) : []
-  // The kind chips row is gone: `sessionContainerKind()` is a constant
-  // `'project'`, so the forensics/CTF chips could only ever filter into empty
-  // groups. The pinned filter keeps every `kindVisible.*` read below at its
-  // long-standing value.
-  const kindVisible = kindGroupsVisible('project')
   const [newSessionKbdFlash, setNewSessionKbdFlash] = useState(false)
   const [messagingLoadMorePending, setMessagingLoadMorePending] = useState<Record<string, boolean>>({})
   const [recentsLoadMorePending, setRecentsLoadMorePending] = useState(false)
@@ -1573,16 +1566,11 @@ export function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* The forensics/CTF container groups are SIDEBAR STRUCTURE, not
-            session-area content: they render even when the gateway is offline
-            and the session area collapses to its blank state — an honestly
-            empty group IS the body there. Pinned to the only kind that exists
-            today (`sessionContainerKind()` is a constant `'project'`), so they
-            render nothing; the wrapper keeps the section break the removed
-            kind-chips row used to carry. */}
-        <div className="mt-5 shrink-0">
-          <SidebarKindGroups filter="project" />
-        </div>
+        {/* Section break between the nav group and the session area. It used to
+            ride on the removed work-mode groups wrapper (which carried `mt-5`);
+            the spacer keeps that 20px so the settings row doesn't butt up
+            against the session groups. */}
+        <div aria-hidden="true" className="mt-5 shrink-0" />
 
         {showSessionSections && (
           <div
@@ -1590,7 +1578,7 @@ export function ChatSidebar({
             data-sessions-mode={sessionsMode}
             data-sessions-project={inProject ? (enteredProjectId ?? undefined) : undefined}
           >
-            {kindVisible.project && pinnedSessions.length > 0 && (
+            {pinnedSessions.length > 0 && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
                 contentClassName="flex flex-col gap-0.5 pb-2"
@@ -1614,196 +1602,193 @@ export function ChatSidebar({
               />
             )}
 
-            {kindVisible.project && (
-              <SidebarSessionsSection
-                activeProjectId={activeProjectId}
-                activeSessionId={activeSidebarSessionId}
-                // Inbox style is a render variant, not a grouping — it rides
-                // whichever view is active: flat recents, project lanes, and
-                // the overview previews all render the same card.
-                card={cardRows}
-                collapsible={!inProject}
-                contentClassName={cn(
-                  'flex min-h-0 flex-1 flex-col gap-0.5 pb-1.75',
-                  // The section is the ONE authority on whether the virtual
-                  // list owns scrolling: it neutralizes this wrapper scroller
-                  // itself (overflow-visible) when it virtualizes. Gating
-                  // SCROLL_Y here on index's own parallel guess desynced the
-                  // two — a cached project tree flipped this side but not the
-                  // section's, leaving the list with no scroller at all and
-                  // the recents pane rendering blank under Updated grouping.
-                  SCROLL_Y,
-                  // Flatten into the single scroll when compact — unless this is the
-                  // virtualized long list, which must keep its own scroller.
-                  !recentsVirtualizes && COMPACT_FLAT
-                )}
-                dndSensors={dndSensors}
-                emptyState={
-                  showSessionSkeletons ? (
-                    <SidebarSessionSkeletons />
-                  ) : (
-                    <div className="grid min-h-16 place-items-center rounded-lg px-2 text-center text-xs text-(--ui-text-tertiary)">
-                      {inProject
-                        ? s.projectEmpty
-                        : filtersActive
-                          ? s.noFilterMatches
-                          : pinnedSessions.length > 0
-                            ? s.allPinned
-                            : s.noSessions}
-                    </div>
-                  )
-                }
-                footer={
-                  // Hidden only when workspace-grouped — those groups page
-                  // themselves. Profile groups don't: this one footer fetches the
-                  // next page, which grows every profile at once.
-                  !agentsGrouped && !showSessionSkeletons && hasMoreSessions ? (
-                    <SidebarLoadMoreRow
-                      loading={sessionsLoading || recentsLoadMorePending}
-                      onClick={() => void onLoadMoreRecents()}
-                      // Recents are post-filtered to non-project sessions, so a
-                      // backend page size (50) is not a truthful "rows you'll
-                      // see" count. Use the generic label instead of a fake N.
-                      step={0}
-                    />
-                  ) : null
-                }
-                forceEmptyState={showSessionSkeletons}
-                // Archived is a plain list, and so is a magnitude-ranked one.
-                // Otherwise project lanes stay chronological whatever the flat
-                // list does — only the flat list can swap its dividers for
-                // WORKING / DONE.
-                grouping={showArchived || rankedGlobally ? 'none' : grouping === 'status' ? 'status' : 'date'}
-                groups={displayAgentGroups}
-                headerAction={
-                  // One cluster, not a fragment: the header is justify-between,
-                  // so two children (mark-all + the rest) park the check-all in
-                  // the middle as a blank 24px hole until hover.
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    {unreadCount > 0 && (
-                      <Tip label={s.markAllRead}>
-                        <Button
-                          aria-label={s.markAllRead}
-                          className={HEADER_ACTION_BTN}
-                          onClick={event => {
-                            event.stopPropagation()
-                            markAllSessionsRead()
-                            // Ack the persisted layer too, or the next list
-                            // refresh repaints every dot just dismissed.
-                            ackAllSessionsRead()
-                          }}
-                          size="icon-xs"
-                          variant="ghost"
-                        >
-                          <Codicon name="check-all" size="0.75rem" />
-                        </Button>
-                      </Tip>
-                    )}
-                    {inProject && enteredProject ? (
-                      <div className="group/workspace flex shrink-0 items-center gap-0.5">
-                        {enteredProject.path && <StartWorkButton repoPath={enteredProject.path} />}
-                        {/* Home has no folder and no record to rename, theme, or delete. */}
-                        {!enteredProject.isNoProject && (
-                          <ProjectMenu
-                            isActive={enteredProject.id === activeProjectId}
-                            onExitScope={exitProjectScope}
-                            project={enteredProject}
-                            scoped
-                          />
-                        )}
-                        <div className="grid size-6 place-items-center">
-                          <Tip label={s.showProjects}>
-                            <Button
-                              aria-label={s.showProjects}
-                              className={HEADER_NAV_BTN}
-                              onClick={event => {
-                                event.stopPropagation()
-                                exitProjectScope()
-                              }}
-                              size="icon-xs"
-                              variant="ghost"
-                            >
-                              <Codicon name="list-unordered" size="0.75rem" />
-                            </Button>
-                          </Tip>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {!showAllProfiles ? (
-                          <Tip label={agentsGrouped ? s.projects.newButton : s.nav['new-session']}>
-                            <Button
-                              aria-label={agentsGrouped ? s.projects.newButton : s.nav['new-session']}
-                              className={HEADER_ACTION_BTN}
-                              onClick={event => {
-                                event.stopPropagation()
-
-                                if (agentsGrouped) {
-                                  openProjectCreate()
-                                } else {
-                                  onNewSessionInWorkspace(null)
-                                }
-                              }}
-                              size="icon-xs"
-                              variant="ghost"
-                            >
-                              <Codicon name="add" size="0.75rem" />
-                            </Button>
-                          </Tip>
-                        ) : null}
-                        <div className="grid size-6 place-items-center">
-                          <SidebarFilterMenu className={HEADER_NAV_BTN} />
-                        </div>
-                      </>
-                    )}
+            <SidebarSessionsSection
+              activeProjectId={activeProjectId}
+              activeSessionId={activeSidebarSessionId}
+              // Inbox style is a render variant, not a grouping — it rides
+              // whichever view is active: flat recents, project lanes, and
+              // the overview previews all render the same card.
+              card={cardRows}
+              collapsible={!inProject}
+              contentClassName={cn(
+                'flex min-h-0 flex-1 flex-col gap-0.5 pb-1.75',
+                // The section is the ONE authority on whether the virtual
+                // list owns scrolling: it neutralizes this wrapper scroller
+                // itself (overflow-visible) when it virtualizes. Gating
+                // SCROLL_Y here on index's own parallel guess desynced the
+                // two — a cached project tree flipped this side but not the
+                // section's, leaving the list with no scroller at all and
+                // the recents pane rendering blank under Updated grouping.
+                SCROLL_Y,
+                // Flatten into the single scroll when compact — unless this is the
+                // virtualized long list, which must keep its own scroller.
+                !recentsVirtualizes && COMPACT_FLAT
+              )}
+              dndSensors={dndSensors}
+              emptyState={
+                showSessionSkeletons ? (
+                  <SidebarSessionSkeletons />
+                ) : (
+                  <div className="grid min-h-16 place-items-center rounded-lg px-2 text-center text-xs text-(--ui-text-tertiary)">
+                    {inProject
+                      ? s.projectEmpty
+                      : filtersActive
+                        ? s.noFilterMatches
+                        : pinnedSessions.length > 0
+                          ? s.allPinned
+                          : s.noSessions}
                   </div>
-                }
-                label={sessionsLabel}
-                labelMeta={
-                  worktreeGroupingActive ? (
-                    reposScanning && !projectsSkeletonVisible ? (
-                      <GlyphSpinner ariaLabel={s.loading} className="text-[0.6875rem] text-(--ui-text-quaternary)" />
-                    ) : undefined
-                  ) : undefined
-                }
-                liveSessions={inProject ? agentSessions : undefined}
-                manualOrderIds={agentOrderManual ? agentOrderIds : sortOrderIds}
-                onArchiveSession={onArchiveSession}
-                onBranchSession={onBranchSession}
-                onDeleteSession={onDeleteSession}
-                onEnterProject={onEnterProject}
-                // Unlike reorder below, this stays on across profiles: a folder
-                // is a folder, and the new session lands in the active profile
-                // — the same one the composer would have started it in.
-                onNewSessionInWorkspace={onNewSessionInWorkspace}
-                onReorderProjects={showAllProfiles ? undefined : reorderProjects}
-                onReorderSessions={showAllProfiles ? undefined : reorderSessions}
-                onResumeSession={onResumeSession}
-                onToggle={() => setSidebarRecentsOpen(!agentsOpen)}
-                onTogglePin={pinSession}
-                onToggleUnread={toggleUnread}
-                open={agentsOpen}
-                pinned={false}
-                projectBackRow={
-                  inProject ? <ProjectBackRow label={s.projects.back} onClick={exitProjectScope} /> : undefined
-                }
-                projectContent={inProject ? enteredProjectContent : undefined}
-                projectOverview={projectOverview}
-                projectOverviewPreviews={overviewPreviews}
-                projectRepoWorktrees={inProject ? scopedRepoWorktrees : undefined}
-                projectsLoading={worktreeGroupingActive ? projectTreeLoading : false}
-                removedSessionIds={inProject ? removedSessionIds : undefined}
-                rootClassName={cn(
-                  'min-h-32 flex-1 overflow-hidden p-0',
-                  !recentsVirtualizes && 'compact:min-h-0 compact:flex-none compact:overflow-visible'
-                )}
-                sessions={displayAgentSessions}
-                sortable={!showAllProfiles && agentSessions.length > 1}
-              />
-            )}
+                )
+              }
+              footer={
+                // Hidden only when workspace-grouped — those groups page
+                // themselves. Profile groups don't: this one footer fetches the
+                // next page, which grows every profile at once.
+                !agentsGrouped && !showSessionSkeletons && hasMoreSessions ? (
+                  <SidebarLoadMoreRow
+                    loading={sessionsLoading || recentsLoadMorePending}
+                    onClick={() => void onLoadMoreRecents()}
+                    // Recents are post-filtered to non-project sessions, so a
+                    // backend page size (50) is not a truthful "rows you'll
+                    // see" count. Use the generic label instead of a fake N.
+                    step={0}
+                  />
+                ) : null
+              }
+              forceEmptyState={showSessionSkeletons}
+              // Archived is a plain list, and so is a magnitude-ranked one.
+              // Otherwise project lanes stay chronological whatever the flat
+              // list does — only the flat list can swap its dividers for
+              // WORKING / DONE.
+              grouping={showArchived || rankedGlobally ? 'none' : grouping === 'status' ? 'status' : 'date'}
+              groups={displayAgentGroups}
+              headerAction={
+                // One cluster, not a fragment: the header is justify-between,
+                // so two children (mark-all + the rest) park the check-all in
+                // the middle as a blank 24px hole until hover.
+                <div className="flex shrink-0 items-center gap-0.5">
+                  {unreadCount > 0 && (
+                    <Tip label={s.markAllRead}>
+                      <Button
+                        aria-label={s.markAllRead}
+                        className={HEADER_ACTION_BTN}
+                        onClick={event => {
+                          event.stopPropagation()
+                          markAllSessionsRead()
+                          // Ack the persisted layer too, or the next list
+                          // refresh repaints every dot just dismissed.
+                          ackAllSessionsRead()
+                        }}
+                        size="icon-xs"
+                        variant="ghost"
+                      >
+                        <Codicon name="check-all" size="0.75rem" />
+                      </Button>
+                    </Tip>
+                  )}
+                  {inProject && enteredProject ? (
+                    <div className="group/workspace flex shrink-0 items-center gap-0.5">
+                      {enteredProject.path && <StartWorkButton repoPath={enteredProject.path} />}
+                      {/* Home has no folder and no record to rename, theme, or delete. */}
+                      {!enteredProject.isNoProject && (
+                        <ProjectMenu
+                          isActive={enteredProject.id === activeProjectId}
+                          onExitScope={exitProjectScope}
+                          project={enteredProject}
+                          scoped
+                        />
+                      )}
+                      <div className="grid size-6 place-items-center">
+                        <Tip label={s.showProjects}>
+                          <Button
+                            aria-label={s.showProjects}
+                            className={HEADER_NAV_BTN}
+                            onClick={event => {
+                              event.stopPropagation()
+                              exitProjectScope()
+                            }}
+                            size="icon-xs"
+                            variant="ghost"
+                          >
+                            <Codicon name="list-unordered" size="0.75rem" />
+                          </Button>
+                        </Tip>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {!showAllProfiles ? (
+                        <Tip label={agentsGrouped ? s.projects.newButton : s.nav['new-session']}>
+                          <Button
+                            aria-label={agentsGrouped ? s.projects.newButton : s.nav['new-session']}
+                            className={HEADER_ACTION_BTN}
+                            onClick={event => {
+                              event.stopPropagation()
 
-            {kindVisible.project &&
-              !worktreeGroupingActive &&
+                              if (agentsGrouped) {
+                                openProjectCreate()
+                              } else {
+                                onNewSessionInWorkspace(null)
+                              }
+                            }}
+                            size="icon-xs"
+                            variant="ghost"
+                          >
+                            <Codicon name="add" size="0.75rem" />
+                          </Button>
+                        </Tip>
+                      ) : null}
+                      <div className="grid size-6 place-items-center">
+                        <SidebarFilterMenu className={HEADER_NAV_BTN} />
+                      </div>
+                    </>
+                  )}
+                </div>
+              }
+              label={sessionsLabel}
+              labelMeta={
+                worktreeGroupingActive ? (
+                  reposScanning && !projectsSkeletonVisible ? (
+                    <GlyphSpinner ariaLabel={s.loading} className="text-[0.6875rem] text-(--ui-text-quaternary)" />
+                  ) : undefined
+                ) : undefined
+              }
+              liveSessions={inProject ? agentSessions : undefined}
+              manualOrderIds={agentOrderManual ? agentOrderIds : sortOrderIds}
+              onArchiveSession={onArchiveSession}
+              onBranchSession={onBranchSession}
+              onDeleteSession={onDeleteSession}
+              onEnterProject={onEnterProject}
+              // Unlike reorder below, this stays on across profiles: a folder
+              // is a folder, and the new session lands in the active profile
+              // — the same one the composer would have started it in.
+              onNewSessionInWorkspace={onNewSessionInWorkspace}
+              onReorderProjects={showAllProfiles ? undefined : reorderProjects}
+              onReorderSessions={showAllProfiles ? undefined : reorderSessions}
+              onResumeSession={onResumeSession}
+              onToggle={() => setSidebarRecentsOpen(!agentsOpen)}
+              onTogglePin={pinSession}
+              onToggleUnread={toggleUnread}
+              open={agentsOpen}
+              pinned={false}
+              projectBackRow={
+                inProject ? <ProjectBackRow label={s.projects.back} onClick={exitProjectScope} /> : undefined
+              }
+              projectContent={inProject ? enteredProjectContent : undefined}
+              projectOverview={projectOverview}
+              projectOverviewPreviews={overviewPreviews}
+              projectRepoWorktrees={inProject ? scopedRepoWorktrees : undefined}
+              projectsLoading={worktreeGroupingActive ? projectTreeLoading : false}
+              removedSessionIds={inProject ? removedSessionIds : undefined}
+              rootClassName={cn(
+                'min-h-32 flex-1 overflow-hidden p-0',
+                !recentsVirtualizes && 'compact:min-h-0 compact:flex-none compact:overflow-visible'
+              )}
+              sessions={displayAgentSessions}
+              sortable={!showAllProfiles && agentSessions.length > 1}
+            />
+
+            {!worktreeGroupingActive &&
               messagingGroups.map(group => {
                 const visible = messagingVisible[group.sourceId] ?? NON_SESSION_INITIAL_ROWS
                 const shownSessions = group.sessions.slice(0, visible)
@@ -1848,7 +1833,7 @@ export function ChatSidebar({
                 )
               })}
 
-            {kindVisible.project && !worktreeGroupingActive && cronJobs.length > 0 && (
+            {!worktreeGroupingActive && cronJobs.length > 0 && (
               <SidebarCronJobsSection
                 jobs={cronJobs}
                 label={s.cronJobs}
@@ -1862,7 +1847,7 @@ export function ChatSidebar({
           </div>
         )}
 
-        {!showSessionSections && kindVisible.project && <SidebarBlankState onNewProject={openProjectCreate} />}
+        {!showSessionSections && <SidebarBlankState onNewProject={openProjectCreate} />}
 
         {/* Profile / Fleet strip: kept as a standing shortcut above the dock —
             switching a profile is a per-session decision, not a settings

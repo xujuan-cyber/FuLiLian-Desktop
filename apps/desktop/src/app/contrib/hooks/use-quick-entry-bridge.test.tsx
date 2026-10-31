@@ -91,19 +91,19 @@ describe('useQuickEntryBridge capture routing (step 16 · T7)', () => {
     stashSessionDraft('s1', 'already typed thoughts', [])
     render(<Harness />)
 
-    inboundHandler?.({ mode: 'ctf', target: 's1', text: 'rop gadget notes' })
+    inboundHandler?.({ mode: 'project', target: 's1', text: 'wire up the cache layer' })
 
     const drafts = draftsFromStorage()
-    expect(drafts.s1).toBe('already typed thoughts\n\nrop gadget notes')
+    expect(drafts.s1).toBe('already typed thoughts\n\nwire up the cache layer')
     expect(submitText).not.toHaveBeenCalled()
   })
 
   it('a target that is not a real slot still lands as a draft keyed by its id', () => {
     render(<Harness />)
 
-    inboundHandler?.({ mode: 'forensics', target: 's9', text: 'chain of custody' })
+    inboundHandler?.({ mode: 'project', target: 's9', text: 'sketch the schema' })
 
-    expect(draftsFromStorage().s9).toBe('chain of custody')
+    expect(draftsFromStorage().s9).toBe('sketch the schema')
   })
 
   it('the LEGACY payload (no mode) keeps the v1 prompt-send routing', () => {

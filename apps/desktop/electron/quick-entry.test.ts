@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createQuickEntryShortcut,
   DEFAULT_QUICK_ENTRY_SHORTCUT,
-  formatQuickCaptureAuditLine,
   type GlobalShortcutLike,
   parseQuickEntryShortcut,
   quickEntryWindowBounds,
@@ -280,41 +279,5 @@ describe('merged capture chord (step 16 · T7)', () => {
     expect(held.has('CommandOrControl+Shift+Space')).toBe(false)
     expect(held.has('Alt+Q')).toBe(true)
     expect(controller.current()).toEqual({ error: null, registered: true, shortcut: 'Alt+Q' })
-  })
-})
-
-// Step 16 · T7 forensics audit trail: a forensics-mode capture MUST leave a
-// structured desktop.log line (fixed marker, mode/target/length/outcome — the
-// captured content itself never appears). These pin the exact trail.
-describe('formatQuickCaptureAuditLine (step 16 · T7 forensics audit)', () => {
-  it('a forwarded forensics capture leaves the full structured line without the content', () => {
-    expect(formatQuickCaptureAuditLine({ mode: 'forensics', target: 's1' }, 42, 'forwarded')).toBe(
-      '[quick-capture:audit] mode=forensics target=s1 chars=42 outcome=forwarded'
-    )
-  })
-
-  it('the dropped outcome still records the attempted forensics capture', () => {
-    expect(formatQuickCaptureAuditLine({ mode: 'forensics', target: 'new' }, 7, 'dropped-no-primary-window')).toBe(
-      '[quick-capture:audit] mode=forensics target=new chars=7 outcome=dropped-no-primary-window'
-    )
-  })
-
-  it('non-forensics modes and the legacy (mode-less) shape are not audit-mandatory', () => {
-    expect(formatQuickCaptureAuditLine({ mode: 'note', target: 'note' }, 10, 'forwarded')).toBeNull()
-    expect(formatQuickCaptureAuditLine({ mode: 'ctf', target: 'new' }, 10, 'forwarded')).toBeNull()
-    expect(formatQuickCaptureAuditLine({ mode: 'project', target: 'new' }, 10, 'forwarded')).toBeNull()
-    expect(formatQuickCaptureAuditLine({}, 10, 'forwarded')).toBeNull()
-  })
-
-  it('log-injection-proof: whitespace, control chars, and `=` in the target collapse to underscores', () => {
-    expect(formatQuickCaptureAuditLine({ mode: 'forensics', target: 'bad target\nINJECTED=lines' }, 1, 'forwarded')).toBe(
-      '[quick-capture:audit] mode=forensics target=bad_target_INJECTED_lines chars=1 outcome=forwarded'
-    )
-  })
-
-  it('an absent target falls back to the unknown atom instead of producing an empty pair', () => {
-    expect(formatQuickCaptureAuditLine({ mode: 'forensics' }, 3, 'forwarded')).toBe(
-      '[quick-capture:audit] mode=forensics target=unknown chars=3 outcome=forwarded'
-    )
   })
 })

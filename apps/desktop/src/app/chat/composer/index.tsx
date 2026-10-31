@@ -4,7 +4,6 @@ import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useCallback, u
 import { useNavigate } from 'react-router'
 
 import { composerFloatingStrip } from '@/app/chat/composer/composer-dock'
-import { sessionContainerKind } from '@/app/chat/sidebar/container-kind'
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { openSession } from '@/app/open-session'
@@ -40,7 +39,6 @@ import {
   type QueueEditState,
   slashArgStage
 } from './composer-utils'
-import { ContainerPills } from './container-pills'
 import { ContextMenu } from './context-menu'
 import { COMPOSER_AREAS, runComposerMiddleware } from './contrib'
 import { ComposerControls } from './controls'
@@ -1280,10 +1278,6 @@ export function ChatBar({
           <div className={cn(composerFloatingStrip, inline ? 'px-0' : 'px-[5px]', 'pb-1.5 empty:hidden')}>
             <ActionBadges sessionId={statusSessionId} />
             <SuggestionPills sessionId={statusSessionId} />
-            {/* Work-mode metadata pills (§7 映射行) — static placeholders that
-                render nothing while every session is a project (no kind data
-                layer); the seam is the same sessionContainerKind() lookup. */}
-            <ContainerPills kind={sessionContainerKind()} />
           </div>
           {/* Session-scoped status stack (todos, subagents, background tasks,
               queue). An in-flow dock child: the dock is bottom-anchored, so it

@@ -1,7 +1,7 @@
 // System tray + close-to-tray controller (step 16 · T6).
 //
 // The tray is the desktop's always-on surface: it carries the aggregate session
-// status (running / needs-input), the three new-task entries, one row per live
+// status (running / needs-input), the new-task entry, one row per live
 // session, "open main window", and a REAL quit. The main window's close button
 // hides to the tray instead of tearing the app down, unless the user turned
 // that off — and never when the app is genuinely quitting (tray quit, Cmd-Q, or
@@ -26,7 +26,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { app, ipcMain, Menu, Tray, nativeImage } from 'electron'
+import { app, ipcMain, Menu, nativeImage, Tray } from 'electron'
 
 // ── Menu copy ───────────────────────────────────────────────────────────────
 // Keys, not strings: the main process has no i18n runtime, so the renderer
@@ -34,21 +34,12 @@ import { app, ipcMain, Menu, Tray, nativeImage } from 'electron'
 // key. The English table below is the last-resort fallback (a snapshot that
 // arrives before the renderer's locale is ready).
 
-export type TrayMenuLabelKey =
-  | 'needsInputHeading'
-  | 'newCtf'
-  | 'newForensics'
-  | 'newProject'
-  | 'openMainWindow'
-  | 'quit'
-  | 'runningHeading'
+export type TrayMenuLabelKey = 'needsInputHeading' | 'newProject' | 'openMainWindow' | 'quit' | 'runningHeading'
 
 export type TrayMenuLabels = Record<TrayMenuLabelKey, string>
 
 export const EMPTY_TRAY_LABELS: TrayMenuLabels = {
   needsInputHeading: 'Needs input',
-  newCtf: 'New CTF challenge',
-  newForensics: 'New forensics case',
   newProject: 'New coding task',
   openMainWindow: 'Open main window',
   quit: 'Quit',
@@ -57,10 +48,9 @@ export const EMPTY_TRAY_LABELS: TrayMenuLabels = {
 
 // ── Session snapshot ────────────────────────────────────────────────────────
 
-/** The three work-mode containers (DESIGN_PROPOSAL §4.1). The tray's new-task
- *  entries write the kind verbatim so the renderer's creation flow can key on
- *  it — no re-derivation here. */
-export type TraySessionKind = 'ctf' | 'forensics' | 'project'
+/** The tray's new-task entry writes its kind verbatim so the renderer's
+ *  creation flow can key on it — no re-derivation here. */
+export type TraySessionKind = 'project'
 
 export interface TraySessionRow {
   id: string
@@ -79,11 +69,9 @@ export interface TrayStatePayload extends TraySnapshot {
   labels: TrayMenuLabels
 }
 
-/** Accelerators shown beside the fixed entries. Ctrl+1/2/3 match the
- *  new-task shortcuts the workbench keybind table documents. */
+/** Accelerator shown beside the fixed new-task entry. Ctrl+3 matches the
+ *  new-task shortcut the keybind table documents. */
 export const TRAY_ACCELERATORS = {
-  newCtf: 'CommandOrControl+2',
-  newForensics: 'CommandOrControl+1',
   newProject: 'CommandOrControl+3',
   openMainWindow: 'CommandOrControl+Shift+F'
 } as const
@@ -94,7 +82,7 @@ export type TrayMenuModelItem =
   | { type: 'separator' }
   | {
       accelerator: string
-      labelKey: 'newCtf' | 'newForensics' | 'newProject'
+      labelKey: 'newProject'
       sessionKind: TraySessionKind
       type: 'new-session'
     }
@@ -176,19 +164,12 @@ function appendGroup(
 
 /**
  * The tray menu as data. Order is the contract (mirrors the 06 preview's
- * bottom-right popover): three new-task entries, then the running group, then
+ * bottom-right popover): the new-task entry, then the running group, then
  * the needs-input group, then open-main, then quit — separators only where a
  * block actually exists.
  */
 export function buildTrayMenuModel(snapshot: TraySnapshot): TrayMenuModelItem[] {
   const items: TrayMenuModelItem[] = [
-    {
-      accelerator: TRAY_ACCELERATORS.newForensics,
-      labelKey: 'newForensics',
-      sessionKind: 'forensics',
-      type: 'new-session'
-    },
-    { accelerator: TRAY_ACCELERATORS.newCtf, labelKey: 'newCtf', sessionKind: 'ctf', type: 'new-session' },
     { accelerator: TRAY_ACCELERATORS.newProject, labelKey: 'newProject', sessionKind: 'project', type: 'new-session' }
   ]
 
@@ -468,20 +449,26 @@ function trayTemplate(
     switch (item.type) {
       case 'separator':
         return { type: 'separator' as const }
+
       case 'heading':
         return { enabled: false, label: `${labels[item.labelKey]} · ${item.count}` }
+
       case 'session':
         return { click: () => actions.focusSession(item.sessionId), label: item.title }
+
       case 'new-session':
         return {
           accelerator: item.accelerator,
           click: () => actions.newSession(item.sessionKind),
           label: labels[item.labelKey]
         }
+
       case 'open-main':
         return { accelerator: item.accelerator, click: () => actions.openMainWindow(), label: labels[item.labelKey] }
+
       case 'quit':
         return { click: () => actions.quit(), label: labels[item.labelKey] }
+
       default:
         return { type: 'separator' as const }
     }

@@ -351,67 +351,13 @@ export interface Translations {
     noResults: string
   }
 
-  container: {
-    meta: {
-      project: string
-      forensics: string
-      ctf: string
-      caseNo: string
-      statsEvidence: string
-      statsAudit: string
-      statsReport: string
-      event: string
-      categoryPoints: string
-      countdown: string
-      countdownNone: string
-    }
-    cards: {
-      evidenceTitle: string
-      evidenceEmpty: string
-      auditTitle: string
-      auditEmpty: string
-      flagVaultTitle: string
-      flagEmpty: string
-      submissionsTitle: string
-      submissionsEmpty: string
-      toolboxTitle: string
-      toolboxEmpty: string
-    }
-    pills: {
-      caseNo: string
-      evidence: string
-      categoryPoints: string
-      countdown: string
-      countdownNone: string
-      emptyValue: string
-    }
-  }
 
   // Three-mode first-use guide (step 16 · T18-1, 方案 §5-T18 /
   // DESIGN_PROPOSAL §4.4). `project` never guides; forensics / ctf show once.
-  modeOnboarding: {
-    forensicsTitle: string
-    forensicsIntro: string
-    scopeHeading: string
-    scopeStatement: string
-    guardHeading: string
-    guardReadonly: string
-    guardWrite: string
-    guardHash: string
-    ctfTitle: string
-    ctfIntro: string
-    vaultHeading: string
-    vaultMask: string
-    vaultAudit: string
-    confirm: string
-    confirmHint: string
-  }
 
   // System tray (step 16 · T6). The renderer resolves these and pushes them
   // with each snapshot — the main process has no i18n runtime of its own.
   tray: {
-    newForensics: string
-    newCtf: string
     newProject: string
     runningHeading: string
     needsInputHeading: string
@@ -455,112 +401,11 @@ export interface Translations {
   }
 
   // Case timeline page (step 16 · T13, 方案 §5-T13) — 预览 07 的取证时间线分析.
-  caseTimeline: {
-    /** Page-head title (the「· 时间线」suffix). */
-    title: string
-    back: string
-    statEvents: (count: number) => string
-    /** Mock-provenance banner: the dataset is NOT real extraction. */
-    mockBanner: string
-    saveAsFinding: string
-    exportCsv: string
-    addToReport: string
-    savedAsFinding: string
-    addedToReport: string
-    exportCsvFailed: string
-    /** Left rail headings. */
-    sourcesHeading: string
-    rangeHeading: string
-    confidenceHeading: string
-    tagsHeading: string
-    starredOnlyChip: string
-    confidenceFloor: (min: number) => string
-    /** Histogram. */
-    histogramTitle: string
-    histogramAggregate: string
-    histogramDrag: (from: string, to: string) => string
-    histogramEmpty: string
-    /** Event table. */
-    columnTime: string
-    columnSource: string
-    columnEvent: string
-    columnConfidence: string
-    columnTags: string
-    sourceRegistry: string
-    sourceLog: string
-    sourcePcap: string
-    sourceFile: string
-    /** Table footer (counts + the T16 seam note). */
-    footerTotal: (total: number) => string
-    footerFiltered: (filtered: number) => string
-    footerStarred: (starred: number) => string
-    footerStarSeam: string
-    /** States. */
-    loading: string
-    loadFailed: string
-    empty: string
-    emptyFiltered: string
-    /** Rows per source count in the rail. */
-    sourceCount: (count: number) => string
-  }
 
   // Report & export pipeline (step 16 · T16, 方案 §5-T16) — the unified
   // export entry (MD→PDF / CSV / audit JSONL) + section template UI.
-  reportCenter: {
-    title: string
-    back: string
-    open: string
-    caseLabel: string
-    draftHeading: string
-    /** Honest provenance note: real starred findings only; the complete
-     *  writeup stays with the Python sidecar (writeup.py seam). */
-    draftHint: string
-    sectionsHeading: string
-    sectionSummary: string
-    sectionTimeline: string
-    sectionFindings: string
-    sectionArtifacts: string
-    sectionFlags: string
-    sectionEmpty: string
-    starredCount: (count: number) => string
-    exportPdf: string
-    exportCsv: string
-    exportAuditJsonl: string
-    exportBusy: string
-    exportPdfFailed: string
-    exportCsvFailed: string
-    exportAuditFailed: string
-    pdfSaved: string
-    auditSaved: string
-    addedToReport: string
-    generateSections: string
-    sectionsGenerated: string
-    emptyDraft: string
-  }
 
   // Cases overview page (step 16 · T14, 方案 §5-T14) — the /cases card grid.
-  casesOverview: {
-    /** Page-head title + subtitle. */
-    title: string
-    subtitle: string
-    /** The two-group status filter (进行中/已归档). */
-    filterActive: string
-    filterArchived: string
-    /** Card lines. Counts without a data layer render 「—」 (honest empty). */
-    cardSessions: string
-    cardEvidence: string
-    cardAudit: string
-    cardReport: string
-    cardLastActive: string
-    /** Fallbacks for unnamed containers. */
-    noContainer: string
-    untitledCase: string
-    /** States: no cases at all / the group matches nothing. */
-    empty: string
-    emptyDesc: string
-    emptyArchived: string
-    emptyArchivedDesc: string
-  }
 
   home: {
     greeting: {
@@ -572,8 +417,6 @@ export interface Translations {
     chips: {
       programming: string
       programmingTip: string
-      forensics: string
-      ctf: string
       idle: string
       placeholderTip: string
     }
@@ -583,10 +426,6 @@ export interface Translations {
       more: string
     }
     modeCards: {
-      forensics: string
-      forensicsDesc: string
-      ctf: string
-      ctfDesc: string
       project: string
       projectDesc: string
     }
@@ -607,46 +446,6 @@ export interface Translations {
       fullAccessNote: string
       highRiskCommands: string
       highRiskCommandsDesc: string
-    }
-    evidence: {
-      nav: string
-      title: string
-      intro: string
-      readOnly: string
-      readOnlyDesc: string
-      verifyOnReference: string
-      verifyOnReferenceDesc: string
-      archiveLock: string
-      archiveLockDesc: string
-      disableConfirmTitle: string
-    }
-    audit: {
-      nav: string
-      title: string
-      intro: string
-      enabled: string
-      enabledDesc: string
-      retention: string
-      retentionDesc: string
-      retentionPermanent: string
-      exportTitle: string
-      export: string
-      clear: string
-      dataLayerNote: string
-    }
-    sensitive: {
-      nav: string
-      title: string
-      intro: string
-      redactSecrets: string
-      redactSecretsDesc: string
-      redactFlags: string
-      redactFlagsDesc: string
-      customRegex: string
-      customRegexDesc: string
-      customRegexPlaceholder: string
-      revealAudited: string
-      revealAuditedDesc: string
     }
   }
 
@@ -822,38 +621,13 @@ export interface Translations {
     }
     group: {
       basics: string
-      'work-mode': string
+      agent: string
       'model-capabilities': string
       'security-compliance': string
       'connection-data': string
       apps: string
       programming: string
-      forensics: {
-        nav: string
-        title: string
-        intro: string
-        caseNoTemplate: string
-        caseNoTemplateDesc: string
-        reportSections: string
-        reportSectionsDesc: string
-        reportSectionNames: Record<string, string>
-        reportSectionDescs: Record<string, string>
-        timelineSources: string
-        timelineSourcesDesc: string
-        timelineSourceNames: Record<string, string>
-        timelineSourceDescs: Record<string, string>
-      }
-      ctf: {
-        nav: string
-        title: string
-        intro: string
-        flagRegex: string
-        flagRegexDesc: string
-        defaultTimezone: string
-        defaultTimezoneDesc: string
-        submitRetryLimit: string
-        submitRetryLimitDesc: string
-      }
+      workspace: string
       skinGallery: {
         title: string
         recommended: string
@@ -1784,11 +1558,7 @@ export interface Translations {
       pages: string
       containers: string
     }
-    newForensics: string
-    newCtf: string
     newCodingTask: string
-    casesOverview: string
-    comingSoon: string
     paletteFooter: {
       select: string
       run: string
@@ -2549,14 +2319,6 @@ export interface Translations {
     brandWordmark: string
     newTask: string
     searchCommandPalette: string
-    kind: {
-      all: string
-      forensics: string
-      ctf: string
-      project: string
-      forensicsEmpty: string
-      ctfEmpty: string
-    }
     gateway: {
       local: string
       connected: string

@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
 
-import { KEYBIND_READONLY, type KeybindCategory, keybindAction } from '@/lib/keybinds/actions'
+import { KEYBIND_READONLY, keybindAction, type KeybindCategory } from '@/lib/keybinds/actions'
 import { canonicalizeCombo } from '@/lib/keybinds/combo'
 
 import { bindingsFor } from './keybinds'
@@ -96,14 +96,12 @@ export interface KeybindTableEntry {
 }
 
 export const KEYBIND_TABLE: readonly KeybindTableEntry[] = [
-  // ── 全局 (方案 §3-T9: 面板 / 新建 / 三模式 / 捕获 / 设置) ──────────────────
+  // ── 全局 (方案 §3-T9: 面板 / 新建 / 捕获 / 设置) ────────────────────────────
   { id: 'nav.commandPalette', group: 'global', actionId: 'nav.commandPalette', scope: 'app', status: 'active' },
   { id: 'session.new', group: 'global', actionId: 'session.new', scope: 'app', status: 'active' },
-  // T6 tray accelerators (electron/tray.ts TRAY_ACCELERATORS). The menu items
-  // dispatch kind payloads over IPC, but the renderer's kind-aware creation
+  // T6 tray accelerator (electron/tray.ts TRAY_ACCELERATORS). The menu item
+  // dispatches a kind payload over IPC, but the renderer's kind-aware creation
   // consumer doesn't exist yet (T6 回执 §6.1) → reserved, honestly shown.
-  { id: 't9.newForensics', group: 'global', combos: ['ctrl+1'], scope: 'os', status: 'reserved' },
-  { id: 't9.newCtf', group: 'global', combos: ['ctrl+2'], scope: 'os', status: 'reserved' },
   { id: 't9.newProject', group: 'global', combos: ['ctrl+3'], scope: 'os', status: 'reserved' },
   // T7 quick capture — real merged global key (electron/quick-entry.ts).
   { id: 't9.quickCapture', group: 'global', combos: ['ctrl+shift+space'], scope: 'os', status: 'active' },
@@ -122,15 +120,13 @@ export const KEYBIND_TABLE: readonly KeybindTableEntry[] = [
   { id: 't9.approvalSession', group: 'sessionApproval', combos: ['a'], scope: 'approval', status: 'active' },
   { id: 't9.approvalDeny', group: 'sessionApproval', combos: ['n'], scope: 'approval', status: 'active' },
 
-  // ── 编辑 (方案 §3-T9: 发送 / 换行 / 历史 / 引用证据) ───────────────────────
+  // ── 编辑 (方案 §3-T9: 发送 / 换行 / 历史) ───────────────────────────────────
   { id: 'composer.send', group: 'editing', combos: ['enter'], scope: 'app', status: 'active' },
   { id: 'composer.newline', group: 'editing', combos: ['shift+enter'], scope: 'app', status: 'active' },
   // Shipped history keys are the bare ↑/↓ (KEYBIND_READONLY), NOT the plan's
   // Alt+↑↓ — the composer side is outside T9's file face, so the sheet shows
   // the real chords and the deviation is recorded in the T9 回执.
   { id: 'composer.history', group: 'editing', combos: ['up', 'down'], scope: 'app', status: 'active' },
-  // Ctrl+E 引用证据: no existing handler chain (T9-5 诚实落地) → reserved.
-  { id: 't9.evidenceQuote', group: 'editing', combos: ['ctrl+e'], scope: 'app', status: 'reserved' },
 
   // ── 导航与视图 ─────────────────────────────────────────────────────────────
   { id: 'session.next', group: 'navigationView', actionId: 'session.next', scope: 'app', status: 'active' },
@@ -238,10 +234,10 @@ export function detectKeybindConflicts(entries: readonly KeybindConflictInput[])
 }
 
 // Chords dispatched OUTSIDE the rebindable table (T6 / T7 / T8), recorded so
-// the unified check covers them. The T6 tray trio and T7 capture ARE the
-// table's os-scope rows (t9.new* / t9.quickCapture) — they enter through
-// KEYBIND_TABLE and are not duplicated here; T8's ⌘K likewise comes in via the
-// table's `nav.commandPalette` actionId row.
+// the unified check covers them. The T6 tray accelerator and T7 capture ARE
+// the table's os-scope rows (t9.newProject / t9.quickCapture) — they enter
+// through KEYBIND_TABLE and are not duplicated here; T8's ⌘K likewise comes in
+// via the table's `nav.commandPalette` actionId row.
 export const DISPATCHED_KEYBIND_ENTRIES: readonly KeybindConflictInput[] = [
   { id: 't6.openMainWindow', combos: ['ctrl+shift+f'], scope: 'os' },
   {

@@ -1,7 +1,8 @@
 import { useEffect, useReducer, useRef } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-import { ArrowUp, Bug, Pencil, Search, Terminal } from '@/lib/icons'
 import { useI18n } from '@/i18n'
+import { ArrowUp, Pencil, Terminal } from '@/lib/icons'
 import {
   initialQuickComposerState,
   QUICK_CAPTURE_MODES,
@@ -11,8 +12,6 @@ import {
   quickComposerReducer,
   type QuickComposerState
 } from '@/store/quick-entry'
-
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 /*
  * Token fallbacks are deliberate (step 16 REV-批次一 S2 / backlog BL-15).
@@ -27,13 +26,11 @@ import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
  * to bare `var(--token)`.
  */
 
-/** Chip vocabulary, one entry per work mode (DESIGN_PROPOSAL §4.1). */
+/** Chip vocabulary, one entry per capture shape. */
 const MODE_META: Record<
   QuickCaptureMode,
-  { icon: typeof Bug; labelKey: 'modeCtf' | 'modeForensics' | 'modeNote' | 'modeProject' }
+  { icon: typeof Pencil; labelKey: 'modeNote' | 'modeProject' }
 > = {
-  ctf: { icon: Bug, labelKey: 'modeCtf' },
-  forensics: { icon: Search, labelKey: 'modeForensics' },
   note: { icon: Pencil, labelKey: 'modeNote' },
   project: { icon: Terminal, labelKey: 'modeProject' }
 }
@@ -177,7 +174,7 @@ const dismissOnEscape = (dispatch: (event: QuickComposerEvent) => void) => (even
 
 /**
  * The Quick Capture window — the whole renderer surface of the global-hotkey
- * mini window (step 16 · T7): one input, the four work-mode chips, the target
+ * mini window (step 16 · T7): one input, the capture-shape chips, the target
  * container picker, and a submit that saves a DRAFT instead of firing a
  * prompt, so capturing never interrupts whatever the main window is doing.
  *
@@ -188,15 +185,15 @@ const dismissOnEscape = (dispatch: (event: QuickComposerEvent) => void) => (even
  * (the composer draft stash / the note inbox), so the window stays usable with
  * the gateway down — the pushed connection state only drives a hint.
  *
- * Honesty note (step 16 · T4 seam): the kind data layer does not exist yet, so
- * the picker lists REAL targets only — the new-draft slot and the recent
- * sessions the primary renderer pushes. The mode chip rides the payload as
- * recorded intent; no forensics/CTF container is ever fabricated.
+ * Honesty note (step 16 · T4 seam): the picker lists REAL targets only — the
+ * new-draft slot and the recent sessions the primary renderer pushes. The mode
+ * chip rides the payload as recorded intent; no container is ever fabricated.
  */
 export function QuickCaptureApp() {
   const { t } = useI18n()
   const qc = t.quickCapture
   const inputRef = useRef<HTMLInputElement>(null)
+
   const [state, dispatch] = useReducer((current: QuickComposerState, event: QuickComposerEvent) => {
     const { send, state: next } = quickComposerReducer(current, event)
     const api = window.fulilianDesktop?.quickEntry
@@ -209,6 +206,7 @@ export function QuickCaptureApp() {
 
     return next
   }, initialQuickComposerState)
+
   const [keycap, setKeycap] = useReducer((_current: string, next: string) => next, '')
 
   // Re-summoned by the chord: the shell reuses the window, so reset the draft

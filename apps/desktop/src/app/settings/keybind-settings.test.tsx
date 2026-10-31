@@ -47,21 +47,21 @@ describe('KeybindSettings four-group layout (T9-1)', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
-  it('shows the fixed T9 rows (tray trio / capture / approval trio) with reserved badges for unshipped chords', () => {
+  it('shows the fixed T9 rows (capture / approval trio) with a reserved badge for the unshipped chord', () => {
     renderKeybindSettings()
 
-    // Fixed rows from the shared registry (fixedRowsForGroup): tray trio +
-    // quick capture + approval trio + the reserved evidence quote.
+    // Fixed rows from the shared registry (fixedRowsForGroup): quick capture +
+    // approval trio.
     expect(screen.getByText('Quick capture')).toBeTruthy()
     expect(screen.getByText('Allow once')).toBeTruthy()
     expect(screen.getByText('Always allow this session')).toBeTruthy()
     expect(screen.getByText('Reject')).toBeTruthy()
 
-    // Reserved honesty rows: tray Ctrl 1/2/3 (kind-aware consumer missing) and
-    // Ctrl+E evidence quote (no handler chain yet).
-    expect(screen.getAllByText('Reserved').length).toBeGreaterThanOrEqual(4)
-    expect(screen.getByText('New forensics case')).toBeTruthy()
-    expect(screen.getByText('Quote evidence (forensics mode)')).toBeTruthy()
+    // Reserved honesty rows: the tray Ctrl 1/2/3 trio and the Ctrl+E evidence
+    // quote left with the work modes (P1) — only the coding-task chord is still
+    // documented-but-unwired.
+    expect(screen.getAllByText('Reserved').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('New coding task')).toBeTruthy()
   })
 
   it('rebinds stay inside their registry group: nav.settings appears under Global', () => {

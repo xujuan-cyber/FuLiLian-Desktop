@@ -374,15 +374,12 @@ export const zh: Translations = {
       'composer.history': '切换弹窗/历史',
       'composer.cancel': '关闭弹窗·取消运行',
       // 步骤 16 · T9 速查页条目（store/keybinds-registry.ts KEYBIND_TABLE）。
-      't9.newForensics': '新建取证案件',
-      't9.newCtf': '新建 CTF 赛题',
       't9.newProject': '新建编程任务',
       't9.quickCapture': '快速捕获',
       't9.sessionSlots': '切换会话（槽位 1-9）',
       't9.approvalOnce': '允许一次',
       't9.approvalSession': '本会话总是允许',
       't9.approvalDeny': '拒绝',
-      't9.evidenceQuote': '引用证据（取证模式）',
       't9.zoom': '缩放界面',
       't9.quickSheet': '快捷键速查'
     }
@@ -403,63 +400,7 @@ export const zh: Translations = {
     noResults: '未找到语言'
   },
 
-  container: {
-    meta: {
-      project: '项目',
-      forensics: '取证',
-      ctf: 'CTF',
-      caseNo: '案号',
-      statsEvidence: '证据',
-      statsAudit: '留痕',
-      statsReport: '报告',
-      event: '赛事',
-      categoryPoints: '分类·分值',
-      countdown: '倒计时',
-      countdownNone: '未设截止'
-    },
-    cards: {
-      evidenceTitle: '证据清单',
-      evidenceEmpty: '导入证据以开始——导入即计算 SHA256。',
-      auditTitle: '审计留痕',
-      auditEmpty: '暂无留痕记录。',
-      flagVaultTitle: 'flag 保管库',
-      flagEmpty: '暂无已保存 flag。',
-      submissionsTitle: '提交历史',
-      submissionsEmpty: '暂无提交记录。',
-      toolboxTitle: '工具箱',
-      toolboxEmpty: '快捷启动随数据层轮次启用。'
-    },
-    pills: {
-      caseNo: '案号',
-      evidence: '证据',
-      categoryPoints: '分类·分值',
-      countdown: '倒计时',
-      countdownNone: '未设截止',
-      emptyValue: '—'
-    }
-  },
-
-  modeOnboarding: {
-    forensicsTitle: '取证模式——授权与护栏',
-    forensicsIntro: '在开立取证案件前，请了解证据的处理方式。本引导仅展示一次。',
-    scopeHeading: '授权范围',
-    scopeStatement: '我确认已获得对该案证据的实施授权，并将仅在我获授权范围内开展操作。',
-    guardHeading: '只读护栏',
-    guardReadonly: '证据目录以只读方式挂载；任何写入均需审批、复验与留痕。',
-    guardWrite: '高风险命令（rm -rf、dd、mkfs、shred 等）始终需要二次确认。',
-    guardHash: '证据在导入即计算哈希（SHA256），并在引用前复验。',
-    ctfTitle: 'CTF 模式——flag 保管库与审计',
-    ctfIntro: '了解 CTF 容器中 flag 的存储与追踪方式。本引导仅展示一次。',
-    vaultHeading: 'flag 保管库',
-    vaultMask: 'flag 默认打码，可按需显隐。',
-    vaultAudit: '每次显隐与每次提交都会记入审计日志。',
-    confirm: '确认并继续',
-    confirmHint: '请先勾选授权声明再继续。'
-  },
-
   tray: {
-    newForensics: '新建取证案件',
-    newCtf: '新建 CTF 赛题',
     newProject: '新建编程任务',
     runningHeading: '运行中',
     needsInputHeading: '需输入',
@@ -494,97 +435,7 @@ export const zh: Translations = {
     noteRowHint: '速记'
   },
 
-  caseTimeline: {
-    title: '时间线',
-    back: '返回',
-    statEvents: count => `${count.toLocaleString()} 个事件`,
-    mockBanner: '示例数据集——取证提取管线尚未接入，以下事件为生成数据，非真实证据。',
-    saveAsFinding: '保存为发现',
-    exportCsv: '导出 CSV',
-    addToReport: '加入报告',
-    savedAsFinding: '已保存为发现',
-    addedToReport: '已加入报告草稿',
-    exportCsvFailed: 'CSV 导出失败',
-    sourcesHeading: '来源',
-    rangeHeading: '时间范围',
-    confidenceHeading: '置信度',
-    tagsHeading: '标签',
-    starredOnlyChip: '已星标',
-    confidenceFloor: min => `≥ ${min}%`,
-    histogramTitle: '事件密度',
-    histogramAggregate: '按 3 小时聚合',
-    histogramDrag: (from, to) => `拖选 ${from} → ${to}`,
-    histogramEmpty: '范围内暂无事件',
-    columnTime: '时间（本地）',
-    columnSource: '来源',
-    columnEvent: '事件',
-    columnConfidence: '置信度',
-    columnTags: '标签',
-    sourceRegistry: '注册表',
-    sourceLog: '系统日志',
-    sourcePcap: 'pcap',
-    sourceFile: '文件',
-    footerTotal: total => `共 ${total.toLocaleString()} 个事件`,
-    footerFiltered: filtered => `过滤后显示 ${filtered.toLocaleString()}`,
-    footerStarred: starred => `已星标 ${starred.toLocaleString()}`,
-    footerStarSeam: '星标事件将同步进报告章节',
-    loading: '时间线加载中…',
-    loadFailed: '时间线加载失败',
-    empty: '该案件暂无时间线事件',
-    emptyFiltered: '当前过滤条件下无匹配事件',
-    sourceCount: count => `${count.toLocaleString()}`
-  },
-
   // 报告与导出管线（step 16 · T16，方案 §5-T16）。
-  reportCenter: {
-    title: '报告中心',
-    back: '返回',
-    open: '报告中心',
-    caseLabel: '案件',
-    draftHeading: '报告草稿',
-    draftHint:
-      '草稿由真实星标发现汇成——章节模板对齐 fulilian_ctf/writeup.py，管线就绪后完整 writeup 由 Python sidecar 生成。',
-    sectionsHeading: '章节',
-    sectionSummary: '概述',
-    sectionTimeline: '时间线',
-    sectionFindings: '关键发现',
-    sectionArtifacts: '附件物证',
-    sectionFlags: 'Flag 结论',
-    sectionEmpty: '本节暂无数据',
-    starredCount: count => `${count.toLocaleString()} 条星标发现`,
-    exportPdf: '导出 PDF',
-    exportCsv: '导出 CSV',
-    exportAuditJsonl: '导出审计 JSONL',
-    exportBusy: '导出中…',
-    exportPdfFailed: 'PDF 导出失败',
-    exportCsvFailed: 'CSV 导出失败',
-    exportAuditFailed: '审计 JSONL 导出失败',
-    pdfSaved: '报告 PDF 已保存',
-    auditSaved: '审计 JSONL 已保存',
-    addedToReport: '已加入报告草稿',
-    generateSections: '汇成草稿',
-    sectionsGenerated: '报告草稿已汇成',
-    emptyDraft: '暂无报告数据——星标时间线事件以填充关键发现章节'
-  },
-
-  // 案件总览页（step 16 · T14，方案 §5-T14）。
-  casesOverview: {
-    title: '案件',
-    subtitle: '按真实会话聚合的工作容器',
-    filterActive: '进行中',
-    filterArchived: '已归档',
-    cardSessions: '个会话',
-    cardEvidence: '证据数',
-    cardAudit: '留痕数',
-    cardReport: '报告状态',
-    cardLastActive: '最近活动',
-    noContainer: '无容器',
-    untitledCase: '未命名工作',
-    empty: '还没有案件',
-    emptyDesc: '出现真实会话工作后，容器会显示在这里。',
-    emptyArchived: '没有已归档案件',
-    emptyArchivedDesc: '该组暂无匹配——已归档容器会落在这里。'
-  },
 
   home: {
     greeting: {
@@ -594,10 +445,8 @@ export const zh: Translations = {
     },
     lede: '把目标、证据，或者一段还没想清楚的思路丢进来。我先看清上下文，再给出下一步。',
     chips: {
-      programming: '继续案件',
+      programming: '继续上次工作',
       programmingTip: '聚焦输入框，接着往下说',
-      forensics: '新建证据',
-      ctf: '接手 CTF 赛题',
       idle: '闲时任务',
       placeholderTip: '取证数据接入后可用'
     },
@@ -607,10 +456,6 @@ export const zh: Translations = {
       more: '模板库'
     },
     modeCards: {
-      forensics: '取证案件',
-      forensicsDesc: '证据完整性校验、审计与报告。',
-      ctf: 'CTF 赛题',
-      ctfDesc: 'flag 保管库、提交历史与计时。',
       project: '编程项目',
       projectDesc: '仓库、终端、预览与代码变更。'
     }
@@ -632,46 +477,6 @@ export const zh: Translations = {
       highRiskCommands: '高危命令清单',
       highRiskCommandsDesc: '无论何种模式都需二次确认的命令（逗号分隔）。拦截层本体随数据层落地，本页仅记录清单。'
     },
-    evidence: {
-      nav: '取证保护',
-      title: '取证保护',
-      intro: '面向取证案件。以下偏好在证据容器数据层激活后生效，现在先落配置，后续无需重新决策。',
-      readOnly: '证据目录只读挂载',
-      readOnlyDesc: '证据目录以只读方式挂载；写入需审批且必定留痕。默认开启，且不可静默关闭。',
-      verifyOnReference: '引用前复验',
-      verifyOnReferenceDesc: '每次引用证据文件前重新计算 SHA256，失配即阻断引用。默认开启。',
-      archiveLock: '归档后锁定写操作',
-      archiveLockDesc: '已归档案件拒绝写操作，直至经审批并留痕解锁。',
-      disableConfirmTitle: '关闭证据目录只读挂载？'
-    },
-    audit: {
-      nav: '审计留痕',
-      title: '审计留痕',
-      intro: '对工具调用、写入、解锁与揭示行为的本地审计日志——合法取证工作的合规记录。',
-      enabled: '审计留痕',
-      enabledDesc: '将 agent 工具调用、写操作与人工事件（解锁、揭示、导出）记入本地审计日志。默认开启。',
-      retention: '保留期',
-      retentionDesc: '审计条目本地保留多久后清理。',
-      retentionPermanent: '永久',
-      exportTitle: '导出与清空',
-      export: '导出',
-      clear: '清空',
-      dataLayerNote: '审计存储本体随数据层（后续轮次）落地——届时此处启用生效，在此之前不产生数据。'
-    },
-    sensitive: {
-      nav: '敏感信息',
-      title: '敏感信息',
-      intro: 'Fulilian 在内容到达模型或屏幕前的脱敏规则。flag 脱敏作用于 CTF 模式；密钥脱敏全局生效。',
-      redactSecrets: '密钥脱敏',
-      redactSecretsDesc: '尽可能对检测到的密钥（key、token、密码）在模型可见内容中打码。默认开启。',
-      redactFlags: 'flag 脱敏',
-      redactFlagsDesc: '对工具输出中的 CTF flag 打码；在 flag 卡中经显式操作揭示。',
-      customRegex: '自定义正则',
-      customRegexDesc: '额外的正则表达式，其匹配内容按密钥方式打码。',
-      customRegexPlaceholder: '正则表达式',
-      revealAudited: '揭示留痕',
-      revealAuditedDesc: '每次取消打码/揭示动作都会写入审计日志。默认开启。'
-    }
   },
 
   settings: {
@@ -874,59 +679,14 @@ export const zh: Translations = {
     },
     group: {
       basics: '基础',
-      'work-mode': '工作模式',
+      agent: '智能体',
+      workspace: '工作区',
       'model-capabilities': '模型与能力',
       'security-compliance': '安全与合规',
       'connection-data': '连接与数据',
       apps: '应用',
       // 编程入口复用既有工作区页（链接跳转，非新页）——DESIGN_PROPOSAL §5.5。
       programming: '编程',
-      forensics: {
-        nav: '取证',
-        title: '取证',
-        intro: '取证案件的缺省配置：案号编号、报告结构与时间线来源。案件数据本身按案件管理，不在此处。',
-        caseNoTemplate: '案号格式模板',
-        caseNoTemplateDesc: '生成新案号时使用的格式。YYYY 为年份，NNN 为补零序号。',
-        reportSections: '报告章节模板',
-        reportSectionsDesc: '生成的报告草稿包含哪些章节。草稿生成本体随数据层（后续轮次）落地——此处先记录结构。',
-        reportSectionNames: {
-          overview: '概述',
-          evidence: '证据清单',
-          analysis: '分析过程',
-          conclusion: '结论',
-          appendix: '附录'
-        },
-        reportSectionDescs: {
-          overview: '案件摘要、范围与授权依据。',
-          evidence: '附哈希与复验状态的证据列表。',
-          analysis: '时间线与发现，按哈希引用证据。',
-          conclusion: '对案件问题的回答，附置信度说明。',
-          appendix: '工具版本、环境与原始导出。'
-        },
-        timelineSources: '时间线来源',
-        timelineSourcesDesc: '时间线提取允许取用的来源类型。提取随数据层（后续轮次）落地。',
-        timelineSourceNames: {
-          mirror: '磁盘镜像',
-          logs: '日志',
-          pcap: '网络抓包'
-        },
-        timelineSourceDescs: {
-          mirror: '已挂载镜像中的文件系统痕迹。',
-          logs: '应用、系统与安全事件日志。',
-          pcap: '网络捕获与流记录。'
-        }
-      },
-      ctf: {
-        nav: 'CTF',
-        title: 'CTF',
-        intro: 'CTF 赛题的缺省配置：flag 识别、赛事时区与提交重试。flag 本体加密存于保管库。',
-        flagRegex: 'flag 正则',
-        flagRegexDesc: '用于检测并对工具输出中的 flag 打码的正则表达式。',
-        defaultTimezone: '默认赛事时区',
-        defaultTimezoneDesc: '赛题未标注时区时，截止时间使用的时区（IANA 名称）。',
-        submitRetryLimit: '提交重试上限',
-        submitRetryLimitDesc: '单题记录的错误提交次数上限，超过后建议冷却。'
-      },
       skinGallery: {
         title: '皮肤画廊',
         recommended: '推荐'
@@ -2159,11 +1919,8 @@ export const zh: Translations = {
       pages: '页面',
       containers: '容器'
     },
-    newForensics: '新建取证案件',
-    newCtf: '新建 CTF 赛题',
     newCodingTask: '新建编程任务',
-    casesOverview: '案件总览',
-    comingSoon: '即将可用',
+
     paletteFooter: {
       select: '选择',
       run: '执行',
@@ -3085,14 +2842,6 @@ export const zh: Translations = {
     brandWordmark: 'FuLilian',
     newTask: '新建任务',
     searchCommandPalette: '搜索（命令面板）',
-    kind: {
-      all: '全部',
-      forensics: '取证',
-      ctf: 'CTF',
-      project: '项目',
-      forensicsEmpty: '暂无取证案件',
-      ctfEmpty: '暂无 CTF 赛题'
-    },
     gateway: {
       local: '本地网关',
       connected: '已连接',

@@ -38,14 +38,7 @@ export interface TraySnapshot {
   running: TraySessionRow[]
 }
 
-export type TrayMenuLabelKey =
-  | 'needsInputHeading'
-  | 'newCtf'
-  | 'newForensics'
-  | 'newProject'
-  | 'openMainWindow'
-  | 'quit'
-  | 'runningHeading'
+export type TrayMenuLabelKey = 'needsInputHeading' | 'newProject' | 'openMainWindow' | 'quit' | 'runningHeading'
 
 export type TrayMenuLabels = Record<TrayMenuLabelKey, string>
 
@@ -100,8 +93,6 @@ export const $trayCounts = computed($traySnapshot, trayCounts)
 export function trayMenuLabels(): TrayMenuLabels {
   return {
     needsInputHeading: translateNow('tray.needsInputHeading'),
-    newCtf: translateNow('tray.newCtf'),
-    newForensics: translateNow('tray.newForensics'),
     newProject: translateNow('tray.newProject'),
     openMainWindow: translateNow('tray.openMainWindow'),
     quit: translateNow('tray.quit'),

@@ -7,12 +7,8 @@ import type { EnvVarInfo } from '@/types/fulilian'
 export type SettingsView =
   | 'about'
   | 'approvals'
-  | 'audit'
   | 'billing'
   | 'connections'
-  | 'ctf'
-  | 'evidence-protection'
-  | 'forensics'
   | 'gateway'
   | 'keybinds'
   | 'keys'
@@ -20,9 +16,9 @@ export type SettingsView =
   | 'pet'
   | 'plugins'
   | 'presets'
+  | 'profiles'
   | 'providers'
   | 'quick-entry'
-  | 'sensitive-info'
   | 'sessions'
   | 'submodels'
   | 'tray'
@@ -31,12 +27,12 @@ export type SettingsView =
 // The six Workbench groups (DESIGN_PROPOSAL §5.5). Pure re-grouping: section
 // ids are stable, only placement and order change.
 export type SettingsGroupId =
+  | 'agent'
   | 'apps'
   | 'basics'
   | 'connection-data'
   | 'model-capabilities'
   | 'security-compliance'
-  | 'work-mode'
 export type EnvPatch = Partial<Pick<EnvVarInfo, 'is_set' | 'redacted_value'>>
 
 export interface SettingsPageProps {

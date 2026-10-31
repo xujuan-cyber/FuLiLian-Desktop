@@ -17,7 +17,7 @@ import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 /**
  * The composer's permission chip (R5): the current GLOBAL `approvals.mode` for
  * the active profile, rendered in the control row's LEFT zone beside the attach
- * (`+`) button — v3 §8.5's `[+] [只读 · 取证]` slot. Click cycles
+ * (`+`) button — v3 §8.5's `[+] [只读]` slot. Click cycles
  * manual → smart → off; Shift+Tab cycles through the shared keybind layer — the
  * chip's tooltip surfaces that chord via TipKeybindLabel so the two doors read
  * as one control.

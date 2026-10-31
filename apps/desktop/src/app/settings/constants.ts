@@ -646,7 +646,7 @@ export const SECTIONS: DesktopConfigSection[] = [
     keys: []
   },
   {
-    group: 'work-mode',
+    group: 'basics',
     id: 'workspace',
     label: 'Workspace',
     icon: Monitor,
@@ -792,27 +792,38 @@ export const SECTIONS: DesktopConfigSection[] = [
 
 // Workbench nav grouping (DESIGN_PROPOSAL §5.5): each group lists its nav
 // views in display order — `config:*` ids resolve through SECTIONS, the rest
-// are page-level views rendered by the settings shell. The programming entry
-// intentionally reuses the existing workspace page (link, not a new page).
+// are page-level views rendered by the settings shell.
 export interface SettingsGroupDef {
   id: SettingsGroupId
   views: SettingsView[]
 }
 
 export const SETTINGS_GROUPS: SettingsGroupDef[] = [
-  { id: 'basics', views: ['config:chat', 'config:appearance', 'notifications', 'keybinds', 'tray'] },
-  { id: 'work-mode', views: ['forensics', 'ctf', 'config:workspace'] },
+  {
+    id: 'basics',
+    views: ['config:chat', 'config:appearance', 'notifications', 'keybinds', 'tray', 'config:workspace']
+  },
+  { id: 'agent', views: ['submodels', 'profiles'] },
   {
     id: 'model-capabilities',
-    views: ['config:model', 'providers', 'submodels', 'config:memory', 'config:voice', 'config:browser', 'config:advanced']
+    views: ['config:model', 'providers', 'config:memory', 'config:voice', 'config:browser', 'config:advanced']
   },
-  {
-    id: 'security-compliance',
-    views: ['config:safety', 'approvals', 'evidence-protection', 'audit', 'sensitive-info']
-  },
+  { id: 'security-compliance', views: ['config:safety', 'approvals'] },
   { id: 'connection-data', views: ['keys', 'gateway', 'sessions', 'billing'] },
   { id: 'apps', views: ['plugins', 'presets', 'about', 'pet', 'quick-entry'] }
 ]
+
+// Group header copy. Every group id in `SETTINGS_GROUPS` has a matching
+// `settings.group.*` entry in all five locales, so this is a plain lookup —
+// no fallback needed (the `agent` group used to borrow the sidebar's label
+// before its own key landed in P1).
+export interface SettingsGroupLabelSource {
+  settings: { group: Partial<Record<SettingsGroupId, string>> }
+}
+
+export function settingsGroupLabel(group: SettingsGroupId, t: SettingsGroupLabelSource): string {
+  return t.settings.group[group] ?? group
+}
 
 // Every view the shell can render, derived from the group table so the rail,
 // the narrow dropdown and the deep-link enum can never drift apart. The legacy

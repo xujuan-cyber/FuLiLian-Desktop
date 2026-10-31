@@ -19,30 +19,10 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
-// Cases overview (step 16 · T14, 方案 §5-T14): the `/cases` two-segment
-// reservation T13's classifier left open is now claimed. A full workspace
-// page (like skills/messaging), NOT an overlay. The three-segment
-// `/cases/<caseId>/timeline` shape below stays the timeline page's — the
-// overview's exact-path entry in APP_ROUTES can never shadow it, because
-// APP_VIEW_BY_PATH matches full paths only and a session literally named
-// `cases` can't collide with a reserved path.
-export const CASES_ROUTE = '/cases'
-// Case timeline (step 16 · T13, 方案 §5-T13): the canonical plan's second new
-// route. Shape `/cases/<caseId>/timeline`; the caseId segment is real data —
-// the id of the case the page is opened for. A full workspace page (like
-// skills/messaging), NOT an overlay. Other `/cases/...` shapes (one segment,
-// wrong suffix, extra segments) stay OUT of both classifiers: they are not
-// either page.
-export const CASE_TIMELINE_PREFIX = '/cases/'
-export const CASE_TIMELINE_SUFFIX = '/timeline'
 
 export type AppView =
   | 'agents'
   | 'artifacts'
-  // Case timeline page (T13) — a workspace page, not an overlay and not chat.
-  | 'case-timeline'
-  // Cases overview page (T14) — same shape: a workspace page.
-  | 'cases'
   | 'chat'
   | 'command-center'
   | 'connectors'
@@ -62,7 +42,6 @@ export type AppView =
 export type AppRouteId =
   | 'agents'
   | 'artifacts'
-  | 'cases'
   | 'command-center'
   | 'connectors'
   | 'cron'
@@ -87,7 +66,6 @@ export const APP_ROUTES = [
   { id: 'skills', path: SKILLS_ROUTE, view: 'skills' },
   { id: 'connectors', path: CONNECTORS_ROUTE, view: 'connectors' },
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
-  { id: 'cases', path: CASES_ROUTE, view: 'cases' },
   { id: 'webhooks', path: WEBHOOKS_ROUTE, view: 'webhooks' },
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
@@ -190,30 +168,6 @@ export function routeSessionId(pathname: string): string | null {
   return id && !id.includes('/') ? decodeURIComponent(id) : null
 }
 
-// ── Case timeline route (step 16 · T13, 方案 §5-T13) ────────────────────────
-
-/** The exact route for a case's timeline page: `/cases/<caseId>/timeline`. */
-export function caseTimelineRoute(caseId: string): string {
-  return `${CASE_TIMELINE_PREFIX}${encodeURIComponent(caseId)}${CASE_TIMELINE_SUFFIX}`
-}
-
-/** Extract the case id when `pathname` IS a case-timeline route, else null.
- *  Strictly shaped: exactly three segments, the last one `timeline`, and a
- *  non-empty decoded id — so `/cases`, `/cases/x`, and
- *  `/cases/x/other/timeline` never classify as this page (`/cases` itself is
- *  the T14 overview's reserved APP_ROUTES path). */
-export function caseTimelineCaseId(pathname: string): null | string {
-  const path = routePathname(pathname)
-
-  if (!path.startsWith(CASE_TIMELINE_PREFIX) || !path.endsWith(CASE_TIMELINE_SUFFIX)) {
-    return null
-  }
-
-  const middle = path.slice(CASE_TIMELINE_PREFIX.length, path.length - CASE_TIMELINE_SUFFIX.length)
-
-  return middle && !middle.includes('/') ? decodeURIComponent(middle) : null
-}
-
 /**
  * The primary composer's durable scope key candidate: the route is the source
  * of truth for which chat is on screen, so prefer its (stable) stored session
@@ -244,15 +198,6 @@ export function appViewForPath(pathname: string): AppView {
 
   if (isContributedPath(path)) {
     return 'extension'
-  }
-
-  // The case-timeline route is parameterized, so it can't live in the
-  // single-path APP_VIEW_BY_PATH map. Checked AFTER the session parser —
-  // `routeSessionId('/cases/x/timeline')` is already null (multi-segment), and
-  // a session literally named `cases` can't collide with the three-segment
-  // shape matched here.
-  if (caseTimelineCaseId(path)) {
-    return 'case-timeline'
   }
 
   return APP_VIEW_BY_PATH.get(path) ?? 'chat'

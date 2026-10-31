@@ -14,11 +14,7 @@ import {
   BarChart3,
   Bell,
   CheckCircle2,
-  Clock,
   Download,
-  EyeOff,
-  FileText,
-  FolderOpen,
   Globe,
   type IconComponent,
   Info,
@@ -30,7 +26,6 @@ import {
   RefreshCw,
   Search,
   Settings2,
-  Terminal,
   Upload,
   Users,
   Zap
@@ -49,7 +44,14 @@ import { OverlayMain, OverlayNavItem, OverlaySidebar, OverlaySplitLayout } from 
 import { OverlayView } from '../overlays/overlay-view'
 import { SKILLS_ROUTE } from '../routes'
 
-import { DEFAULT_SETTINGS_VIEW, SECTIONS, SETTINGS_GROUPS, SETTINGS_VIEWS, settingsViewFromSection } from './constants'
+import {
+  DEFAULT_SETTINGS_VIEW,
+  SECTIONS,
+  SETTINGS_GROUPS,
+  SETTINGS_VIEWS,
+  settingsGroupLabel,
+  settingsViewFromSection
+} from './constants'
 import { SettingsContent, SettingsSkeleton } from './primitives'
 import { SettingsSearchField, type SettingsSearchFieldHandle } from './settings-search-field'
 import { KEYS_VIEWS, type KeysView, PROVIDER_VIEWS, type ProviderView } from './subnav-views'
@@ -77,16 +79,8 @@ const ApprovalsPermissionsSettings = lazy(async () => ({
 }))
 
 const AppearanceSettings = lazy(async () => ({ default: (await import('./appearance-settings')).AppearanceSettings }))
-const AuditSettings = lazy(async () => ({ default: (await import('./audit-settings')).AuditSettings }))
 const BillingSettings = lazy(async () => ({ default: (await import('./billing')).BillingSettings }))
 const ConfigSettings = lazy(async () => ({ default: (await import('./config-settings')).ConfigSettings }))
-const CtfSettings = lazy(async () => ({ default: (await import('./ctf-settings')).CtfSettings }))
-
-const EvidenceProtectionSettings = lazy(async () => ({
-  default: (await import('./evidence-protection-settings')).EvidenceProtectionSettings
-}))
-
-const ForensicsSettings = lazy(async () => ({ default: (await import('./forensics-settings')).ForensicsSettings }))
 const GatewaySettings = lazy(async () => ({ default: (await import('./gateway-settings')).GatewaySettings }))
 const KeybindSettings = lazy(async () => ({ default: (await import('./keybind-settings')).KeybindSettings }))
 const KeysSettings = lazy(async () => ({ default: (await import('./keys-settings')).KeysSettings }))
@@ -99,15 +93,16 @@ const PetSettings = lazy(async () => ({ default: (await import('./pet-settings')
 const PluginsSettings = lazy(async () => ({ default: (await import('./plugins-settings')).PluginsSettings }))
 const PresetsSettings = lazy(async () => ({ default: (await import('./presets-settings')).PresetsSettings }))
 
+// Profiles used to be a standalone overlay page; it is a Settings sub-page now.
+// Only its content is imported — the overlay shell (Panel) stays behind for the
+// `/profiles` route.
+const ProfilesContent = lazy(async () => ({ default: (await import('../profiles')).ProfilesContent }))
+
 const ProvidersSettings = lazy(async () => ({
   default: (await import('./providers-settings')).ProvidersSettings
 }))
 
 const QuickEntrySettings = lazy(async () => ({ default: (await import('./quick-entry-settings')).QuickEntrySettings }))
-
-const SensitiveInfoSettings = lazy(async () => ({
-  default: (await import('./sensitive-info-settings')).SensitiveInfoSettings
-}))
 
 const SessionsSettings = lazy(async () => ({ default: (await import('./sessions-settings')).SessionsSettings }))
 
@@ -272,8 +267,9 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
   const sectionById = useMemo(() => new Map(SECTIONS.map(section => [section.id, section])), [])
 
   // One label/icon resolution per nav view. `config:workspace` presents as the
-  // Workbench "programming" entry (DESIGN_PROPOSAL §5.5) while reusing the
-  // existing workspace page — a link, not a new page.
+  // Workbench "workspace" entry while reusing the existing workspace page —
+  // a link, not a new page. (It used to read "programming", a leftover of the
+  // three work modes that P1 removed.)
   const viewMeta = useCallback(
     (view: SettingsViewId): { icon: IconComponent; label: string } => {
       if (view.startsWith('config:')) {
@@ -287,7 +283,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
           icon: section.icon,
           label:
             view === 'config:workspace'
-              ? t.settings.group.programming
+              ? t.settings.group.workspace
               : (t.settings.sections[section.id] ?? section.label)
         }
       }
@@ -299,20 +295,8 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         case 'approvals':
           return { icon: CheckCircle2, label: t.security.approvals.nav }
 
-        case 'audit':
-          return { icon: Clock, label: t.security.audit.nav }
-
         case 'billing':
           return { icon: BarChart3, label: t.settings.nav.billing }
-
-        case 'ctf':
-          return { icon: Terminal, label: t.settings.group.ctf.nav }
-
-        case 'evidence-protection':
-          return { icon: FolderOpen, label: t.security.evidence.nav }
-
-        case 'forensics':
-          return { icon: FileText, label: t.settings.group.forensics.nav }
 
         case 'gateway':
           return { icon: Globe, label: t.settings.nav.gateway }
@@ -337,14 +321,16 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         case 'presets':
           return { icon: Layers3, label: t.presets.title }
 
+        case 'profiles':
+          // Same string the page renders as its heading — a second key would
+          // be exactly the drift the five-locale rule exists to avoid.
+          return { icon: Users, label: t.profiles.title }
+
         case 'providers':
           return { icon: Zap, label: t.settings.nav.providers }
 
         case 'quick-entry':
           return { icon: Zap, label: t.settings.quickEntry.enabledTitle }
-
-        case 'sensitive-info':
-          return { icon: EyeOff, label: t.security.sensitive.nav }
 
         case 'sessions':
           return { icon: Archive, label: t.settings.nav.archivedChats }
@@ -422,7 +408,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
             onSelect: () => setActiveView(view)
           }
         }),
-        label: t.settings.group[group.id]
+        label: settingsGroupLabel(group.id, t)
       })),
     [activeView, keysView, providerView, t, viewMeta, setActiveView, openProviderView, openKeysView]
   )
@@ -527,18 +513,14 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       <GatewaySettings />
     ) : activeView === 'keybinds' ? (
       <KeybindSettings />
-    ) : activeView === 'forensics' ? (
-      <ForensicsSettings />
-    ) : activeView === 'ctf' ? (
-      <CtfSettings />
     ) : activeView === 'approvals' ? (
       <ApprovalsPermissionsSettings />
-    ) : activeView === 'evidence-protection' ? (
-      <EvidenceProtectionSettings />
-    ) : activeView === 'audit' ? (
-      <AuditSettings />
-    ) : activeView === 'sensitive-info' ? (
-      <SensitiveInfoSettings />
+    ) : activeView === 'profiles' ? (
+      // Profiles is a Settings sub-page now: the overlay shell is dropped and
+      // only its content is mounted inside the settings pane.
+      <SettingsContent bare>
+        <ProfilesContent embedded />
+      </SettingsContent>
     ) : activeView === 'pet' ? (
       <SettingsContent>
         <PetSettings />

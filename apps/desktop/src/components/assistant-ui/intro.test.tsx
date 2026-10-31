@@ -57,13 +57,11 @@ describe('Intro (v3 empty state: left axis greeting, lede, quick chips, entry ca
     // §6: no green chip — the accent is reserved for verified states.
     expect(action.className).not.toContain('accent')
 
-    for (const key of ['forensics', 'ctf', 'idle']) {
-      const chip = screen.getByTestId(`intro-chip-placeholder-${key}`)
-      expect(chip.tagName).toBe('SPAN')
-      expect(chip.getAttribute('aria-disabled')).toBe('true')
-      expect(chip.className).toContain('opacity-60')
-      expect(chip.getAttribute('title')).toBe(en.home.chips.placeholderTip)
-    }
+    const placeholder = screen.getByTestId('intro-chip-placeholder-idle')
+    expect(placeholder.tagName).toBe('SPAN')
+    expect(placeholder.getAttribute('aria-disabled')).toBe('true')
+    expect(placeholder.className).toContain('opacity-60')
+    expect(placeholder.getAttribute('title')).toBe(en.home.chips.placeholderTip)
   })
 
   it('the quick-action chip performs the one real action: focusing the composer', () => {
@@ -73,25 +71,22 @@ describe('Intro (v3 empty state: left axis greeting, lede, quick chips, entry ca
     expect(mocks.requestComposerFocus).toHaveBeenCalledWith('active')
   })
 
-  it('lists the three entry cards in a three-column grid with clamped descriptions', () => {
+  it('lists the entry card in a grid with a clamped description', () => {
     const { container } = render(<Intro />)
 
-    const cards = ['forensics', 'ctf', 'project'].map(key => screen.getByTestId(`intro-mode-card-${key}`))
-    expect(cards).toHaveLength(3)
+    const card = screen.getByTestId('intro-mode-card-project')
 
-    for (const card of cards) {
-      expect(card.className).toContain('min-h-28')
-      expect(card.className).toContain('rounded-xl')
-      expect(card.className).toContain('p-4')
-    }
+    expect(card.className).toContain('min-h-28')
+    expect(card.className).toContain('rounded-xl')
+    expect(card.className).toContain('p-4')
 
     // Description is clamped to three lines, so a longer translation can never
-    // push the cards out of alignment.
+    // push the card out of alignment.
     for (const node of Array.from(container.querySelectorAll('[data-testid^="intro-mode-card-"] > div:last-child'))) {
       expect(node.className).toContain('line-clamp-3')
     }
 
-    const grid = cards[0].parentElement as HTMLElement
+    const grid = card.parentElement as HTMLElement
     expect(grid.className).toContain('sm:grid-cols-3')
     expect(grid.className).toContain('gap-3')
 

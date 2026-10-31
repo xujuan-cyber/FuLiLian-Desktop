@@ -105,13 +105,14 @@ describe('quickComposerReducer', () => {
   it('the chip carries its mode on the payload', () => {
     const { sent } = run([
       connect,
-      { mode: 'ctf', type: 'mode' },
+      { mode: 'note', type: 'mode' },
+      { mode: 'project', type: 'mode' },
       { target: 's1', type: 'target' },
-      { draft: 'rop gadget notes', type: 'edit' },
+      { draft: 'wire up the cache layer', type: 'edit' },
       { type: 'submit' }
     ])
 
-    expect(sent).toEqual([{ mode: 'ctf', target: 's1', text: 'rop gadget notes' }])
+    expect(sent).toEqual([{ mode: 'project', target: 's1', text: 'wire up the cache layer' }])
   })
 
   it('the note chip routes to the no-container inbox regardless of the session picker', () => {
@@ -129,9 +130,9 @@ describe('quickComposerReducer', () => {
 
   it('leaving note mode returns the target to the new-draft slot', () => {
     const noted = run([connect, { mode: 'note', type: 'mode' }]).state
-    const back = quickComposerReducer(noted, { mode: 'forensics', type: 'mode' }).state
+    const back = quickComposerReducer(noted, { mode: 'project', type: 'mode' }).state
 
-    expect(back.mode).toBe('forensics')
+    expect(back.mode).toBe('project')
     expect(back.target).toBe(QUICK_TARGET_NEW)
   })
 

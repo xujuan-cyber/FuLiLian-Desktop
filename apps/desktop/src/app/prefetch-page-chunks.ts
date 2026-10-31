@@ -35,8 +35,6 @@ const PAGE_MODULES: Array<() => Promise<unknown>> = [
   () => import('@/app/settings/config-settings'),
   () => import('@/app/agents'),
   () => import('@/app/artifacts'),
-  () => import('@/app/case-timeline'),
-  () => import('@/app/cases'),
   () => import('@/app/command-center'),
   () => import('@/app/cron'),
   () => import('@/app/messaging'),

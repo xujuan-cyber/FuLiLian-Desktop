@@ -109,7 +109,7 @@ export function ComposerControls({
         <>
           <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
           {/* The permission chip lives in the control row's LEFT zone (v3 §8.5:
-              `[+] [只读 · 取证]`) — see ChatBar — so it is deliberately absent
+              `[+] [只读]`) — see ChatBar — so it is deliberately absent
               here. The right zone is model · voice · send. */}
           {voiceControls}
         </>

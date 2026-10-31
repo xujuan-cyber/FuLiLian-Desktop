@@ -382,15 +382,12 @@ export const en: Translations = {
       'composer.history': 'Cycle popover / history',
       'composer.cancel': 'Close popover · cancel run',
       // Step 16 · T9 curated rows (store/keybinds-registry.ts KEYBIND_TABLE).
-      't9.newForensics': 'New forensics case',
-      't9.newCtf': 'New CTF challenge',
       't9.newProject': 'New coding task',
       't9.quickCapture': 'Quick capture',
       't9.sessionSlots': 'Switch session (slots 1-9)',
       't9.approvalOnce': 'Allow once',
       't9.approvalSession': 'Always allow this session',
       't9.approvalDeny': 'Reject',
-      't9.evidenceQuote': 'Quote evidence (forensics mode)',
       't9.zoom': 'Zoom interface',
       't9.quickSheet': 'Shortcut cheat sheet'
     }
@@ -411,65 +408,7 @@ export const en: Translations = {
     noResults: 'No languages found'
   },
 
-  container: {
-    meta: {
-      project: 'Project',
-      forensics: 'Forensics',
-      ctf: 'CTF',
-      caseNo: 'Case',
-      statsEvidence: 'Evidence',
-      statsAudit: 'Audit',
-      statsReport: 'Report',
-      event: 'Event',
-      categoryPoints: 'Category·Points',
-      countdown: 'Countdown',
-      countdownNone: 'No deadline'
-    },
-    cards: {
-      evidenceTitle: 'Evidence',
-      evidenceEmpty: 'Import evidence to begin — SHA256 is computed on import.',
-      auditTitle: 'Audit trail',
-      auditEmpty: 'No audit entries yet.',
-      flagVaultTitle: 'Flag vault',
-      flagEmpty: 'No saved flags.',
-      submissionsTitle: 'Submissions',
-      submissionsEmpty: 'No submissions recorded.',
-      toolboxTitle: 'Toolbox',
-      toolboxEmpty: 'Quick launchers arrive with the data layer.'
-    },
-    pills: {
-      caseNo: 'Case',
-      evidence: 'Evidence',
-      categoryPoints: 'Category·Points',
-      countdown: 'Countdown',
-      countdownNone: 'No deadline',
-      emptyValue: '—'
-    }
-  },
-
-  modeOnboarding: {
-    forensicsTitle: 'Forensics mode — authorization & guardrails',
-    forensicsIntro: 'Before you open a forensics case, review how evidence is handled. This briefing shows once.',
-    scopeHeading: 'Authorization scope',
-    scopeStatement:
-      'I confirm I am authorized to examine the evidence in this case, and that I will work only within the scope I have been granted.',
-    guardHeading: 'Read-only guardrails',
-    guardReadonly:
-      'Evidence directories are mounted read-only; any write needs approval, re-verification and an audit record.',
-    guardWrite: 'High-risk commands (rm -rf, dd, mkfs, shred, …) always require a second confirmation.',
-    guardHash: 'Evidence is hashed (SHA256) on import and re-verified before it is cited.',
-    ctfTitle: 'CTF mode — flag vault & audit',
-    ctfIntro: 'How flags are stored and tracked in CTF containers. This briefing shows once.',
-    vaultHeading: 'Flag vault',
-    vaultMask: 'Flags are masked by default and can be revealed on demand.',
-    vaultAudit: 'Every reveal and every submission is written to the audit log.',
-    confirm: 'Confirm and continue',
-    confirmHint: 'Tick the authorization statement to continue.'
-  },
-
   tray: {
-    newForensics: 'New forensics case',
-    newCtf: 'New CTF challenge',
     newProject: 'New coding task',
     runningHeading: 'Running',
     needsInputHeading: 'Needs input',
@@ -504,97 +443,7 @@ export const en: Translations = {
     noteRowHint: 'Quick capture note'
   },
 
-  caseTimeline: {
-    title: 'Timeline',
-    back: 'Back',
-    statEvents: count => `${count.toLocaleString()} events`,
-    mockBanner: 'Sample dataset — the forensics extraction pipeline is not wired yet; rows are generated, not real evidence.',
-    saveAsFinding: 'Save as finding',
-    exportCsv: 'Export CSV',
-    addToReport: 'Add to report',
-    savedAsFinding: 'Saved as finding',
-    addedToReport: 'Added to report draft',
-    exportCsvFailed: 'CSV export failed',
-    sourcesHeading: 'Sources',
-    rangeHeading: 'Time range',
-    confidenceHeading: 'Confidence',
-    tagsHeading: 'Tags',
-    starredOnlyChip: 'Starred',
-    confidenceFloor: min => `≥ ${min}%`,
-    histogramTitle: 'Event density',
-    histogramAggregate: '3-hour buckets',
-    histogramDrag: (from, to) => `Selected ${from} → ${to}`,
-    histogramEmpty: 'No events in range',
-    columnTime: 'Time (local)',
-    columnSource: 'Source',
-    columnEvent: 'Event',
-    columnConfidence: 'Confidence',
-    columnTags: 'Tags',
-    sourceRegistry: 'Registry',
-    sourceLog: 'System log',
-    sourcePcap: 'pcap',
-    sourceFile: 'Files',
-    footerTotal: total => `${total.toLocaleString()} events total`,
-    footerFiltered: filtered => `showing ${filtered.toLocaleString()} after filters`,
-    footerStarred: starred => `${starred.toLocaleString()} starred`,
-    footerStarSeam: 'Starred events sync into the report section',
-    loading: 'Loading timeline…',
-    loadFailed: 'Timeline failed to load',
-    empty: 'No timeline events for this case yet',
-    emptyFiltered: 'No events match the current filters',
-    sourceCount: count => `${count.toLocaleString()}`
-  },
-
   // Report & export pipeline (step 16 · T16, 方案 §5-T16).
-  reportCenter: {
-    title: 'Report center',
-    back: 'Back',
-    open: 'Report center',
-    caseLabel: 'Case',
-    draftHeading: 'Report draft',
-    draftHint:
-      'Assembled from real starred findings — the section template mirrors fulilian_ctf/writeup.py; the complete writeup is generated by the Python sidecar when the pipeline lands.',
-    sectionsHeading: 'Sections',
-    sectionSummary: 'Summary',
-    sectionTimeline: 'Timeline',
-    sectionFindings: 'Findings',
-    sectionArtifacts: 'Artifacts',
-    sectionFlags: 'Flags',
-    sectionEmpty: 'No data in this section yet',
-    starredCount: count => `${count.toLocaleString()} starred finding(s)`,
-    exportPdf: 'Export PDF',
-    exportCsv: 'Export CSV',
-    exportAuditJsonl: 'Export audit JSONL',
-    exportBusy: 'Exporting…',
-    exportPdfFailed: 'PDF export failed',
-    exportCsvFailed: 'CSV export failed',
-    exportAuditFailed: 'Audit JSONL export failed',
-    pdfSaved: 'Report PDF saved',
-    auditSaved: 'Audit JSONL saved',
-    addedToReport: 'Added to report draft',
-    generateSections: 'Assemble draft',
-    sectionsGenerated: 'Report draft assembled',
-    emptyDraft: 'No report data yet — star timeline events to feed the findings section'
-  },
-
-  // Cases overview page (step 16 · T14, 方案 §5-T14).
-  casesOverview: {
-    title: 'Cases',
-    subtitle: 'Work containers aggregated from real sessions',
-    filterActive: 'Active',
-    filterArchived: 'Archived',
-    cardSessions: 'sessions',
-    cardEvidence: 'Evidence',
-    cardAudit: 'Audit trail',
-    cardReport: 'Report',
-    cardLastActive: 'Last activity',
-    noContainer: 'No container',
-    untitledCase: 'Untitled work',
-    empty: 'No cases yet',
-    emptyDesc: 'Containers appear here as soon as real session work exists.',
-    emptyArchived: 'No archived cases',
-    emptyArchivedDesc: 'Nothing in this group matches — archived containers land here.'
-  },
 
   home: {
     greeting: {
@@ -604,10 +453,8 @@ export const en: Translations = {
     },
     lede: 'A goal, a piece of evidence, or a half-formed idea. I read the context first, then take the next step.',
     chips: {
-      programming: 'Continue case',
+      programming: 'Continue where you left off',
       programmingTip: 'Focus the composer and pick up where you left off',
-      forensics: 'New evidence',
-      ctf: 'Take a CTF',
       idle: 'Idle task',
       placeholderTip: 'Available once evidence data is connected'
     },
@@ -617,10 +464,6 @@ export const en: Translations = {
       more: 'Templates'
     },
     modeCards: {
-      forensics: 'Evidence cases',
-      forensicsDesc: 'Integrity checks, audit trail, and report drafts in one chain.',
-      ctf: 'CTF challenges',
-      ctfDesc: 'Flag vault, submission history, and a timer per challenge.',
       project: 'Code projects',
       projectDesc: 'One workspace: repo, terminal, preview, and git changes.'
     }
@@ -646,54 +489,6 @@ export const en: Translations = {
       highRiskCommandsDesc:
         'Commands that always require a second confirmation regardless of mode (comma separated). The interception layer itself lands with the data layer; this page only records the list.'
     },
-    evidence: {
-      nav: 'Evidence protection',
-      title: 'Evidence protection',
-      intro:
-        'For forensics cases. Preferences apply to the evidence container when its data layer is active; they are recorded now so nothing has to be re-decided later.',
-      readOnly: 'Read-only evidence mount',
-      readOnlyDesc:
-        'Evidence directories mount read-only. Writes require an approval and are always audited. Default on, and never turned off silently.',
-      verifyOnReference: 'Verify before reference',
-      verifyOnReferenceDesc:
-        'Re-compute SHA256 each time an evidence file is referenced; a mismatch blocks the reference. Default on.',
-      archiveLock: 'Lock writes on archive',
-      archiveLockDesc:
-        'Archived cases reject write operations until they are unlocked with an approval and an audit entry.',
-      disableConfirmTitle: 'Turn off the read-only evidence mount?'
-    },
-    audit: {
-      nav: 'Audit trail',
-      title: 'Audit trail',
-      intro:
-        'Local audit logging of tool calls, writes, unlocks and reveals — the compliance record for legal forensics work.',
-      enabled: 'Audit logging',
-      enabledDesc:
-        'Record agent tool calls, write operations and manual events (unlock, reveal, export) to the local audit log. Default on.',
-      retention: 'Retention period',
-      retentionDesc: 'How long audit entries are kept locally before cleanup.',
-      retentionPermanent: 'Forever',
-      exportTitle: 'Export & clear',
-      export: 'Export',
-      clear: 'Clear',
-      dataLayerNote:
-        'The audit store itself arrives with the data layer (later round) — these controls enable there and are inert until then.'
-    },
-    sensitive: {
-      nav: 'Sensitive info',
-      title: 'Sensitive information',
-      intro:
-        'What Fulilian masks before it reaches the model or the screen. Flag masking applies in CTF mode; secret masking applies everywhere.',
-      redactSecrets: 'Redact secrets',
-      redactSecretsDesc: 'Hide detected secrets (keys, tokens, passwords) from model-visible content when possible. Default on.',
-      redactFlags: 'Redact flags',
-      redactFlagsDesc: 'Mask CTF flags in captured output; reveal per flag card with an explicit action.',
-      customRegex: 'Custom pattern',
-      customRegexDesc: 'An extra regular expression whose matches are masked like secrets.',
-      customRegexPlaceholder: 'Regular expression',
-      revealAudited: 'Audit reveals',
-      revealAuditedDesc: 'Every unmask/reveal action is written to the audit trail. Default on.'
-    }
   },
 
   settings: {
@@ -901,7 +696,8 @@ export const en: Translations = {
     },
     group: {
       basics: 'Basics',
-      'work-mode': 'Work modes',
+      agent: 'Agents',
+      workspace: 'Workspace',
       'model-capabilities': 'Models & capabilities',
       'security-compliance': 'Security & compliance',
       'connection-data': 'Connection & data',
@@ -909,58 +705,6 @@ export const en: Translations = {
       // The programming entry reuses the existing workspace page (a link, not
       // a new page) — DESIGN_PROPOSAL §5.5.
       programming: 'Programming',
-      forensics: {
-        nav: 'Forensics',
-        title: 'Forensics',
-        intro:
-          'Defaults for forensics cases: case numbering, report structure and timeline sources. Case data itself is managed per case, not here.',
-        caseNoTemplate: 'Case number template',
-        caseNoTemplateDesc:
-          'Format used when a new case number is minted. YYYY is the year, NNN a zero-padded counter.',
-        reportSections: 'Report section template',
-        reportSectionsDesc:
-          'Which sections a generated report draft contains. Draft generation itself arrives with the data layer (later round) — the structure is recorded here.',
-        reportSectionNames: {
-          overview: 'Overview',
-          evidence: 'Evidence inventory',
-          analysis: 'Analysis process',
-          conclusion: 'Conclusion',
-          appendix: 'Appendix'
-        },
-        reportSectionDescs: {
-          overview: 'Case summary, scope and authorization basis.',
-          evidence: 'Evidence list with hashes and verify status.',
-          analysis: 'Timeline and findings, referencing evidence by hash.',
-          conclusion: 'Answers to the case questions, with confidence notes.',
-          appendix: 'Tool versions, environment and raw exports.'
-        },
-        timelineSources: 'Timeline sources',
-        timelineSourcesDesc:
-          'Which source types timeline extraction may draw from. Extraction arrives with the data layer (later round).',
-        timelineSourceNames: {
-          mirror: 'Disk images',
-          logs: 'Logs',
-          pcap: 'Packet captures'
-        },
-        timelineSourceDescs: {
-          mirror: 'Filesystem artifacts from mounted images.',
-          logs: 'Application, system and security event logs.',
-          pcap: 'Network captures and flow records.'
-        }
-      },
-      ctf: {
-        nav: 'CTF',
-        title: 'CTF',
-        intro:
-          'Defaults for CTF challenges: flag recognition, event timezone and submission retries. Flags themselves live encrypted in the flag vault.',
-        flagRegex: 'Flag pattern',
-        flagRegexDesc: 'Regular expression used to detect and mask flags in tool output.',
-        defaultTimezone: 'Default event timezone',
-        defaultTimezoneDesc: 'Timezone used for challenge deadlines that do not state one (IANA name).',
-        submitRetryLimit: 'Submission retry limit',
-        submitRetryLimitDesc:
-          'How many wrong submissions are recorded for one challenge before a cooldown is suggested.'
-      },
       skinGallery: {
         title: 'Skin gallery',
         recommended: 'Recommended'
@@ -1989,11 +1733,8 @@ export const en: Translations = {
       pages: 'Pages',
       containers: 'Containers'
     },
-    newForensics: 'New forensics case',
-    newCtf: 'New CTF challenge',
     newCodingTask: 'New coding task',
-    casesOverview: 'Cases overview',
-    comingSoon: 'Coming soon',
+
     paletteFooter: {
       select: 'Select',
       run: 'Run',
@@ -2932,14 +2673,6 @@ export const en: Translations = {
     brandWordmark: 'FuLilian',
     newTask: 'New task',
     searchCommandPalette: 'Search (command palette)',
-    kind: {
-      all: 'All',
-      forensics: 'Forensics',
-      ctf: 'CTF',
-      project: 'Projects',
-      forensicsEmpty: 'No forensics cases yet',
-      ctfEmpty: 'No CTF challenges yet'
-    },
     gateway: {
       local: 'Local gateway',
       connected: 'Connected',

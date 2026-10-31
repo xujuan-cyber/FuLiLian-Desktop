@@ -203,9 +203,6 @@ import { probeGatewayWebSocket } from './gateway-ws-probe'
 import { registerGitIpc } from './git-ipc'
 import { clearStaleGitLocks } from './gitlock'
 import { readAndConsumeHandoffResult } from './handoff-result'
-import { registerCaseTimelineIpc } from './case-timeline'
-// 报告与导出管线（step 16 · T16）— fulilian:report-export 单通道。
-import { registerReportExportIpc } from './report-export'
 import {
   ATTACHMENT_UPLOAD_DEFAULT_MAX_BYTES,
   clampDataUrlReadMaxMb,
@@ -316,7 +313,7 @@ import {
   spliceRegistrySessionRows,
   tagRegistrySessionResponse
 } from './profile-session-routing'
-import { createQuickEntryShortcut, formatQuickCaptureAuditLine, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
+import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
@@ -16569,20 +16566,6 @@ ipcMain.on('fulilian:quick-entry:submit', (_event, payload) => {
     return
   }
 
-  // Step 16 · T7: a forensics-mode capture leaves its audit trail HERE, at the
-  // one choke point every submit transits — even when it is dropped below for
-  // lack of a primary window. The line records mode/target/LENGTH/outcome only,
-  // never the captured content (see quick-entry.ts formatQuickCaptureAuditLine).
-  const auditLine = formatQuickCaptureAuditLine(
-    payload,
-    text.length,
-    mainWindow && !mainWindow.isDestroyed() ? 'forwarded' : 'dropped-no-primary-window'
-  )
-
-  if (auditLine) {
-    rememberLog(auditLine)
-  }
-
   if (!mainWindow || mainWindow.isDestroyed()) {
     rememberLog('[quick-entry] dropped a submit: no primary window to route it to')
 
@@ -16821,13 +16804,6 @@ const terminalIpc = registerTerminalIpc({
 
 registerWslCliIpc({ rememberLog })
 registerTerminalShellIpc({ rememberLog })
-
-// 取证时间线桥接（step 16 · T13）：ctf:importEvent / forensics:timeline；P2 管线未就绪 ⇒ mock 数据集（显式标注 mockGenerated，见 case-timeline.ts）。
-registerCaseTimelineIpc({ log: rememberLog })
-
-// 报告与导出管线（step 16 · T16）：fulilian:report-export 单通道——MD→PDF
-// （printToPDF 原生能力）/ 审计标记行 / 审计行聚合导出，见 report-export.ts。
-registerReportExportIpc({ auditLogPath: DESKTOP_LOG_PATH, downloadsPath: app.getPath('downloads'), log: rememberLog })
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession
 

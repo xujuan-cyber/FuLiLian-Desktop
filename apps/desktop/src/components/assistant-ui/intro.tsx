@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react'
 
 import { requestComposerFocus } from '@/app/chat/composer/focus'
 import { useI18n } from '@/i18n'
-import { ChevronRight, FileText, GitBranch, Terminal } from '@/lib/icons'
+import { ChevronRight, GitBranch } from '@/lib/icons'
 
 export type IntroProps = {
   /** v3 §8.3: the empty-state composer node, mounted by the caller and
@@ -24,17 +24,9 @@ export function Intro({ composer }: IntroProps) {
   const [hour] = useState(() => new Date().getHours())
   const greeting = hour < 12 ? h.greeting.morning : hour < 18 ? h.greeting.afternoon : h.greeting.evening
 
-  const cards = [
-    { desc: h.modeCards.forensicsDesc, icon: FileText, key: 'forensics' as const, title: h.modeCards.forensics },
-    { desc: h.modeCards.ctfDesc, icon: Terminal, key: 'ctf' as const, title: h.modeCards.ctf },
-    { desc: h.modeCards.projectDesc, icon: GitBranch, key: 'project' as const, title: h.modeCards.project }
-  ]
+  const cards = [{ desc: h.modeCards.projectDesc, icon: GitBranch, key: 'project' as const, title: h.modeCards.project }]
 
-  const pendingChips = [
-    { key: 'forensics' as const, label: h.chips.forensics },
-    { key: 'ctf' as const, label: h.chips.ctf },
-    { key: 'idle' as const, label: h.chips.idle }
-  ]
+  const pendingChips = [{ key: 'idle' as const, label: h.chips.idle }]
 
   return (
     // v3 empty state: one left axis inside a centred column. The row gap below

@@ -267,60 +267,6 @@ export const ja = defineLocale({
     noResults: '言語が見つかりません'
   },
 
-  container: {
-    meta: {
-      project: 'プロジェクト',
-      forensics: '取証',
-      ctf: 'CTF',
-      caseNo: '案件番号',
-      statsEvidence: '証拠',
-      statsAudit: '監査',
-      statsReport: '報告書',
-      event: 'イベント',
-      categoryPoints: '分野·配点',
-      countdown: 'カウントダウン',
-      countdownNone: '締切未設定'
-    },
-    cards: {
-      evidenceTitle: '証拠一覧',
-      evidenceEmpty: '証拠をインポートして開始——インポート時に SHA256 を計算します。',
-      auditTitle: '監査ログ',
-      auditEmpty: '監査記録はまだありません。',
-      flagVaultTitle: 'flag 保管庫',
-      flagEmpty: '保存済み flag はありません。',
-      submissionsTitle: '提出履歴',
-      submissionsEmpty: '提出の記録はありません。',
-      toolboxTitle: 'ツールボックス',
-      toolboxEmpty: 'クイック起動はデータ層と共に提供されます。'
-    },
-    pills: {
-      caseNo: '案件番号',
-      evidence: '証拠',
-      categoryPoints: '分野·配点',
-      countdown: 'カウントダウン',
-      countdownNone: '締切未設定',
-      emptyValue: '—'
-    }
-  },
-
-  modeOnboarding: {
-    forensicsTitle: 'フォレンジックモード——認可とガードレール',
-    forensicsIntro: 'フォレンジック案件を開く前に、証拠の扱い方を確認してください。この案内は一度だけ表示されます。',
-    scopeHeading: '認可範囲',
-    scopeStatement: '私は本案の証拠を検査する権限を有しており、付与された範囲内でのみ作業することを確認します。',
-    guardHeading: '読み取り専用ガードレール',
-    guardReadonly: '証拠ディレクトリは読み取り専用でマウントされます。書き込みには承認・再検証・監査記録が必要です。',
-    guardWrite: '高リスクコマンド（rm -rf、dd、mkfs、shred など）は常に二段階確認を要します。',
-    guardHash: '証拠は取り込み時にハッシュ（SHA256）を計算し、引用前に再検証します。',
-    ctfTitle: 'CTF モード——flag 保管庫と監査',
-    ctfIntro: 'CTF コンテナでの flag の保存と追跡方法を確認してください。この案内は一度だけ表示されます。',
-    vaultHeading: 'flag 保管庫',
-    vaultMask: 'flag は既定でマスクされ、必要に応じて表示できます。',
-    vaultAudit: '表示・非表示のたびに、提出のたびに監査ログへ記録されます。',
-    confirm: '確認して続行',
-    confirmHint: '続行するには認可声明にチェックを入れてください。'
-  },
-
   // ステップ 16 · T9: 4グループレイアウト（方案 §3-T9）— 設定ページと
   // ? チートシートが store/keybinds-registry.ts 経由で共通参照する。
   keybinds: {
@@ -445,15 +391,12 @@ export const ja = defineLocale({
       'composer.help': 'クイックヘルプ',
       'composer.history': 'ポップオーバー/履歴の切り替え',
       'composer.cancel': 'ポップオーバーを閉じる · 実行をキャンセル',
-      't9.newForensics': 'フォレンジック案件を新規作成',
-      't9.newCtf': 'CTF 問題を新規作成',
       't9.newProject': 'コーディングタスクを新規作成',
       't9.quickCapture': 'クイックキャプチャ',
       't9.sessionSlots': 'セッション切替（スロット 1-9）',
       't9.approvalOnce': '一度だけ許可',
       't9.approvalSession': 'このセッションは常に許可',
       't9.approvalDeny': '拒否',
-      't9.evidenceQuote': '証拠を引用（フォレンジックモード）',
       't9.zoom': '表示の拡大縮小',
       't9.quickSheet': 'ショートカット早見表'
     }
@@ -464,8 +407,6 @@ export const ja = defineLocale({
   },
 
   tray: {
-    newForensics: 'フォレンジック案件を新規作成',
-    newCtf: 'CTF 問題を新規作成',
     newProject: 'コーディングタスクを新規作成',
     runningHeading: '実行中',
     needsInputHeading: '入力待ち',
@@ -500,97 +441,7 @@ export const ja = defineLocale({
     noteRowHint: 'クイックメモ'
   },
 
-  caseTimeline: {
-    title: 'タイムライン',
-    back: '戻る',
-    statEvents: count => `イベント ${count.toLocaleString()} 件`,
-    mockBanner: 'サンプルデータセット——フォレンジック抽出パイプラインは未接続のため、以下のイベントは生成データであり実際の証拠ではありません。',
-    saveAsFinding: '発見として保存',
-    exportCsv: 'CSV をエクスポート',
-    addToReport: 'レポートに追加',
-    savedAsFinding: '発見として保存しました',
-    addedToReport: 'レポート下書きに追加しました',
-    exportCsvFailed: 'CSV のエクスポートに失敗しました',
-    sourcesHeading: 'ソース',
-    rangeHeading: '期間',
-    confidenceHeading: '信頼度',
-    tagsHeading: 'タグ',
-    starredOnlyChip: 'スター付き',
-    confidenceFloor: min => `≥ ${min}%`,
-    histogramTitle: 'イベント密度',
-    histogramAggregate: '3 時間ごとに集計',
-    histogramDrag: (from, to) => `選択 ${from} → ${to}`,
-    histogramEmpty: '範囲内にイベントはありません',
-    columnTime: '時刻（ローカル）',
-    columnSource: 'ソース',
-    columnEvent: 'イベント',
-    columnConfidence: '信頼度',
-    columnTags: 'タグ',
-    sourceRegistry: 'レジストリ',
-    sourceLog: 'システムログ',
-    sourcePcap: 'pcap',
-    sourceFile: 'ファイル',
-    footerTotal: total => `合計 ${total.toLocaleString()} 件`,
-    footerFiltered: filtered => `フィルター後 ${filtered.toLocaleString()} 件を表示`,
-    footerStarred: starred => `スター付き ${starred.toLocaleString()} 件`,
-    footerStarSeam: 'スター付きイベントはレポート章節に同期されます',
-    loading: 'タイムラインを読み込み中…',
-    loadFailed: 'タイムラインの読み込みに失敗しました',
-    empty: 'このケースにはタイムラインイベントがまだありません',
-    emptyFiltered: '現在のフィルターに一致するイベントはありません',
-    sourceCount: count => `${count.toLocaleString()}`
-  },
-
   // レポートとエクスポートパイプライン（step 16 · T16、方案 §5-T16）。
-  reportCenter: {
-    title: 'レポートセンター',
-    back: '戻る',
-    open: 'レポートセンター',
-    caseLabel: 'ケース',
-    draftHeading: 'レポート草案',
-    draftHint:
-      '草案は実際のスター付き発見から組み立てられます——章テンプレートは fulilian_ctf/writeup.py に準拠し、パイプライン接続後の完全な writeup は Python sidecar が生成します。',
-    sectionsHeading: '章',
-    sectionSummary: '概要',
-    sectionTimeline: 'タイムライン',
-    sectionFindings: '主要な発見',
-    sectionArtifacts: '添付資料',
-    sectionFlags: 'Flag 結論',
-    sectionEmpty: 'この章にはまだデータがありません',
-    starredCount: count => `スター付き発見 ${count.toLocaleString()} 件`,
-    exportPdf: 'PDF をエクスポート',
-    exportCsv: 'CSV をエクスポート',
-    exportAuditJsonl: '監査 JSONL をエクスポート',
-    exportBusy: 'エクスポート中…',
-    exportPdfFailed: 'PDF のエクスポートに失敗しました',
-    exportCsvFailed: 'CSV のエクスポートに失敗しました',
-    exportAuditFailed: '監査 JSONL のエクスポートに失敗しました',
-    pdfSaved: 'レポート PDF を保存しました',
-    auditSaved: '監査 JSONL を保存しました',
-    addedToReport: 'レポート草案に追加しました',
-    generateSections: '草案を組み立てる',
-    sectionsGenerated: 'レポート草案を組み立てました',
-    emptyDraft: 'レポートデータがまだありません——タイムラインイベントにスターを付けて主要な発見の章に入力してください'
-  },
-
-  // ケース一覧ページ（step 16 · T14、方案 §5-T14）。
-  casesOverview: {
-    title: 'ケース',
-    subtitle: '実セッションから集約した作業コンテナ',
-    filterActive: '進行中',
-    filterArchived: 'アーカイブ済み',
-    cardSessions: 'セッション',
-    cardEvidence: '証拠数',
-    cardAudit: '記録数',
-    cardReport: 'レポート状態',
-    cardLastActive: '最終アクティビティ',
-    noContainer: 'コンテナなし',
-    untitledCase: '無題の作業',
-    empty: 'ケースはまだありません',
-    emptyDesc: '実セッションの作業ができ次第、コンテナがここに表示されます。',
-    emptyArchived: 'アーカイブ済みのケースはありません',
-    emptyArchivedDesc: 'このグループに一致するものはありません——アーカイブ済みコンテナはここに表示されます。'
-  },
 
   home: {
     greeting: {
@@ -600,10 +451,8 @@ export const ja = defineLocale({
     },
     lede: '目的でも、証拠でも、まとまっていない考えでも。まず文脈を読み、次の一歩を提案します。',
     chips: {
-      programming: '案件を続ける',
+      programming: '前回の続きから',
       programmingTip: '入力欄にフォーカスして続きを入力します',
-      forensics: '証拠を追加',
-      ctf: 'CTF に挑戦',
       idle: 'すきま作業',
       placeholderTip: 'データ連携後に利用できます'
     },
@@ -613,10 +462,6 @@ export const ja = defineLocale({
       more: 'テンプレート'
     },
     modeCards: {
-      forensics: '証拠案件',
-      forensicsDesc: '証拠の完全性検証、監査ログ、レポート草案まで一続き。',
-      ctf: 'CTF 問題',
-      ctfDesc: 'flag 保管庫、提出履歴、問題ごとのタイマー。',
       project: 'コードプロジェクト',
       projectDesc: 'リポジトリ、ターミナル、プレビュー、git 差分を一画面に。'
     }
@@ -642,56 +487,6 @@ export const ja = defineLocale({
       highRiskCommandsDesc:
         'モードに関係なく二次確認が必要なコマンド（カンマ区切り）。遮断層そのものはデータ層と共に提供され、このページはリストを記録するだけです。'
     },
-    evidence: {
-      nav: '証拠保護',
-      title: '証拠保護',
-      intro:
-        '取証案件向け。以下の設定は証拠コンテナのデータ層が有効になると適用されます——今のうちに記録しておけば、後で改めて決める必要はありません。',
-      readOnly: '証拠ディレクトリの読み取り専用マウント',
-      readOnlyDesc:
-        '証拠ディレクトリは読み取り専用でマウントされます。書き込みには承認が必要で、必ず監査されます。デフォルトはオンで、黙ってオフにはできません。',
-      verifyOnReference: '参照前に検証',
-      verifyOnReferenceDesc:
-        '証拠ファイルを参照するたびに SHA256 を再計算し、不一致なら参照を遮断します。デフォルトはオン。',
-      archiveLock: 'アーカイブ時に書き込みをロック',
-      archiveLockDesc:
-        'アーカイブ済み案件は、承認と監査記録付きの解除まで書き込み操作を拒否します。',
-      disableConfirmTitle: '証拠ディレクトリの読み取り専用マウントを解除しますか？'
-    },
-    audit: {
-      nav: '監査ログ',
-      title: '監査ログ',
-      intro:
-        'ツール呼び出し・書き込み・解除・表示の操作を記録するローカル監査ログ——合法な取証作業のためのコンプライアンス記録です。',
-      enabled: '監査ログ',
-      enabledDesc:
-        'agent のツール呼び出し、書き込み操作、手動イベント（解除・表示・書き出し）をローカル監査ログに記録します。デフォルトはオン。',
-      retention: '保持期間',
-      retentionDesc: '監査エントリをローカルに保持する期間。',
-      retentionPermanent: '無期限',
-      exportTitle: '書き出しと消去',
-      export: '書き出し',
-      clear: '消去',
-      dataLayerNote:
-        '監査ストア本体はデータ層（後のラウンド）で提供されます——それまでは無効で、データは生成されません。'
-    },
-    sensitive: {
-      nav: '機密情報',
-      title: '機密情報',
-      intro:
-        'モデルや画面に届く前に Fulilian がマスクする内容のルール。flag のマスクは CTF モード、シークレットのマスクは全環境で有効です。',
-      redactSecrets: 'シークレットのマスク',
-      redactSecretsDesc:
-        '検出されたシークレット（キー・トークン・パスワード）を可能な限りモデル可視コンテンツから隠します。デフォルトはオン。',
-      redactFlags: 'flag のマスク',
-      redactFlagsDesc:
-        'ツール出力中の CTF flag をマスクします。flag カードから明示的な操作でのみ表示します。',
-      customRegex: 'カスタムパターン',
-      customRegexDesc: '追加の正規表現。一致した内容はシークレットと同様にマスクされます。',
-      customRegexPlaceholder: '正規表現',
-      revealAudited: '表示を監査',
-      revealAuditedDesc: 'マスク解除・表示の操作はすべて監査ログに記録されます。デフォルトはオン。'
-    }
   },
 
   settings: {
@@ -903,66 +698,14 @@ export const ja = defineLocale({
     },
     group: {
       basics: '基本',
-      'work-mode': '作業モード',
+      agent: 'エージェント',
+      workspace: 'ワークスペース',
       'model-capabilities': 'モデルと能力',
       'security-compliance': 'セキュリティとコンプライアンス',
       'connection-data': '接続とデータ',
       apps: 'アプリ',
       // プログラミング入口は既存のワークスペースページを再利用（リンク、新ページなし）——DESIGN_PROPOSAL §5.5。
       programming: 'プログラミング',
-      forensics: {
-        nav: '取証',
-        title: '取証',
-        intro:
-          '取証案件のデフォルト設定：案件番号、報告書構成、タイムラインのソース。案件データ自体は案件ごとに管理され、ここでは扱いません。',
-        caseNoTemplate: '案件番号テンプレート',
-        caseNoTemplateDesc:
-          '新しい案件番号を発行する際の形式。YYYY は年、NNN はゼロ埋めの連番です。',
-        reportSections: '報告書セクションテンプレート',
-        reportSectionsDesc:
-          '生成される報告書ドラフトに含めるセクション。ドラフト生成そのものはデータ層（後のラウンド）で提供されます——ここでは構成だけを記録します。',
-        reportSectionNames: {
-          overview: '概要',
-          evidence: '証拠一覧',
-          analysis: '分析過程',
-          conclusion: '結論',
-          appendix: '付録'
-        },
-        reportSectionDescs: {
-          overview: '案件の要約、範囲、承認根拠。',
-          evidence: 'ハッシュと検証状態付きの証拠リスト。',
-          analysis: 'タイムラインと所見。ハッシュで証拠を参照。',
-          conclusion: '案件の問いへの回答と信頼度メモ。',
-          appendix: 'ツールバージョン、環境、生データの書き出し。'
-        },
-        timelineSources: 'タイムラインのソース',
-        timelineSourcesDesc:
-          'タイムライン抽出が参照できるソースの種類。抽出はデータ層（後のラウンド）で提供されます。',
-        timelineSourceNames: {
-          mirror: 'ディスクイメージ',
-          logs: 'ログ',
-          pcap: 'パケットキャプチャ'
-        },
-        timelineSourceDescs: {
-          mirror: 'マウントされたイメージ内のファイルシステム痕跡。',
-          logs: 'アプリ・システム・セキュリティイベントログ。',
-          pcap: 'ネットワークキャプチャとフローレコード。'
-        }
-      },
-      ctf: {
-        nav: 'CTF',
-        title: 'CTF',
-        intro:
-          'CTF 問題のデフォルト設定：flag の認識、イベントのタイムゾーン、提出のリトライ。flag 本体は保管庫に暗号化して保存されます。',
-        flagRegex: 'flag パターン',
-        flagRegexDesc: 'ツール出力中の flag を検出・マスクする正規表現。',
-        defaultTimezone: 'デフォルトのイベントタイムゾーン',
-        defaultTimezoneDesc:
-          '問題がタイムゾーンを明示しない場合の締切に使うタイムゾーン（IANA 名）。',
-        submitRetryLimit: '提出リトライ上限',
-        submitRetryLimitDesc:
-          '1 問あたり記録される誤提出の上限。超えるとクールダウンを提案します。'
-      },
       skinGallery: {
         title: 'スキンギャラリー',
         recommended: 'おすすめ'
@@ -2216,11 +1959,8 @@ export const ja = defineLocale({
       pages: 'ページ',
       containers: 'コンテナ'
     },
-    newForensics: '取証案件を新規作成',
-    newCtf: 'CTF 問題を新規作成',
     newCodingTask: 'コーディングタスクを新規作成',
-    casesOverview: '案件一覧',
-    comingSoon: '近日提供',
+
     paletteFooter: {
       select: '選択',
       run: '実行',
@@ -3166,14 +2906,6 @@ export const ja = defineLocale({
     brandWordmark: 'FuLilian',
     newTask: '新規タスク',
     searchCommandPalette: '検索（コマンドパレット）',
-    kind: {
-      all: 'すべて',
-      forensics: 'フォレンジック',
-      ctf: 'CTF',
-      project: 'プロジェクト',
-      forensicsEmpty: 'フォレンジック案件はまだありません',
-      ctfEmpty: 'CTF 問題はまだありません'
-    },
     gateway: {
       local: 'ローカルゲートウェイ',
       connected: '接続済み',

@@ -39,7 +39,7 @@ const TAB_IDLE =
 
 // A tab riding a multi-tab selection: a neutral wash over whatever surface the
 // tab sits on. ZCode never tints chrome with the accent — orange is reserved
-// for signals (permissions, CTF, counters) — so selection reads as "pressed
+// for signals (permissions, counters) — so selection reads as "pressed
 // surface", not "brand highlight". A background-image gradient (not a shadow)
 // stacks cleanly over `--tab-bg` without fighting the close gradients.
 // `--tab-face` gets the same wash flattened in, keeping the close fade honest.

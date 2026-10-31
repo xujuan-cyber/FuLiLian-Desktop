@@ -63,14 +63,12 @@ afterEach(() => {
 })
 
 describe('QuickCaptureApp', () => {
-  it('renders the capture surface: title, four mode chips, target picker fed by the push', async () => {
+  it('renders the capture surface: title, the capture chips, target picker fed by the push', async () => {
     render(<QuickCaptureApp />)
     pushState(true, [{ id: 's1', title: 'Fix the build' }])
     pushes.onShown?.()
 
     expect(screen.getByText('Quick capture')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Forensics/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /CTF/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Code/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Note/ })).toBeTruthy()
 
@@ -121,16 +119,19 @@ describe('QuickCaptureApp', () => {
     expect(submitMock).toHaveBeenCalledWith({ mode: 'note', target: 'note', text: 'buy milk' })
   })
 
-  it('the mode chip rides the payload and a picked session becomes the target', () => {
+  it('a picked session becomes the target', async () => {
     render(<QuickCaptureApp />)
     pushState(true, [{ id: 's1', title: 'Fix the build' }])
 
-    fireEvent.click(screen.getByRole('button', { name: /CTF/ }))
-    fireEvent.change(screen.getByLabelText('Record into'), { target: { value: 's1' } })
-    fireEvent.change(screen.getByRole('textbox', { name: 'Quick capture' }), { target: { value: 'rop gadget notes' } })
+    const picker = await screen.findByLabelText('Record into')
+
+    await screen.findByRole('option', { name: 'Fix the build' })
+
+    fireEvent.change(picker, { target: { value: 's1' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Quick capture' }), { target: { value: 'wire up the cache layer' } })
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'Quick capture' }), { key: 'Enter' })
 
-    expect(submitMock).toHaveBeenCalledWith({ mode: 'ctf', target: 's1', text: 'rop gadget notes' })
+    expect(submitMock).toHaveBeenCalledWith({ mode: 'project', target: 's1', text: 'wire up the cache layer' })
   })
 
   it('an empty submit sends nothing and never hides the window', () => {

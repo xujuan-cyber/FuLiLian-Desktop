@@ -49,23 +49,16 @@ const row = (id: string, title = id) => ({ id, title })
 // ── Menu model ──────────────────────────────────────────────────────────────
 
 describe('buildTrayMenuModel', () => {
-  test('orders the fixed entries and carries the three mode kinds + copy keys', () => {
+  test('orders the fixed entries and carries the new-task kind + copy key', () => {
     const model = buildTrayMenuModel(EMPTY_TRAY_SNAPSHOT)
 
-    assert.deepEqual(
-      model.map(item => item.type),
-      ['new-session', 'new-session', 'new-session', 'separator', 'open-main', 'separator', 'quit']
-    )
+    assert.deepEqual(model.map(item => item.type), ['new-session', 'separator', 'open-main', 'separator', 'quit'])
 
     const newTasks = model.filter(isNewSession)
 
     assert.deepEqual(
       newTasks.map(item => [item.labelKey, item.sessionKind, item.accelerator]),
-      [
-        ['newForensics', 'forensics', TRAY_ACCELERATORS.newForensics],
-        ['newCtf', 'ctf', TRAY_ACCELERATORS.newCtf],
-        ['newProject', 'project', TRAY_ACCELERATORS.newProject]
-      ]
+      [['newProject', 'project', TRAY_ACCELERATORS.newProject]]
     )
 
     const openMain = model.find(isOpenMain)
@@ -349,22 +342,16 @@ describe('createDesktopTray', () => {
     assert.deepEqual(harness.calls, [['openMainWindow', undefined]])
   })
 
-  test('the three new-task items fire their own kind', () => {
+  test('the new-task item fires its kind', () => {
     const harness = createHarness()
 
     createDesktopTray(harness.options)
 
     const template = harness.template()
 
-    clickItem(template, EMPTY_TRAY_LABELS.newForensics)
-    clickItem(template, EMPTY_TRAY_LABELS.newCtf)
     clickItem(template, EMPTY_TRAY_LABELS.newProject)
 
-    assert.deepEqual(harness.calls, [
-      ['newSession', 'forensics'],
-      ['newSession', 'ctf'],
-      ['newSession', 'project']
-    ])
+    assert.deepEqual(harness.calls, [['newSession', 'project']])
   })
 
   test('a pushed snapshot drives the group rows, counts and the quit/open items', () => {

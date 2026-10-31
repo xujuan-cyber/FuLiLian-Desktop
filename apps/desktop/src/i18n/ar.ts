@@ -366,15 +366,12 @@ export const ar = defineLocale({
       'composer.history': 'التنقل في النافذة المنبثقة / السجل',
       'composer.cancel': 'إغلاق النافذة المنبثقة · إلغاء التشغيل',
       // الخطوة 16 · T9: صفوف ورقة الغش (store/keybinds-registry.ts).
-      't9.newForensics': 'قضية جنائية رقمية جديدة',
-      't9.newCtf': 'تحدي CTF جديد',
       't9.newProject': 'مهمة برمجية جديدة',
       't9.quickCapture': 'الالتقاط السريع',
       't9.sessionSlots': 'تبديل الجلسة (الخانات 1-9)',
       't9.approvalOnce': 'السماح مرة واحدة',
       't9.approvalSession': 'السماح دائما في هذه الجلسة',
       't9.approvalDeny': 'رفض',
-      't9.evidenceQuote': 'اقتباس الدليل (وضع التحقيق)',
       't9.zoom': 'تكبير الواجهة',
       't9.quickSheet': 'ورقة اختصارات لوحة المفاتيح'
     }
@@ -392,63 +389,8 @@ export const ar = defineLocale({
     searchPlaceholder: 'ابحث عن لغة...',
     noResults: 'لا توجد لغة مطابقة'
   },
-  container: {
-    meta: {
-      project: 'مشروع',
-      forensics: 'الأدلة الجنائية',
-      ctf: 'CTF',
-      caseNo: 'رقم الحالة',
-      statsEvidence: 'الأدلة',
-      statsAudit: 'التدقيق',
-      statsReport: 'التقرير',
-      event: 'الفعالية',
-      categoryPoints: 'الفئة·النقاط',
-      countdown: 'العد التنازلي',
-      countdownNone: 'لا موعد نهائي'
-    },
-    cards: {
-      evidenceTitle: 'قائمة الأدلة',
-      evidenceEmpty: 'استورد الأدلة للبدء — يُحسب SHA256 عند الاستيراد.',
-      auditTitle: 'سجل التدقيق',
-      auditEmpty: 'لا توجد مدخلات تدقيق بعد.',
-      flagVaultTitle: 'خزنة الأعلام',
-      flagEmpty: 'لا توجد أعلام محفوظة.',
-      submissionsTitle: 'سجل المحاولات',
-      submissionsEmpty: 'لا توجد محاولات مسجلة.',
-      toolboxTitle: 'صندوق الأدوات',
-      toolboxEmpty: 'تأتي أدوات التشغيل السريع مع طبقة البيانات.'
-    },
-    pills: {
-      caseNo: 'رقم الحالة',
-      evidence: 'الأدلة',
-      categoryPoints: 'الفئة·النقاط',
-      countdown: 'العد التنازلي',
-      countdownNone: 'لا موعد نهائي',
-      emptyValue: '—'
-    }
-  },
-
-  modeOnboarding: {
-    forensicsTitle: 'وضع الأدلة الجنائية — التفويض والضوابط',
-    forensicsIntro: 'قبل فتح قضية أدلة جنائية، راجع كيفية التعامل مع الأدلة. يُعرض هذا الإرشاد مرة واحدة فقط.',
-    scopeHeading: 'نطاق التفويض',
-    scopeStatement: 'أؤكد أنني مُفوَّض لفحص أدلة هذه القضية، وأنني سأعمل فقط ضمن النطاق الممنوح لي.',
-    guardHeading: 'ضوابط القراءة فقط',
-    guardReadonly: 'تُوصَّل أدلة الدلائل للقراءة فقط؛ وأي كتابة تتطلب موافقةً وإعادة تحقق وسجل تدقيق.',
-    guardWrite: 'الأوامر عالية الخطورة (rm -rf، dd، mkfs، shred، …) تتطلب دائمًا تأكيدًا ثانيًا.',
-    guardHash: 'تُحسب بصمة الأدلة (SHA256) عند الاستيراد ويُعاد التحقق منها قبل الاستشهاد بها.',
-    ctfTitle: 'وضع CTF — خزانة الأعلام والتدقيق',
-    ctfIntro: 'كيفية تخزين الأعلام وتتبعها في حاويات CTF. يُعرض هذا الإرشاد مرة واحدة فقط.',
-    vaultHeading: 'خزانة الأعلام',
-    vaultMask: 'الأعلام مُقنَّعة افتراضيًا ويمكن الكشف عنها عند الحاجة.',
-    vaultAudit: 'كل كشف وكل إرسال يُسجَّلان في سجل التدقيق.',
-    confirm: 'تأكيد ومتابعة',
-    confirmHint: 'حدِّد بيان التفويض للمتابعة.'
-  },
 
   tray: {
-    newForensics: 'قضية جنائية رقمية جديدة',
-    newCtf: 'تحدي CTF جديد',
     newProject: 'مهمة برمجية جديدة',
     runningHeading: 'قيد التشغيل',
     needsInputHeading: 'بحاجة إلى إدخال',
@@ -483,97 +425,7 @@ export const ar = defineLocale({
     noteRowHint: 'ملاحظة سريعة'
   },
 
-  caseTimeline: {
-    title: 'الخط الزمني',
-    back: 'رجوع',
-    statEvents: count => `${count.toLocaleString()} حدثًا`,
-    mockBanner: 'مجموعة بيانات نموذجية — لم تُوصل بعدُ خطوط استخراج الأدلة الجنائية؛ الأحداث التالية مولَّدة وليست أدلة حقيقية.',
-    saveAsFinding: 'حفظ كاستنتاج',
-    exportCsv: 'تصدير CSV',
-    addToReport: 'إضافة إلى التقرير',
-    savedAsFinding: 'حُفظ كاستنتاج',
-    addedToReport: 'أُضيف إلى مسودة التقرير',
-    exportCsvFailed: 'فشل تصدير CSV',
-    sourcesHeading: 'المصادر',
-    rangeHeading: 'النطاق الزمني',
-    confidenceHeading: 'درجة الثقة',
-    tagsHeading: 'الوسوم',
-    starredOnlyChip: 'المميزة بنجمة',
-    confidenceFloor: min => `≥ ${min}%`,
-    histogramTitle: 'كثافة الأحداث',
-    histogramAggregate: 'تجميع كل 3 ساعات',
-    histogramDrag: (from, to) => `تحديد ${from} → ${to}`,
-    histogramEmpty: 'لا أحداث في النطاق',
-    columnTime: 'الوقت (محلي)',
-    columnSource: 'المصدر',
-    columnEvent: 'الحدث',
-    columnConfidence: 'الثقة',
-    columnTags: 'الوسوم',
-    sourceRegistry: 'السجل',
-    sourceLog: 'سجل النظام',
-    sourcePcap: 'pcap',
-    sourceFile: 'الملفات',
-    footerTotal: total => `المجموع ${total.toLocaleString()} حدثًا`,
-    footerFiltered: filtered => `يُعرض ${filtered.toLocaleString()} بعد التصفية`,
-    footerStarred: starred => `مميزة بنجمة ${starred.toLocaleString()}`,
-    footerStarSeam: 'ستُزامن الأحداث المميزة بنجمة إلى قسم التقرير',
-    loading: 'جارٍ تحميل الخط الزمني…',
-    loadFailed: 'فشل تحميل الخط الزمني',
-    empty: 'لا توجد أحداث خط زمني لهذه القضية بعد',
-    emptyFiltered: 'لا أحداث تطابق عوامل التصفية الحالية',
-    sourceCount: count => `${count.toLocaleString()}`
-  },
-
   // مسار التقارير والتصدير (step 16 · T16، الخطة §5-T16).
-  reportCenter: {
-    title: 'مركز التقارير',
-    back: 'رجوع',
-    open: 'مركز التقارير',
-    caseLabel: 'القضية',
-    draftHeading: 'مسودة التقرير',
-    draftHint:
-      'تُجمَّع المسودة من النتائج المميزة بنجمة الفعلية — قالب الأقسام يطابق fulilian_ctf/writeup.py، ويولّد الـ writeup الكامل عبر Python sidecar عند جهوزية المسار.',
-    sectionsHeading: 'الأقسام',
-    sectionSummary: 'الملخص',
-    sectionTimeline: 'الخط الزمني',
-    sectionFindings: 'النتائج الرئيسية',
-    sectionArtifacts: 'المرفقات',
-    sectionFlags: 'نتائج الـ Flag',
-    sectionEmpty: 'لا توجد بيانات في هذا القسم بعد',
-    starredCount: count => `${count.toLocaleString()} نتيجة مميزة بنجمة`,
-    exportPdf: 'تصدير PDF',
-    exportCsv: 'تصدير CSV',
-    exportAuditJsonl: 'تصدير تدقيق JSONL',
-    exportBusy: 'جارٍ التصدير…',
-    exportPdfFailed: 'فشل تصدير PDF',
-    exportCsvFailed: 'فشل تصدير CSV',
-    exportAuditFailed: 'فشل تصدير تدقيق JSONL',
-    pdfSaved: 'تم حفظ تقرير PDF',
-    auditSaved: 'تم حفظ تدقيق JSONL',
-    addedToReport: 'أُضيف إلى مسودة التقرير',
-    generateSections: 'تجميع المسودة',
-    sectionsGenerated: 'جُمعت مسودة التقرير',
-    emptyDraft: 'لا توجد بيانات تقرير بعد — میّز الأحداث بنجمة لتغذية قسم النتائج الرئيسية'
-  },
-
-  // صفحة نظرة عامة على القضايا (step 16 · T14، الخطة §5-T14).
-  casesOverview: {
-    title: 'القضايا',
-    subtitle: 'حاويات عمل مجمّعة من جلسات حقيقية',
-    filterActive: 'قيد التنفيذ',
-    filterArchived: 'مؤرشفة',
-    cardSessions: 'جلسات',
-    cardEvidence: 'الأدلة',
-    cardAudit: 'سجل التدقيق',
-    cardReport: 'حالة التقرير',
-    cardLastActive: 'آخر نشاط',
-    noContainer: 'بلا حاوية',
-    untitledCase: 'عمل بدون عنوان',
-    empty: 'لا توجد قضايا بعد',
-    emptyDesc: 'تظهر الحاويات هنا فور وجود عمل جلسات حقيقي.',
-    emptyArchived: 'لا قضايا مؤرشفة',
-    emptyArchivedDesc: 'لا شيء يطابق هذه المجموعة — الحاويات المؤرشفة تظهر هنا.'
-  },
 
   home: {
     greeting: {
@@ -583,10 +435,8 @@ export const ar = defineLocale({
     },
     lede: 'هدف، أو دليل، أو فكرة لم تكتمل بعد. أقرأ السياق أولًا ثم أقترح الخطوة التالية.',
     chips: {
-      programming: 'متابعة الحالة',
+      programming: 'متابعة آخر عمل',
       programmingTip: 'التركيز على صندوق الإدخال لمتابعة العمل',
-      forensics: 'إضافة دليل',
-      ctf: 'خوض تحدّي CTF',
       idle: 'مهمة وقت الفراغ',
       placeholderTip: 'متاح بعد ربط بيانات الأدلة'
     },
@@ -596,10 +446,6 @@ export const ar = defineLocale({
       more: 'القوالب'
     },
     modeCards: {
-      forensics: 'حالات الأدلة',
-      forensicsDesc: 'فحص سلامة الأدلة وسجل التدقيق ومسودات التقارير.',
-      ctf: 'تحدّيات CTF',
-      ctfDesc: 'خزنة الأعلام وسجل المحاولات ومؤقّت لكل تحدٍّ.',
       project: 'مشاريع البرمجة',
       projectDesc: 'مساحة عمل واحدة: المستودع والطرفية والمعاينة وتغييرات git.'
     }
@@ -624,56 +470,6 @@ export const ar = defineLocale({
       highRiskCommandsDesc:
         'أوامر تتطلب تأكيدًا ثانيًا دائمًا بغض النظر عن الوضع (مفصولة بفواصل). طبقة الاعتراض نفسها تأتي مع طبقة البيانات؛ هذه الصفحة تسجل القائمة فقط.'
     },
-    evidence: {
-      nav: 'حماية الأدلة',
-      title: 'حماية الأدلة',
-      intro:
-        'لحالات الأدلة الجنائية. تُطبَّق هذه التفضيلات على حاوية الأدلة عند تنشيط طبقة بياناتها؛ تُسجَّل الآن حتى لا يلزم اتخاذ القرار مجددًا لاحقًا.',
-      readOnly: 'تحميل مجلدات الأدلة للقراءة فقط',
-      readOnlyDesc:
-        'تُحمَّل مجلدات الأدلة للقراءة فقط. الكتابة تتطلب موافقة وتُدوَّن دائمًا. افتراضيًا مفعّل ولا يُعطَّل بصمت.',
-      verifyOnReference: 'التحقق قبل الاستخدام',
-      verifyOnReferenceDesc:
-        'إعادة حساب SHA256 في كل مرة يُستخدم فيها ملف دليل؛ عدم التطابق يمنع الاستخدام. افتراضيًا مفعّل.',
-      archiveLock: 'قفل الكتابة عند الأرشفة',
-      archiveLockDesc:
-        'ترفض الحالات المؤرشفة عمليات الكتابة حتى يُفتح قفلها بموافقة ومدخلة تدقيق.',
-      disableConfirmTitle: 'تعطيل تحميل الأدلة للقراءة فقط؟'
-    },
-    audit: {
-      nav: 'سجل التدقيق',
-      title: 'سجل التدقيق',
-      intro:
-        'تسجيل تدقيق محلي لاستدعاءات الأدوات والكتابات وفتح الأقفال والإظهار — سجل الامتثال للعمل الجنائي القانوني.',
-      enabled: 'تسجيل التدقيق',
-      enabledDesc:
-        'تسجيل استدعاءات أدوات الوكيل وعمليات الكتابة والأحداث اليدوية (فتح القفل، الإظهار، التصدير) في سجل التدقيق المحلي. افتراضيًا مفعّل.',
-      retention: 'مدة الاحتفاظ',
-      retentionDesc: 'مدة الاحتفاظ بمدخلات التدقيق محليًا قبل التنظيف.',
-      retentionPermanent: 'للأبد',
-      exportTitle: 'التصدير والإفراغ',
-      export: 'تصدير',
-      clear: 'إفراغ',
-      dataLayerNote:
-        'يأتي مخزن التدقيق نفسه مع طبقة البيانات (جولة لاحقة) — تُفعَّل هذه العناصر عندها ولا تولّد بيانات حتى ذلك الحين.'
-    },
-    sensitive: {
-      nav: 'المعلومات الحساسة',
-      title: 'المعلومات الحساسة',
-      intro:
-        'ما يقنّعه Fulilian قبل وصوله إلى النموذج أو الشاشة. إخفاء الأعلام (flags) يعمل في وضع CTF؛ وإخفاء الأسرار يعمل في كل مكان.',
-      redactSecrets: 'إخفاء الأسرار',
-      redactSecretsDesc:
-        'إخفاء الأسرار المكتشفة (المفاتيح والرموز وكلمات المرور) من المحتوى المرئي للنموذج كلما أمكن. افتراضيًا مفعّل.',
-      redactFlags: 'إخفاء الأعلام',
-      redactFlagsDesc:
-        'إخفاء أعلام CTF في المخرجات الملتقطة؛ وتُكشف من بطاقة العلم بإجراء صريح.',
-      customRegex: 'نمط مخصص',
-      customRegexDesc: 'تعبير نمطي إضافي تُقنَّع مطابقاته كالأسرار.',
-      customRegexPlaceholder: 'تعبير نمطي',
-      revealAudited: 'تدقيق الإظهار',
-      revealAuditedDesc: 'يُسجَّل في سجل التدقيق كل إجراء إزالة إخفاء/إظهار. افتراضيًا مفعّل.'
-    }
   },
   settings: {
     closeSettings: 'إغلاق الإعدادات',
@@ -881,66 +677,14 @@ export const ar = defineLocale({
     },
     group: {
       basics: 'الأساسيات',
-      'work-mode': 'أنماط العمل',
+      agent: 'الوكلاء',
+      workspace: 'مساحة العمل',
       'model-capabilities': 'النماذج والقدرات',
       'security-compliance': 'الأمان والامتثال',
       'connection-data': 'الاتصال والبيانات',
       apps: 'التطبيقات',
       // مدخل البرمجة يعيد استخدام صفحة مساحة العمل الحالية (رابط، لا صفحة جديدة) — DESIGN_PROPOSAL §5.5.
       programming: 'البرمجة',
-      forensics: {
-        nav: 'الأدلة الجنائية',
-        title: 'الأدلة الجنائية',
-        intro:
-          'الإعدادات الافتراضية لحالات الأدلة الجنائية: ترقيم الحالات وهيكل التقرير ومصادر الخط الزمني. بيانات الحالة نفسها تُدار لكل حالة، وليس هنا.',
-        caseNoTemplate: 'قالب رقم الحالة',
-        caseNoTemplateDesc:
-          'التنسيق المستخدم عند إنشاء رقم حالة جديد. YYYY للسنة وNNN لعداد مبطّن بالأصفار.',
-        reportSections: 'قالب أقسام التقرير',
-        reportSectionsDesc:
-          'الأقسام التي يحتويها مسودة التقرير المولّد. توليد المسودة نفسه يأتي مع طبقة البيانات (جولة لاحقة) — يُسجَّل الهيكل هنا.',
-        reportSectionNames: {
-          overview: 'نظرة عامة',
-          evidence: 'جرد الأدلة',
-          analysis: 'سير التحليل',
-          conclusion: 'الخلاصة',
-          appendix: 'الملحق'
-        },
-        reportSectionDescs: {
-          overview: 'ملخص الحالة والنطاق وأساس التفويض.',
-          evidence: 'قائمة الأدلة مع البصمات وحالة التحقق.',
-          analysis: 'الخط الزمني والنتائج، مع الإشارة إلى الأدلة بالبصمة.',
-          conclusion: 'إجابات أسئلة الحالة مع ملاحظات الثقة.',
-          appendix: 'إصدارات الأدوات والبيئة والمخرجات الخام.'
-        },
-        timelineSources: 'مصادر الخط الزمني',
-        timelineSourcesDesc:
-          'أنواع المصادر التي يجوز سحبها للخط الزمني. الاستخراج يأتي مع طبقة البيانات (جولة لاحقة).',
-        timelineSourceNames: {
-          mirror: 'صور الأقراص',
-          logs: 'السجلات',
-          pcap: 'التقاط الحزم'
-        },
-        timelineSourceDescs: {
-          mirror: 'آثار نظام الملفات من الصور المركّبة.',
-          logs: 'سجلات التطبيقات والنظام وأحداث الأمان.',
-          pcap: 'الالتقاطات الشبكية وسجلات التدفقات.'
-        }
-      },
-      ctf: {
-        nav: 'CTF',
-        title: 'CTF',
-        intro:
-          'الإعدادات الافتراضية لتحدّيات CTF: التعرّف على الأعلام، والمنطقة الزمنية للفعالية، وحدود إعادة المحاولة. تُخزَّن الأعلام نفسها مشفّرة في الخزنة.',
-        flagRegex: 'نمط العلم',
-        flagRegexDesc: 'تعبير نمطي يُستخدم لاكتشاف الأعلام في مخرجات الأدوات وإخفائها.',
-        defaultTimezone: 'المنطقة الزمنية الافتراضية للفعالية',
-        defaultTimezoneDesc:
-          'المنطقة الزمنية المستخدمة للمواعيد النهائية التي لا تحدّد واحدة (اسم IANA).',
-        submitRetryLimit: 'حد إعادة محاولة الإرسال',
-        submitRetryLimitDesc:
-          'عدد المحاولات الخاطئة المسجلة للمسألة الواحدة قبل اقتراح تهدئة.'
-      },
       skinGallery: {
         title: 'معرض السمات',
         recommended: 'موصى به'
@@ -2085,11 +1829,8 @@ export const ar = defineLocale({
       pages: 'الصفحات',
       containers: 'الحاويات'
     },
-    newForensics: 'حالة أدلة جنائية جديدة',
-    newCtf: 'تحدي CTF جديد',
     newCodingTask: 'مهمة برمجة جديدة',
-    casesOverview: 'نظرة عامة على القضايا',
-    comingSoon: 'قريبًا',
+
     paletteFooter: {
       select: 'تحديد',
       run: 'تنفيذ',
@@ -3090,14 +2831,6 @@ export const ar = defineLocale({
     brandWordmark: 'FuLilian',
     newTask: 'مهمة جديدة',
     searchCommandPalette: 'البحث (لوحة الأوامر)',
-    kind: {
-      all: 'الكل',
-      forensics: 'الأدلة الجنائية',
-      ctf: 'CTF',
-      project: 'المشاريع',
-      forensicsEmpty: 'لا توجد قضايا أدلة جنائية بعد',
-      ctfEmpty: 'لا توجد تحديات CTF بعد'
-    },
     gateway: {
       local: 'البوابة المحلية',
       connected: 'متصل',

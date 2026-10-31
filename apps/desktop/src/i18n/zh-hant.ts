@@ -259,60 +259,6 @@ export const zhHant = defineLocale({
     noResults: '找不到語言'
   },
 
-  container: {
-    meta: {
-      project: '專案',
-      forensics: '取證',
-      ctf: 'CTF',
-      caseNo: '案號',
-      statsEvidence: '證據',
-      statsAudit: '留痕',
-      statsReport: '報告',
-      event: '賽事',
-      categoryPoints: '分類·分值',
-      countdown: '倒數',
-      countdownNone: '未設截止'
-    },
-    cards: {
-      evidenceTitle: '證據清單',
-      evidenceEmpty: '匯入證據以開始——匯入即計算 SHA256。',
-      auditTitle: '審計留痕',
-      auditEmpty: '暫無留痕記錄。',
-      flagVaultTitle: 'flag 保管庫',
-      flagEmpty: '暫無已保存 flag。',
-      submissionsTitle: '提交歷史',
-      submissionsEmpty: '暫無提交記錄。',
-      toolboxTitle: '工具箱',
-      toolboxEmpty: '快捷啟動隨資料層輪次啟用。'
-    },
-    pills: {
-      caseNo: '案號',
-      evidence: '證據',
-      categoryPoints: '分類·分值',
-      countdown: '倒數',
-      countdownNone: '未設截止',
-      emptyValue: '—'
-    }
-  },
-
-  modeOnboarding: {
-    forensicsTitle: '取證模式——授權與護欄',
-    forensicsIntro: '在開立取證案件前，請了解證據的處理方式。本引導僅顯示一次。',
-    scopeHeading: '授權範圍',
-    scopeStatement: '我確認已取得對本案證據的實施授權，並將僅在我獲授權範圍內進行操作。',
-    guardHeading: '唯讀護欄',
-    guardReadonly: '證據目錄以唯讀方式掛載；任何寫入均需審批、複驗與留痕。',
-    guardWrite: '高風險命令（rm -rf、dd、mkfs、shred 等）一律需要二次確認。',
-    guardHash: '證據在匯入時即計算雜湊（SHA256），並於引用前複驗。',
-    ctfTitle: 'CTF 模式——flag 保管庫與審計',
-    ctfIntro: '了解 CTF 容器中 flag 的儲存與追蹤方式。本引導僅顯示一次。',
-    vaultHeading: 'flag 保管庫',
-    vaultMask: 'flag 預設打碼，可依需求顯示或隱藏。',
-    vaultAudit: '每次顯示／隱藏與每次提交都會記入審計日誌。',
-    confirm: '確認並繼續',
-    confirmHint: '請先勾選授權聲明再繼續。'
-  },
-
   // 步驟 16 · T9：四組佈局（方案 §3-T9）— 設定頁與 ？ 速查頁經
   // store/keybinds-registry.ts 同源共享。
   keybinds: {
@@ -436,15 +382,12 @@ export const zhHant = defineLocale({
       'composer.help': '快速說明',
       'composer.history': '切換彈出視窗/歷史',
       'composer.cancel': '關閉彈出視窗 · 取消執行',
-      't9.newForensics': '新增取證案件',
-      't9.newCtf': '新增 CTF 賽題',
       't9.newProject': '新增程式任務',
       't9.quickCapture': '快速擷取',
       't9.sessionSlots': '切換工作階段（槽位 1-9）',
       't9.approvalOnce': '允許一次',
       't9.approvalSession': '本工作階段總是允許',
       't9.approvalDeny': '拒絕',
-      't9.evidenceQuote': '引用證據（取證模式）',
       't9.zoom': '縮放介面',
       't9.quickSheet': '快捷鍵速查'
     }
@@ -455,8 +398,6 @@ export const zhHant = defineLocale({
   },
 
   tray: {
-    newForensics: '新增取證案件',
-    newCtf: '新增 CTF 賽題',
     newProject: '新增程式任務',
     runningHeading: '執行中',
     needsInputHeading: '需輸入',
@@ -491,97 +432,7 @@ export const zhHant = defineLocale({
     noteRowHint: '速記'
   },
 
-  caseTimeline: {
-    title: '時間線',
-    back: '返回',
-    statEvents: count => `${count.toLocaleString()} 個事件`,
-    mockBanner: '範例資料集——鑑識擷取管線尚未接入，以下事件為生成資料，非真實證據。',
-    saveAsFinding: '儲存為發現',
-    exportCsv: '匯出 CSV',
-    addToReport: '加入報告',
-    savedAsFinding: '已儲存為發現',
-    addedToReport: '已加入報告草稿',
-    exportCsvFailed: 'CSV 匯出失敗',
-    sourcesHeading: '來源',
-    rangeHeading: '時間範圍',
-    confidenceHeading: '信心度',
-    tagsHeading: '標籤',
-    starredOnlyChip: '已星標',
-    confidenceFloor: min => `≥ ${min}%`,
-    histogramTitle: '事件密度',
-    histogramAggregate: '按 3 小時聚合',
-    histogramDrag: (from, to) => `拖選 ${from} → ${to}`,
-    histogramEmpty: '範圍內暫無事件',
-    columnTime: '時間（本機）',
-    columnSource: '來源',
-    columnEvent: '事件',
-    columnConfidence: '信心度',
-    columnTags: '標籤',
-    sourceRegistry: '登錄檔',
-    sourceLog: '系統日誌',
-    sourcePcap: 'pcap',
-    sourceFile: '檔案',
-    footerTotal: total => `共 ${total.toLocaleString()} 個事件`,
-    footerFiltered: filtered => `過濾後顯示 ${filtered.toLocaleString()}`,
-    footerStarred: starred => `已星標 ${starred.toLocaleString()}`,
-    footerStarSeam: '星標事件將同步進報告章節',
-    loading: '時間線載入中…',
-    loadFailed: '時間線載入失敗',
-    empty: '該案件暫無時間線事件',
-    emptyFiltered: '當前過濾條件下無符合事件',
-    sourceCount: count => `${count.toLocaleString()}`
-  },
-
   // 報告與匯出管線（step 16 · T16，方案 §5-T16）。
-  reportCenter: {
-    title: '報告中心',
-    back: '返回',
-    open: '報告中心',
-    caseLabel: '案件',
-    draftHeading: '報告草稿',
-    draftHint:
-      '草稿由真實星標發現彙成——章節模板對齊 fulilian_ctf/writeup.py，管線就緒後完整 writeup 由 Python sidecar 生成。',
-    sectionsHeading: '章節',
-    sectionSummary: '概述',
-    sectionTimeline: '時間線',
-    sectionFindings: '關鍵發現',
-    sectionArtifacts: '附件物證',
-    sectionFlags: 'Flag 結論',
-    sectionEmpty: '本節暫無資料',
-    starredCount: count => `${count.toLocaleString()} 條星標發現`,
-    exportPdf: '匯出 PDF',
-    exportCsv: '匯出 CSV',
-    exportAuditJsonl: '匯出稽核 JSONL',
-    exportBusy: '匯出中…',
-    exportPdfFailed: 'PDF 匯出失敗',
-    exportCsvFailed: 'CSV 匯出失敗',
-    exportAuditFailed: '稽核 JSONL 匯出失敗',
-    pdfSaved: '報告 PDF 已儲存',
-    auditSaved: '稽核 JSONL 已儲存',
-    addedToReport: '已加入報告草稿',
-    generateSections: '彙成草稿',
-    sectionsGenerated: '報告草稿已彙成',
-    emptyDraft: '暫無報告資料——星標時間線事件以填補關鍵發現章節'
-  },
-
-  // 案件總覽頁（step 16 · T14，方案 §5-T14）。
-  casesOverview: {
-    title: '案件',
-    subtitle: '按真實會話聚合的工作容器',
-    filterActive: '進行中',
-    filterArchived: '已歸檔',
-    cardSessions: '個會話',
-    cardEvidence: '證據數',
-    cardAudit: '留痕數',
-    cardReport: '報告狀態',
-    cardLastActive: '最近活動',
-    noContainer: '無容器',
-    untitledCase: '未命名工作',
-    empty: '還沒有案件',
-    emptyDesc: '出現真實會話工作後，容器會顯示在這裡。',
-    emptyArchived: '沒有已歸檔案件',
-    emptyArchivedDesc: '該組暫無符合——已歸檔容器會落在這裡。'
-  },
 
   home: {
     greeting: {
@@ -591,10 +442,8 @@ export const zhHant = defineLocale({
     },
     lede: '把目標、證據，或是一段還沒想清楚的思路丟進來。我先看清脈絡，再給出下一步。',
     chips: {
-      programming: '繼續案件',
+      programming: '繼續上次工作',
       programmingTip: '聚焦輸入框，接著往下說',
-      forensics: '新增證據',
-      ctf: '接手 CTF 賽題',
       idle: '閒時任務',
       placeholderTip: '取證資料接入後可用'
     },
@@ -604,10 +453,6 @@ export const zhHant = defineLocale({
       more: '模板庫'
     },
     modeCards: {
-      forensics: '取證案件',
-      forensicsDesc: '證據完整性校驗、審計與報告。',
-      ctf: 'CTF 賽題',
-      ctfDesc: 'flag 保管庫、提交歷史與計時。',
       project: '程式設計專案',
       projectDesc: '儲存庫、終端機、預覽與程式碼變更。'
     }
@@ -630,46 +475,6 @@ export const zhHant = defineLocale({
       highRiskCommands: '高危險命令清單',
       highRiskCommandsDesc: '無論何種模式都需二次確認的命令（逗號分隔）。攔截層本體隨資料層落地，本頁僅記錄清單。'
     },
-    evidence: {
-      nav: '取證保護',
-      title: '取證保護',
-      intro: '面向取證案件。以下偏好在證據容器資料層啟用後生效，現在先落配置，後續無需重新決策。',
-      readOnly: '證據目錄唯讀掛載',
-      readOnlyDesc: '證據目錄以唯讀方式掛載；寫入需審批且必定留痕。預設開啟，且不可靜默關閉。',
-      verifyOnReference: '引用前複驗',
-      verifyOnReferenceDesc: '每次引用證據檔案前重新計算 SHA256，失配即阻斷引用。預設開啟。',
-      archiveLock: '歸檔後鎖定寫入操作',
-      archiveLockDesc: '已歸檔案件拒絕寫入操作，直至經審批並留痕解鎖。',
-      disableConfirmTitle: '關閉證據目錄唯讀掛載？'
-    },
-    audit: {
-      nav: '審計留痕',
-      title: '審計留痕',
-      intro: '對工具呼叫、寫入、解鎖與揭示行為的本機審計日誌——合法取證工作的合規記錄。',
-      enabled: '審計留痕',
-      enabledDesc: '將 agent 工具呼叫、寫入操作與人工事件（解鎖、揭示、匯出）記入本機審計日誌。預設開啟。',
-      retention: '保留期限',
-      retentionDesc: '審計條目本機保留多久後清理。',
-      retentionPermanent: '永久',
-      exportTitle: '匯出與清空',
-      export: '匯出',
-      clear: '清空',
-      dataLayerNote: '審計儲存本體隨資料層（後續輪次）落地——屆時此處啟用生效，在此之前不產生資料。'
-    },
-    sensitive: {
-      nav: '敏感資訊',
-      title: '敏感資訊',
-      intro: 'Fulilian 在內容到達模型或螢幕前的脫敏規則。flag 脫敏作用於 CTF 模式；密鑰脫敏全域生效。',
-      redactSecrets: '密鑰脫敏',
-      redactSecretsDesc: '盡可能對偵測到的密鑰（key、token、密碼）在模型可見內容中打碼。預設開啟。',
-      redactFlags: 'flag 脫敏',
-      redactFlagsDesc: '對工具輸出中的 CTF flag 打碼；在 flag 卡中經明確操作揭示。',
-      customRegex: '自訂正規表示式',
-      customRegexDesc: '額外的正規表示式，其匹配內容按密鑰方式打碼。',
-      customRegexPlaceholder: '正規表示式',
-      revealAudited: '揭示留痕',
-      revealAuditedDesc: '每次取消打碼/揭示動作都會寫入審計日誌。預設開啟。'
-    }
   },
 
   settings: {
@@ -880,59 +685,14 @@ export const zhHant = defineLocale({
     },
     group: {
       basics: '基礎',
-      'work-mode': '工作模式',
+      agent: '智慧體',
+      workspace: '工作區',
       'model-capabilities': '模型與能力',
       'security-compliance': '安全與合規',
       'connection-data': '連線與資料',
       apps: '應用',
       // 程式設計入口複用既有工作區頁（連結跳轉，非新頁）——DESIGN_PROPOSAL §5.5。
       programming: '程式設計',
-      forensics: {
-        nav: '取證',
-        title: '取證',
-        intro: '取證案件的預設配置：案號編號、報告結構與時間線來源。案件資料本身按案件管理，不在此處。',
-        caseNoTemplate: '案號格式範本',
-        caseNoTemplateDesc: '產生新案號時使用的格式。YYYY 為年份，NNN 為補零序號。',
-        reportSections: '報告章節範本',
-        reportSectionsDesc: '產生的報告草稿包含哪些章節。草稿產生本體隨資料層（後續輪次）落地——此處先記錄結構。',
-        reportSectionNames: {
-          overview: '概述',
-          evidence: '證據清單',
-          analysis: '分析過程',
-          conclusion: '結論',
-          appendix: '附錄'
-        },
-        reportSectionDescs: {
-          overview: '案件摘要、範圍與授權依據。',
-          evidence: '附雜湊與複驗狀態的證據清單。',
-          analysis: '時間線與發現，按雜湊引用證據。',
-          conclusion: '對案件問題的回答，附信心水準說明。',
-          appendix: '工具版本、環境與原始匯出。'
-        },
-        timelineSources: '時間線來源',
-        timelineSourcesDesc: '時間線提取允許取用的來源類型。提取隨資料層（後續輪次）落地。',
-        timelineSourceNames: {
-          mirror: '磁碟映像',
-          logs: '日誌',
-          pcap: '網路擷取'
-        },
-        timelineSourceDescs: {
-          mirror: '已掛載映像中的檔案系統痕跡。',
-          logs: '應用、系統與安全事件日誌。',
-          pcap: '網路擷取與流記錄。'
-        }
-      },
-      ctf: {
-        nav: 'CTF',
-        title: 'CTF',
-        intro: 'CTF 賽題的預設配置：flag 識別、賽事時區與提交重試。flag 本體加密存於保管庫。',
-        flagRegex: 'flag 正規表示式',
-        flagRegexDesc: '用於偵測並對工具輸出中的 flag 打碼的正規表示式。',
-        defaultTimezone: '預設賽事時區',
-        defaultTimezoneDesc: '賽題未標註時區時，截止時間使用的時區（IANA 名稱）。',
-        submitRetryLimit: '提交重試上限',
-        submitRetryLimitDesc: '單題記錄的錯誤提交次數上限，超過後建議冷卻。'
-      },
       skinGallery: {
         title: '皮膚藝廊',
         recommended: '推薦'
@@ -2155,11 +1915,8 @@ export const zhHant = defineLocale({
       pages: '頁面',
       containers: '容器'
     },
-    newForensics: '新建鑑識案件',
-    newCtf: '新建 CTF 賽題',
     newCodingTask: '新建程式設計任務',
-    casesOverview: '案件總覽',
-    comingSoon: '即將可用',
+
     paletteFooter: {
       select: '選擇',
       run: '執行',
@@ -3079,14 +2836,6 @@ export const zhHant = defineLocale({
     brandWordmark: 'FuLilian',
     newTask: '新增任務',
     searchCommandPalette: '搜尋（命令面板）',
-    kind: {
-      all: '全部',
-      forensics: '鑑識',
-      ctf: 'CTF',
-      project: '專案',
-      forensicsEmpty: '尚無鑑識案件',
-      ctfEmpty: '尚無 CTF 賽題'
-    },
     gateway: {
       local: '本機閘道',
       connected: '已連線',

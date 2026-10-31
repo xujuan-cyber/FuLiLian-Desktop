@@ -118,16 +118,13 @@ export const QUICK_TARGET_NEW = 'new'
 export const QUICK_TARGET_NOTE = 'note'
 
 /**
- * Which work-mode the capture belongs to (DESIGN_PROPOSAL §4.1 vocabulary).
- * The mode rides the submit payload as recorded intent: the target dropdown
- * only ever lists REAL targets, and the kind data layer does not exist yet
- * (`container-kind.ts` still answers `'project'` for everything), so today the
- * mode is metadata for the routing seam — the forensics audit-trail exit can
- * switch on it once that pipeline lands.
+ * Which capture shape a submit carries: a note into the no-container inbox, or
+ * a draft into a chat's composer slot. The mode rides the submit payload as
+ * recorded intent — the target dropdown only ever lists REAL targets.
  */
-export type QuickCaptureMode = 'ctf' | 'forensics' | 'note' | 'project'
+export type QuickCaptureMode = 'note' | 'project'
 
-export const QUICK_CAPTURE_MODES: readonly QuickCaptureMode[] = ['forensics', 'ctf', 'project', 'note']
+export const QUICK_CAPTURE_MODES: readonly QuickCaptureMode[] = ['project', 'note']
 
 /**
  * The primary renderer's push into the quick window: is the gateway usable, and
@@ -164,7 +161,7 @@ export interface QuickComposerState {
    *  reconnect hint. */
   connected: boolean
   draft: string
-  /** Which work-mode chip is active (step 16 · T7). */
+  /** Which capture chip is active (step 16 · T7). */
   mode: QuickCaptureMode
   /** Recent sessions the picker offers, pushed by the primary renderer. */
   sessions: QuickEntrySessionOption[]

@@ -4,7 +4,7 @@
 //
 //   1. Runtime shape — every tab route resolves *its own* chunk into the main
 //      pane (the observable half; a broken route would render nothing).
-//   2. Source wiring — the shell really uses `lazy()` for the 21 child views and
+//   2. Source wiring — the shell really uses `lazy()` for the 18 child views and
 //      keeps the eager ones eager. This half has to be read off the module's
 //      text: a `lazy()` boundary is *unobservable* under happy-dom, because the
 //      mocked module promises settle on the same microtask queue as the render,
@@ -42,14 +42,8 @@ vi.mock('./approvals-permissions-settings', () => ({
   ApprovalsPermissionsSettings: () => <div data-view="approvals" />
 }))
 vi.mock('./appearance-settings', () => ({ AppearanceSettings: () => <div data-view="appearance" /> }))
-vi.mock('./audit-settings', () => ({ AuditSettings: () => <div data-view="audit" /> }))
 vi.mock('./billing', () => ({ BillingSettings: () => <div data-view="billing" /> }))
 vi.mock('./config-settings', () => ({ ConfigSettings: () => <div data-view="config" /> }))
-vi.mock('./ctf-settings', () => ({ CtfSettings: () => <div data-view="ctf" /> }))
-vi.mock('./evidence-protection-settings', () => ({
-  EvidenceProtectionSettings: () => <div data-view="evidence" />
-}))
-vi.mock('./forensics-settings', () => ({ ForensicsSettings: () => <div data-view="forensics" /> }))
 vi.mock('./gateway-settings', () => ({ GatewaySettings: () => <div data-view="gateway" /> }))
 vi.mock('./keybind-settings', () => ({ KeybindSettings: () => <div data-view="keybind" /> }))
 vi.mock('./keys-settings', async (importOriginal: () => Promise<Record<string, unknown>>) => ({
@@ -62,14 +56,13 @@ vi.mock('./notifications-settings', () => ({
 vi.mock('./pet-settings', () => ({ PetSettings: () => <div data-view="pet" /> }))
 vi.mock('./plugins-settings', () => ({ PluginsSettings: () => <div data-view="plugins" /> }))
 vi.mock('./presets-settings', () => ({ PresetsSettings: () => <div data-view="presets" /> }))
+// Profiles is a Settings sub-page now: only the shell-free content is imported.
+vi.mock('../profiles', () => ({ ProfilesContent: () => <div data-view="profiles" /> }))
 vi.mock('./providers-settings', async (importOriginal: () => Promise<Record<string, unknown>>) => ({
   ...(await importOriginal()),
   ProvidersSettings: () => <div data-view="providers" />
 }))
 vi.mock('./quick-entry-settings', () => ({ QuickEntrySettings: () => <div data-view="quick-entry" /> }))
-vi.mock('./sensitive-info-settings', () => ({
-  SensitiveInfoSettings: () => <div data-view="sensitive-info" />
-}))
 vi.mock('./sessions-settings', () => ({ SessionsSettings: () => <div data-view="sessions" /> }))
 vi.mock('./submodels-settings', () => ({ SubmodelsSettings: () => <div data-view="submodels" /> }))
 vi.mock('./tray-settings', () => ({ TraySettings: () => <div data-view="tray" /> }))
@@ -186,8 +179,8 @@ describe('SettingsView tab shell (step 17 · P3b)', () => {
     // happy-dom, so deleting it would leave property 1 green).
     const src = readFileSync(join(process.cwd(), 'src/app/settings/index.tsx'), 'utf8')
 
-    // Only the 22 view modules are split; no stray `lazy(` elsewhere.
-    expect(src.match(/\blazy\(/g)).toHaveLength(22)
+    // Only the 18 view modules are split; no stray `lazy(` elsewhere.
+    expect(src.match(/\blazy\(/g)).toHaveLength(18)
 
     // Each split view keeps its original specifier — a rename or a re-static
     // import would drop the count above, but pin a few of the shapes that
@@ -245,9 +238,7 @@ describe('SettingsView section deep links (D3)', () => {
     const cases: [string, string][] = [
       // page-level views
       ['approvals', 'approvals'],
-      ['audit', 'audit'],
-      ['evidence-protection', 'evidence'],
-      ['sensitive-info', 'sensitive-info'],
+      ['profiles', 'profiles'],
       ['submodels', 'submodels'],
       ['providers', 'providers'],
       // bare SECTIONS ids → their config page
@@ -302,22 +293,22 @@ describe('SettingsView section deep links (D3)', () => {
     root = await mountShell()
     await waitFor(() => expect(resolvedMarker()).toBe('config'))
 
-    fireEvent.click(railRow('audit'))
+    fireEvent.click(railRow('presets'))
 
-    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=audit'))
-    await waitFor(() => expect(resolvedMarker()).toBe('audit'))
-    expect(railIsActive('audit')).toBe(true)
+    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=presets'))
+    await waitFor(() => expect(resolvedMarker()).toBe('presets'))
+    expect(railIsActive('presets')).toBe(true)
   })
 
   it('drops a stale ?section= alias once the user picks a row', async () => {
     root = await mountShell('section=approvals', 'approvals')
     await waitFor(() => expect(resolvedMarker()).toBe('approvals'))
 
-    fireEvent.click(railRow('audit'))
+    fireEvent.click(railRow('presets'))
 
     // One canonical param only — a lingering alias could outvote the click.
-    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=audit'))
-    await waitFor(() => expect(resolvedMarker()).toBe('audit'))
+    await waitFor(() => expect(screen.getByTestId('location-search').textContent).toBe('?tab=presets'))
+    await waitFor(() => expect(resolvedMarker()).toBe('presets'))
   })
 
   it('keeps the canonical ?tab= form working alongside the alias', async () => {
@@ -327,9 +318,9 @@ describe('SettingsView section deep links (D3)', () => {
 
     // A real tab wins over a stale alias in the same URL.
     cleanup()
-    root = await mountShell('tab=audit&section=approvals', 'audit')
-    await waitFor(() => expect(resolvedMarker()).toBe('audit'))
-    expect(railIsActive('audit')).toBe(true)
+    root = await mountShell('tab=presets&section=approvals', 'presets')
+    await waitFor(() => expect(resolvedMarker()).toBe('presets'))
+    expect(railIsActive('presets')).toBe(true)
   })
 })
 

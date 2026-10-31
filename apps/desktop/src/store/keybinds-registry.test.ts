@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { KEYBIND_ACTIONS, KEYBIND_READONLY } from '@/lib/keybinds/actions'
 
 import {
+  $keybindsSheetOpen,
   detectKeybindConflicts,
   DISPATCHED_KEYBIND_ENTRIES,
   fixedRowsForGroup,
@@ -14,7 +15,6 @@ import {
   setKeybindsSheetOpen,
   suggestAlternative,
   toggleKeybindsSheet,
-  $keybindsSheetOpen,
   validateDispatchedKeybinds
 } from './keybinds-registry'
 
@@ -59,16 +59,8 @@ describe('curated T9 table (T9-2 速查页数据源)', () => {
   it('covers every row of the plan keybind table with a label id present in the group map', () => {
     const ids = KEYBIND_TABLE.map(entry => entry.id)
 
-    // 全局 7 rows
-    for (const id of [
-      'nav.commandPalette',
-      'session.new',
-      't9.newForensics',
-      't9.newCtf',
-      't9.newProject',
-      't9.quickCapture',
-      'nav.settings'
-    ]) {
+    // 全局 5 rows
+    for (const id of ['nav.commandPalette', 'session.new', 't9.newProject', 't9.quickCapture', 'nav.settings']) {
       expect(ids).toContain(id)
     }
 
@@ -85,8 +77,8 @@ describe('curated T9 table (T9-2 速查页数据源)', () => {
       expect(ids).toContain(id)
     }
 
-    // 编辑: send / newline / history / evidence quote
-    for (const id of ['composer.send', 'composer.newline', 'composer.history', 't9.evidenceQuote']) {
+    // 编辑: send / newline / history
+    for (const id of ['composer.send', 'composer.newline', 'composer.history']) {
       expect(ids).toContain(id)
     }
 
@@ -113,8 +105,8 @@ describe('curated T9 table (T9-2 速查页数据源)', () => {
   it('marks unimplemented feature chords reserved, never active (T9-5 诚实落地)', () => {
     const reserved = KEYBIND_TABLE.filter(entry => entry.status === 'reserved').map(entry => entry.id)
 
-    // T6 kind-aware creation consumer missing; Ctrl+E evidence-quote chain missing.
-    expect(reserved).toEqual(['t9.newForensics', 't9.newCtf', 't9.newProject', 't9.evidenceQuote'])
+    // T6 kind-aware creation consumer still missing for the tray entry.
+    expect(reserved).toEqual(['t9.newProject'])
 
     for (const entry of KEYBIND_TABLE) {
       if (entry.status === 'active') {
@@ -131,8 +123,8 @@ describe('curated T9 table (T9-2 速查页数据源)', () => {
   it('offers fixed (non-rebindable, non-readonly) rows per group for the settings page', () => {
     const globalFixed = fixedRowsForGroup('global').map(row => row.id)
 
-    expect(globalFixed).toEqual(['t9.newForensics', 't9.newCtf', 't9.newProject', 't9.quickCapture'])
-    expect(fixedRowsForGroup('editing').map(row => row.id)).toEqual(['t9.evidenceQuote'])
+    expect(globalFixed).toEqual(['t9.newProject', 't9.quickCapture'])
+    expect(fixedRowsForGroup('editing').map(row => row.id)).toEqual([])
     // Readonly rows (composer.send …) and the sheet-only slot row stay out —
     // the settings page renders those from their own sources.
     expect(fixedRowsForGroup('sessionApproval').map(row => row.id)).toEqual([
@@ -168,7 +160,7 @@ describe('detectKeybindConflicts (pure, scope-aware)', () => {
   it('never flags the same combo across scopes (cross-scope sample)', () => {
     expect(
       detectKeybindConflicts([
-        { combos: ['ctrl+1'], id: 'tray-new-forensics', scope: 'os' },
+        { combos: ['ctrl+1'], id: 'tray-new-task', scope: 'os' },
         { combos: ['mod+1'], id: 'palette-zone-jump', scope: 'palette' },
         { combos: ['ctrl+1'], id: 'session-slot-1', scope: 'app' }
       ])
@@ -186,7 +178,7 @@ describe('detectKeybindConflicts (pure, scope-aware)', () => {
 })
 
 describe('validateDispatchedKeybinds (T9-4 硬验收: 零冲突)', () => {
-  it('T6 (tray Ctrl+1/2/3, Ctrl+Shift+F) + T7 (Ctrl+Shift+Space) + T8 (Ctrl+K + palette Ctrl 1-9) + the active table are pairwise conflict-free', () => {
+  it('T6 (tray Ctrl+3, Ctrl+Shift+F) + T7 (Ctrl+Shift+Space) + T8 (Ctrl+K + palette Ctrl 1-9) + the active table are pairwise conflict-free', () => {
     expect(validateDispatchedKeybinds()).toEqual([])
   })
 

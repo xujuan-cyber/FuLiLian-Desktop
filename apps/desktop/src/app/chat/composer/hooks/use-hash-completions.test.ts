@@ -49,7 +49,7 @@ async function search(result: HookResult, query: string) {
 
 const SESSIONS = [
   { id: 's-1', title: 'Refactor the gateway', preview: 'split handler registry' },
-  { id: 's-2', title: '字体轮廓取证', preview: '' },
+  { id: 's-2', title: '字体轮廓分析', preview: '' },
   { id: 's-3', title: 'Prep release notes', preview: 'v1.3 changelog' }
 ]
 
@@ -70,7 +70,7 @@ describe('R4 `#` session-reference completions', () => {
     const items = await search(result, '')
 
     expect(mocks.searchSessions).not.toHaveBeenCalled()
-    expect(items.map(item => item.label)).toEqual(['Refactor the gateway', '字体轮廓取证', 'Prep release notes'])
+    expect(items.map(item => item.label)).toEqual(['Refactor the gateway', '字体轮廓分析', 'Prep release notes'])
   })
 
   it('widens local matches with deep-search hits, deduped by session id', async () => {
