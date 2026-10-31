@@ -62,7 +62,10 @@ export function SidebarWorkspaceGroup({ group, renderRows, onNewSession, onRemov
   const nextCount = Math.min(SIDEBAR_GROUP_PAGE, hiddenCount)
 
   // Leading glyph: a home mark for the repo's primary checkout (labeled by its
-  // live branch), a branch/kanban mark otherwise.
+  // live branch), a branch/kanban mark otherwise. NOTE: the folder-vs-single
+  // distinction the user reads lives one level up, in `projectIcon()`
+  // (overview-row.tsx) — `home` for the no-project bucket, a folder glyph for a
+  // real project. Lanes keep their branch mark so a worktree stays legible.
   const leadingIcon = (
     <Codicon
       className="shrink-0 text-(--ui-text-tertiary)"

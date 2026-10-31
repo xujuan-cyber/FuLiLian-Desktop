@@ -232,11 +232,20 @@ export const $sidebarMessagingOpenIds = persistentAtom(
 // workspace's choice) — the "sidebar forgets my grouping every time I switch
 // workspaces" bug. The flat key keeps its historical name so an existing
 // choice survives the update.
-const $sidebarFlatAgentsGrouped = persistentAtom(SIDEBAR_AGENTS_GROUPED_STORAGE_KEY, false, Codecs.bool)
+// Project tree is the default view: a folder per workspace with that
+// workspace's sessions nested, and the sessions that belong to no project
+// collected under a home-marked bucket. That is the shape the sidebar is meant
+// to teach — a folder means "this work belongs to a workspace", no folder means
+// "this is a one-off session". Date grouping is still one click away in the
+// view menu; it just isn't what the app opens with.
+const $sidebarFlatAgentsGrouped = persistentAtom(SIDEBAR_AGENTS_GROUPED_STORAGE_KEY, true, Codecs.bool)
 
+// Same default in the all-profiles scope: folders are how the sidebar reads,
+// whether it is showing one profile or every one of them. Grouping by owner
+// stays opt-in — it only means something here, so the user picks it.
 const $sidebarAllProfilesAgentsGrouped = persistentAtom(
   SIDEBAR_ALL_PROFILES_AGENTS_GROUPED_STORAGE_KEY,
-  false,
+  true,
   Codecs.bool
 )
 
@@ -301,7 +310,7 @@ const $sidebarAllProfilesGrouping = persistentAtom<SidebarGrouping>(
 // The sidebar as it ships. Declared once so the atoms below, "Reset to
 // defaults" and the "has this view been customized?" check can't drift apart —
 // they used to inline the same literals in three places.
-const SIDEBAR_DEFAULT_GROUPING: SidebarGrouping = 'date'
+const SIDEBAR_DEFAULT_GROUPING: SidebarGrouping = 'project'
 const SIDEBAR_DEFAULT_ORDERING: SidebarOrdering = 'updated'
 const SIDEBAR_DEFAULT_ROW_META: SidebarRowMeta[] = ['preview', 'updated']
 
@@ -668,8 +677,11 @@ export function resetSidebarView() {
   // hand it back on the next flip.
   $sidebarFlatGrouping.set(SIDEBAR_DEFAULT_GROUPING)
   $sidebarAllProfilesGrouping.set(SIDEBAR_DEFAULT_GROUPING)
-  $sidebarFlatAgentsGrouped.set(false)
-  $sidebarAllProfilesAgentsGrouped.set(false)
+  // The default view groups by project, so "reset" must land back IN the tree —
+  // the flat scope's own atom can't hold 'project', it carries the date
+  // fallback the user returns to when they leave the tree.
+  $sidebarFlatAgentsGrouped.set(true)
+  $sidebarAllProfilesAgentsGrouped.set(true)
   setSidebarOrdering(SIDEBAR_DEFAULT_ORDERING)
   $sidebarRowMeta.set(SIDEBAR_DEFAULT_ROW_META)
   $sidebarCardRows.set(false)
