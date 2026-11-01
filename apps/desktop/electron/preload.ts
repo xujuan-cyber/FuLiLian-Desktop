@@ -228,7 +228,6 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
       return () => ipcRenderer.removeListener('fulilian:notification-center', listener)
     }
   },
-  requestMicrophoneAccess: () => ipcRenderer.invoke('fulilian:requestMicrophoneAccess'),
   readWindowBelow: () => ipcRenderer.invoke('fulilian:window:readBelow'),
   readFileDataUrl: filePath => ipcRenderer.invoke('fulilian:readFileDataUrl', filePath),
   readFileDataUrlForAttach: filePath => ipcRenderer.invoke('fulilian:readFileDataUrlForAttach', filePath),

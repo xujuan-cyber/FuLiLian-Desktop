@@ -221,7 +221,6 @@ declare global {
           }) => void
         ) => () => void
       }
-      requestMicrophoneAccess: () => Promise<boolean>
       /** read_window_below tool: metadata for the OS window directly underneath this one (never pixels). */
       readWindowBelow?: () => Promise<{
         frontmost: { app: string; title: string } | null

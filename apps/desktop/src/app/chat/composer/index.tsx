@@ -122,7 +122,7 @@ export function ChatBar({
     workspaceTransfer: hudWindowing?.workspaceTransfer === true
   })
 
-  // Every send (typed, queued, voice) passes through the contributed
+  // Every send (typed, queued) passes through the contributed
   // middleware chain first — rewrite / pass-through / cancel. Empty chain =
   // exact pass-through, so surfaces without contributions are byte-identical.
   const onSubmit = useCallback<ChatBarProps['onSubmit']>(
@@ -334,7 +334,7 @@ export function ChatBar({
   })
 
   // v3 §8.5: the card is two rows — the text on top, a 32px control row beneath
-  // (left: attach + permission · right: model · voice · send). The HUD is a
+  // (left: attach + permission · right: model · send). The HUD is a
   // ~470px Spotlight bar where a second row would eat the whole window, so it
   // keeps the compact single-row arrangement (and its `stacked` fallback).
   const twoRow = !hudMode
@@ -1408,7 +1408,7 @@ export function ChatBar({
                     <div className="min-w-0 [grid-area:input]">{input}</div>
                     {twoRow ? (
                       // Three zones on one 32px line: attach + permission on the
-                      // left, an elastic gap, model · voice · send on the right.
+                      // left, an elastic gap, model · send on the right.
                       // Wraps instead of overflowing under 720px.
                       <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 [grid-area:footer]">
                         <div className="flex min-w-0 items-center gap-1.5">{leftZone}</div>

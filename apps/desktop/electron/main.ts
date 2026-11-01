@@ -15459,14 +15459,6 @@ ipcMain.on('fulilian:previewShortcutActive', (_event, active) => {
   previewShortcutActive = Boolean(active)
 })
 
-ipcMain.handle('fulilian:requestMicrophoneAccess', async () => {
-  if (!IS_MAC || typeof systemPreferences.askForMediaAccess !== 'function') {
-    return true
-  }
-
-  return systemPreferences.askForMediaAccess('microphone')
-})
-
 // read_window_below tool: which OS window is directly underneath this one.
 // Metadata only (app, title, bounds) — never pixels. On macOS, other apps'
 // window titles are gated behind the Screen Recording permission; pass titles
