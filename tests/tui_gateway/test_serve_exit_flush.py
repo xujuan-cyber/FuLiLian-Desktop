@@ -133,9 +133,6 @@ def test_shutdown_sessions_flushes_before_teardown(monkeypatch):
     order: list[str] = []
 
     monkeypatch.setattr(
-        server, "_release_gateway_wake_owner", lambda: None, raising=False
-    )
-    monkeypatch.setattr(
         server,
         "_flush_sessions_before_exit",
         lambda budget_s=None: order.append("flush") or 0,

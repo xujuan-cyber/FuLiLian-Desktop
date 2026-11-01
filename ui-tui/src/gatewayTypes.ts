@@ -417,38 +417,6 @@ export interface VoiceRecordResponse {
   text?: string
 }
 
-// ── Wake word ────────────────────────────────────────────────────────
-
-export interface WakeStartResponse {
-  enabled_persisted?: boolean
-  hint?: string
-  owner_surface?: null | string
-  phrase?: string
-  provider?: string
-  reason?: string
-  started?: boolean
-}
-
-export interface WakeStopResponse {
-  disabled_persisted?: boolean
-  reason?: null | string
-  stopped?: boolean
-}
-
-export interface WakeStatusResponse {
-  /** Armed but the mic delivers only silence (macOS backend-permission gap). */
-  audio_silent?: boolean
-  available?: boolean
-  /** Config truth (wake_word.enabled). */
-  enabled?: boolean
-  hint?: string
-  listening?: boolean
-  owned_by_caller?: boolean
-  owner_surface?: null | string
-  phrase?: string
-  provider?: string
-}
-
 // ── Tools (TS keeps configure since it resets local history) ─────────
 
 export interface ToolsConfigureResponse {
@@ -641,11 +609,6 @@ export type GatewayEvent =
       payload?: { no_speech_limit?: boolean; stop_phrase?: boolean; text?: string; typed?: boolean }
       session_id?: string
       type: 'voice.transcript'
-    }
-  | {
-      payload?: { phrase?: string; profile?: null | string; start_new_session?: boolean }
-      session_id?: string
-      type: 'wake.detected'
     }
   | { payload?: { reason?: string }; session_id?: string; type: 'dashboard.new_session_requested' }
   | { payload: { line: string }; session_id?: string; type: 'gateway.stderr' }

@@ -83,7 +83,7 @@ class TestSaveConfigValueTargetsUserConfig:
     """Regression: persisted runtime settings must land in FULILIAN_HOME/config.yaml
     (which config readers actually read), never the repo's cli-config.yaml.
 
-    This was the "wake-word ear reverts to disabled after restart" bug: on an
+    This was the "setting reverts after restart" bug: on an
     install whose FULILIAN_HOME/config.yaml did not exist yet, save_config_value
     fell back to the checked-in cli-config.yaml. The toggle reported success, but
     startup read FULILIAN_HOME/config.yaml and never saw the setting."""
@@ -96,12 +96,12 @@ class TestSaveConfigValueTargetsUserConfig:
 
         from cli import save_config_value
 
-        assert save_config_value("wake_word.enabled", True) is True
+        assert save_config_value("voice.auto_tts", True) is True
 
         config_path = fulilian_home / "config.yaml"
         assert config_path.exists(), "user config.yaml must be created, not skipped"
         result = yaml.safe_load(config_path.read_text())
-        assert result["wake_word"]["enabled"] is True
+        assert result["voice"]["auto_tts"] is True
 
     def test_does_not_write_repo_cli_config(self, tmp_path, monkeypatch):
         # Even when the repo's cli-config.yaml exists, the write goes to the
@@ -117,11 +117,11 @@ class TestSaveConfigValueTargetsUserConfig:
 
         from cli import save_config_value
 
-        save_config_value("wake_word.enabled", True)
+        save_config_value("voice.auto_tts", True)
 
         # The repo template is untouched…
         after = repo_cli_config.read_text() if repo_cli_config.exists() else None
         assert after == before
         # …and the value landed in the user config.
         result = yaml.safe_load((fulilian_home / "config.yaml").read_text())
-        assert result["wake_word"]["enabled"] is True
+        assert result["voice"]["auto_tts"] is True

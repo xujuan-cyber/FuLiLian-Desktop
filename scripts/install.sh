@@ -3182,8 +3182,8 @@ _restore_electron_dist_with_fallback() {
 # first-launch bootstrap never requests (it must not rebuild itself).
 install_desktop_voice_deps() {
     # Desktop ships with working voice out of the box: eagerly install the
-    # wake-word + local-STT stacks ([wake] + [voice] extras) instead of
-    # leaving them to lazy first-use install. Policy change (Teknium, July
+    # local-STT stack ([voice] extra) instead of leaving it to lazy
+    # first-use install. Policy change (Teknium, July
     # 2026, #70509 testing): the first ear-click used to trigger a
     # multi-minute onnxruntime pip install that froze the UI and blew RPC
     # timeouts. Lazy install remains the fallback for CLI-only installs and
@@ -3196,14 +3196,14 @@ install_desktop_voice_deps() {
         install_uv || true
     fi
     if [ -z "${UV_CMD:-}" ]; then
-        log_warn "uv unavailable — voice/wake deps will lazy-install at first use instead"
+        log_warn "uv unavailable — voice deps will lazy-install at first use instead"
         return 0
     fi
-    log_info "Installing voice + wake-word dependencies (onnxruntime, faster-whisper — 1-3min)..."
-    if (cd "$INSTALL_DIR" && $UV_CMD pip install -e ".[wake,voice]") ; then
-        log_success "Voice + wake-word dependencies installed"
+    log_info "Installing voice dependencies (onnxruntime, faster-whisper — 1-3min)..."
+    if (cd "$INSTALL_DIR" && $UV_CMD pip install -e ".[voice]") ; then
+        log_success "Voice dependencies installed"
     else
-        log_warn "Voice/wake dependency install failed — they will lazy-install at first use"
+        log_warn "Voice dependency install failed — they will lazy-install at first use"
     fi
     if [ "$USE_VENV" = true ] && [ -z "$_prev_venv" ]; then
         unset VIRTUAL_ENV

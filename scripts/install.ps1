@@ -3841,26 +3841,26 @@ function Try-RestoreElectronDist {
 
 function Install-DesktopVoiceDeps {
     # Desktop ships with working voice out of the box: eagerly install the
-    # wake-word + local-STT stacks ([wake] + [voice] extras) instead of
-    # leaving them to lazy first-use install. Policy change (Teknium, July
+    # local-STT stack ([voice] extra) instead of leaving it to lazy
+    # first-use install. Policy change (Teknium, July
     # 2026, #70509 testing): the first ear-click used to trigger a
     # multi-minute onnxruntime pip install that froze the UI and blew RPC
     # timeouts. Best-effort -- lazy install remains the fallback for anything
     # this step fails to fetch.
     if (-not $script:UvCmd) { Resolve-UvCmd }
     if (-not $script:UvCmd) {
-        Write-Warn "uv unavailable -- voice/wake deps will lazy-install at first use instead"
+        Write-Warn "uv unavailable -- voice deps will lazy-install at first use instead"
         return
     }
     $env:VIRTUAL_ENV = "$InstallDir\venv"
-    Write-Info "Installing voice + wake-word dependencies (onnxruntime, faster-whisper -- 1-3min)..."
+    Write-Info "Installing voice dependencies (onnxruntime, faster-whisper -- 1-3min)..."
     Push-Location $InstallDir
     try {
-        Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e ".[wake,voice]" }
+        Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e ".[voice]" }
         if ($LASTEXITCODE -eq 0) {
-            Write-Success "Voice + wake-word dependencies installed"
+            Write-Success "Voice dependencies installed"
         } else {
-            Write-Warn "Voice/wake dependency install failed (exit $LASTEXITCODE) -- they will lazy-install at first use"
+            Write-Warn "Voice dependency install failed (exit $LASTEXITCODE) -- they will lazy-install at first use"
         }
     } finally {
         Pop-Location

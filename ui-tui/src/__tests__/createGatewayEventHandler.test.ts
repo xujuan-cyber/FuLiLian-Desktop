@@ -852,14 +852,6 @@ describe('createGatewayEventHandler', () => {
     expect(polarityBackgroundFromForeground('not-a-color')).toBeUndefined()
   })
 
-  it('claims wake-word ownership when the gateway becomes ready', () => {
-    const ctx = buildCtx([])
-
-    createGatewayEventHandler(ctx)({ payload: {}, type: 'gateway.ready' } as any)
-
-    expect(ctx.gateway.rpc).toHaveBeenCalledWith('wake.start', { surface: 'tui' })
-  })
-
   it('ends voice mode on a stop-phrase transcript without submitting a turn', () => {
     const ctx = buildCtx([])
     const onEvent = createGatewayEventHandler(ctx)
@@ -925,57 +917,6 @@ describe('createGatewayEventHandler', () => {
 
     await vi.waitFor(() => expect(ctx.submission.submitRef.current).toHaveBeenCalledWith('send safely'))
     expect(ctx.composer.setInput).toHaveBeenCalledWith('')
-  })
-
-  it('opens a fresh session before starting voice after wake detection', async () => {
-    const ctx = buildCtx([])
-    ctx.session.newSession = vi.fn(async () => patchUiState({ sid: 'wake-session' }))
-    patchUiState({ sid: 'old-session' })
-
-    createGatewayEventHandler(ctx)({
-      payload: { phrase: 'hey fulilian', start_new_session: true },
-      type: 'wake.detected'
-    } as any)
-
-    await vi.waitFor(() =>
-      expect(ctx.gateway.rpc).toHaveBeenCalledWith('voice.record', {
-        action: 'start',
-        session_id: 'wake-session'
-      })
-    )
-    expect(ctx.session.newSession).toHaveBeenCalledOnce()
-    expect(ctx.voice.setVoiceEnabled).toHaveBeenCalledWith(true)
-  })
-
-  it('keeps the current session when wake detection disables session creation', async () => {
-    const ctx = buildCtx([])
-    patchUiState({ sid: 'current-session' })
-
-    createGatewayEventHandler(ctx)({
-      payload: { phrase: 'hey fulilian', start_new_session: false },
-      type: 'wake.detected'
-    } as any)
-
-    await vi.waitFor(() =>
-      expect(ctx.gateway.rpc).toHaveBeenCalledWith('voice.record', {
-        action: 'start',
-        session_id: 'current-session'
-      })
-    )
-    expect(ctx.session.newSession).not.toHaveBeenCalled()
-  })
-
-  it('rearms wake detection when no session is available', async () => {
-    const ctx = buildCtx([])
-    patchUiState({ sid: '' })
-
-    createGatewayEventHandler(ctx)({
-      payload: { start_new_session: false },
-      type: 'wake.detected'
-    } as any)
-
-    await vi.waitFor(() => expect(ctx.gateway.rpc).toHaveBeenCalledWith('wake.resume', {}))
-    expect(ctx.gateway.rpc).not.toHaveBeenCalledWith('voice.record', expect.anything())
   })
 
   it('on gateway.ready with no STARTUP_RESUME_ID and auto_resume off, forges a new session', async () => {

@@ -556,11 +556,6 @@ async def handle_ws(
 
             transport.close()
 
-            try:
-                await asyncio.to_thread(server._release_wake_for_transport, transport)
-            except Exception:
-                _log.exception("ws wake-word teardown failed peer=%s", peer)
-
             # Reap sessions this transport owned (close_on_disconnect sidecar
             # sessions) or detach the rest to the drop sentinel so later emits
             # don't crash into a closed socket or fall through to desktop stdout

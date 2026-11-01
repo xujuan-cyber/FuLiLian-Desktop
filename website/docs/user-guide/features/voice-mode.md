@@ -10,8 +10,6 @@ FuLiLian supports full voice interaction across CLI and messaging platforms. Tal
 
 If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with Fulilian](../../guides/use-voice-mode-with-fulilian.md).
 
-For hands-free session start — saying "hey fulilian" (or any phrase) to open a fresh voice session on the CLI, TUI, or desktop app — see [Wake Word](/user-guide/features/wake-word).
-
 ## Prerequisites
 
 Before using voice features, make sure you have:
