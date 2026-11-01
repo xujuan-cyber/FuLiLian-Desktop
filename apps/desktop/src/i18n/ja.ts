@@ -3944,7 +3944,6 @@ export const ja = defineLocale({
   },
 
   desktop: {
-    audioReadFailed: '録音した音声を読み取れませんでした',
     sessionUnavailable: 'セッションが利用できません',
     createSessionFailed: '新しいセッションを作成できませんでした',
     promptFailed: 'プロンプトに失敗しました',

@@ -3815,7 +3815,6 @@ export const zhHant = defineLocale({
   },
 
   desktop: {
-    audioReadFailed: '無法讀取錄製的音訊',
     sessionUnavailable: '工作階段不可用',
     createSessionFailed: '無法建立新工作階段',
     promptFailed: '提示詞傳送失敗',

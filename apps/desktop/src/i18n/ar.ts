@@ -3936,7 +3936,6 @@ export const ar = defineLocale({
     secretPlaceholder: 'القيمة السرية'
   },
   desktop: {
-    audioReadFailed: 'فشلت قراءة الصوت',
     sessionUnavailable: 'الجلسة غير متاحة',
     createSessionFailed: 'فشل إنشاء الجلسة',
     promptFailed: 'فشل إرسال الرسالة',

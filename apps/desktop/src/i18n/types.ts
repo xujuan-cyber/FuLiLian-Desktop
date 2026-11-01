@@ -3272,7 +3272,6 @@ export interface Translations {
   }
 
   desktop: {
-    audioReadFailed: string
     sessionUnavailable: string
     createSessionFailed: string
     promptFailed: string

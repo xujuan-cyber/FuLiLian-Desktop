@@ -3768,7 +3768,6 @@ export const en: Translations = {
   },
 
   desktop: {
-    audioReadFailed: 'Could not read recorded audio',
     sessionUnavailable: 'Session unavailable',
     createSessionFailed: 'Could not create a new session',
     promptFailed: 'Prompt failed',

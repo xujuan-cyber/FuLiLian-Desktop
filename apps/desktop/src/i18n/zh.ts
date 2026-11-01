@@ -3816,7 +3816,6 @@ export const zh: Translations = {
   },
 
   desktop: {
-    audioReadFailed: '无法读取录制的音频',
     sessionUnavailable: '会话不可用',
     createSessionFailed: '无法创建新会话',
     promptFailed: '提示词发送失败',
