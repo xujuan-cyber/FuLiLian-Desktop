@@ -164,26 +164,6 @@ export const ja = defineLocale({
       openaiRejectedApiKeyWithStatus: status => `OpenAI が API キーを拒否しました (${status} invalid_api_key)。`,
       openaiTtsNeedsKey: 'OpenAI TTS には VOICE_TOOLS_OPENAI_KEY または OPENAI_API_KEY が必要です。'
     },
-    voice: {
-      configureSpeechToText: '音声モードを使用するには音声認識を設定してください。',
-      couldNotStartSession: '音声セッションを開始できませんでした',
-      microphoneAccessDenied: 'マイクへのアクセスが拒否されました。',
-      microphoneConstraintsUnsupported: 'このデバイスはマイクの制約をサポートしていません。',
-      microphoneFailed: 'マイクが失敗しました',
-      microphoneInUse: 'マイクは他のアプリで使用中です。',
-      microphonePermissionDenied: 'マイクのアクセス許可が拒否されました。',
-      microphoneStartFailed: 'マイクの録音を開始できませんでした。',
-      microphoneUnsupported: 'このランタイムはマイク録音をサポートしていません。',
-      noMicrophone: 'マイクが見つかりませんでした。',
-      noSpeechDetected: '音声が検出されませんでした',
-      playbackFailed: '音声再生に失敗しました',
-      recordingFailed: '音声録音に失敗しました',
-      sayStopToEnd: phrase => `「${phrase}」と言うと音声チャットを終了できます。`,
-      transcriptionFailed: '音声文字起こしに失敗しました',
-      transcriptionUnavailable: '音声文字起こしはまだ利用できません。',
-      tryRecordingAgain: 'もう一度録音してください。',
-      unavailable: '音声は利用できません'
-    },
     native: {
       approvalTitle: '承認が必要です',
       approveAction: '承認',
@@ -333,7 +313,6 @@ export const ja = defineLocale({
       'workspace.openFolder': 'フォルダーをプロジェクトとして開く',
       'composer.focus': 'コンポーザーにフォーカス',
       'composer.modelPicker': 'モデルピッカーを開く',
-      'composer.voice': '音声会話を開始 / 停止',
       'view.toggleSidebar': 'セッションサイドバーの切り替え',
       'view.toggleRightSidebar': 'ファイルブラウザーの切り替え',
       'view.toggleReview': 'レビューペインの切り替え',
@@ -458,8 +437,7 @@ export const ja = defineLocale({
     },
     chipsNote: '取証・CTF・アイドル時タスクの入口はプレースホルダーです——kind データ層と共に有効化されます。',
     section: {
-      title: 'ここから始める',
-      more: 'テンプレート'
+      title: 'ここから始める'
     },
     modeCards: {
       project: 'コードプロジェクト',
@@ -718,7 +696,6 @@ export const ja = defineLocale({
       workspace: 'ワークスペース',
       safety: '安全性',
       memory: 'メモリとコンテキスト',
-      voice: '音声',
       advanced: '詳細'
     },
     searchPlaceholder: {
@@ -958,80 +935,6 @@ export const ja = defineLocale({
         enabled: 'ファイルチェックポイント',
         maxSnapshots: 'チェックポイント上限'
       },
-      voice: {
-        recordKey: '音声ショートカット',
-        maxRecordingSeconds: '最大録音時間',
-        autoTts: '応答を読み上げる'
-      },
-      stt: {
-        enabled: '音声認識',
-        provider: '音声認識プロバイダー',
-        local: {
-          model: 'ローカル文字起こしモデル',
-          language: '文字起こし言語'
-        },
-        openai: {
-          model: 'OpenAI STT モデル'
-        },
-        groq: {
-          model: 'Groq STT モデル'
-        },
-        mistral: {
-          model: 'Mistral STT モデル'
-        },
-        elevenlabs: {
-          modelId: 'ElevenLabs STT モデル',
-          languageCode: 'ElevenLabs 言語',
-          tagAudioEvents: '音声イベントをタグ付け',
-          diarize: '話者分離'
-        }
-      },
-      tts: {
-        provider: '音声合成プロバイダー',
-        edge: {
-          voice: 'Edge 音声'
-        },
-        openai: {
-          model: 'OpenAI TTS モデル',
-          voice: 'OpenAI 音声'
-        },
-        elevenlabs: {
-          voiceId: 'ElevenLabs 音声',
-          modelId: 'ElevenLabs モデル'
-        },
-        xai: {
-          voiceId: 'xAI (Grok) 音声',
-          language: 'xAI 言語',
-          speed: '再生速度',
-          autoSpeechTags: '自動音声タグ',
-          optimizeStreamingLatency: 'ストリーミング遅延最適化',
-          sampleRate: 'サンプルレート',
-          bitRate: 'ビットレート'
-        },
-        minimax: {
-          model: 'MiniMax TTS モデル',
-          voiceId: 'MiniMax 音声'
-        },
-        mistral: {
-          model: 'Mistral TTS モデル',
-          voiceId: 'Mistral 音声'
-        },
-        gemini: {
-          model: 'Gemini TTS モデル',
-          voice: 'Gemini 音声'
-        },
-        neutts: {
-          model: 'NeuTTS モデル',
-          device: 'NeuTTS デバイス'
-        },
-        kittentts: {
-          model: 'KittenTTS モデル',
-          voice: 'KittenTTS 音声'
-        },
-        piper: {
-          voice: 'Piper 音声'
-        }
-      },
       memory: {
         memoryEnabled: '永続メモリ',
         userProfileEnabled: 'ユーザープロファイル',
@@ -1107,15 +1010,6 @@ export const ja = defineLocale({
       },
       compression: {
         enabled: '会話が大きくなったとき、古いコンテキストを要約します。'
-      },
-      voice: {
-        autoTts: 'アシスタントの応答を自動で読み上げます。'
-      },
-      stt: {
-        enabled: 'ローカルまたはプロバイダーによる音声文字起こしを有効にします。',
-        elevenlabs: {
-          languageCode: '任意の ISO-639-3 言語コードです。空欄なら ElevenLabs が自動検出します。'
-        }
       },
       updates: {
         nonInteractiveLocalChanges:
@@ -2976,32 +2870,11 @@ export const ja = defineLocale({
       'さらに進める',
       '調整または続行'
     ],
-    startVoice: '音声会話を開始',
     openDirective: '開く',
     queueMessage: 'メッセージをキューに入れる',
     steer: '現在の実行を誘導',
     stop: '停止',
     send: '送信',
-    speaking: '話しています',
-    transcribing: '文字起こし中',
-    thinking: '考え中',
-    muted: 'ミュート',
-    listening: '聴いています',
-    muteMic: 'マイクをミュート',
-    unmuteMic: 'マイクのミュートを解除',
-    stopListening: '聴き取りを停止して送信',
-    stopShort: '停止',
-    endConversation: '音声会話を終了',
-    endShort: '終了',
-    stopDictation: '口述を停止',
-    transcribingDictation: '口述を文字起こし中',
-    voiceControls: '音声',
-    voiceDictation: '音声口述',
-    speakReplies: '返信を読み上げる',
-    stopSpeakingReplies: '返信の読み上げを停止',
-    wakeWordListening: phrase => `ウェイクワード:「${phrase}」— 待機中`,
-    wakeWordOff: phrase => `ウェイクワード:「${phrase}」— オフ`,
-    wakeWordPausedVoice: phrase => `ウェイクワード:「${phrase}」— 音声チャット中は一時停止`,
     lookupLoading: '検索中…',
     lookupNoMatches: '一致なし。',
     lookupTry: '試す',
@@ -3053,10 +2926,6 @@ export const ja = defineLocale({
     previewLabel: label => `${label} のプレビュー`,
     couldNotPreview: label => `${label} をプレビューできませんでした`,
     removeAttachment: label => `${label} を削除`,
-    dictating: '口述中',
-    preparingAudio: '音声を準備中',
-    speakingResponse: '応答を読み上げ中',
-    readingAloud: '読み上げ中',
     themeSuggestions: 'デスクトップテーマの候補',
     noMatchingThemes: '一致するテーマがありません。',
     themeTryPre: '試してみる: ',
@@ -3879,10 +3748,6 @@ export const ja = defineLocale({
       errorSendDiagnostics: '診断情報を送信',
       filesChanged: count => `${count} 件のファイルを変更`,
       reviewChanges: 'レビュー',
-      readAloudFailed: '読み上げに失敗しました',
-      preparingAudio: '音声を準備中...',
-      stopReading: '読み上げを停止',
-      readAloud: '読み上げ',
       editMessage: 'メッセージを編集',
       expandMessage: 'メッセージを展開',
       scrollToBottom: '一番下へスクロール',

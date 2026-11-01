@@ -65,7 +65,6 @@ export type DesktopActionId =
   | 'profile'
   | 'skin'
   | 'title'
-  | 'wake'
   | 'yolo'
 
 /** A command fulfilled by opening a desktop overlay picker. */
@@ -179,12 +178,6 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     surface: action('branch')
   },
   { name: '/yolo', description: 'Toggle YOLO — auto-approve dangerous commands', surface: action('yolo') },
-  {
-    name: '/wake',
-    description: 'Control the desktop wake-word listener [on|off|status]',
-    surface: action('wake'),
-    argumentMode: 'options'
-  },
   {
     name: '/handoff',
     description: 'Hand off this session to a messaging platform',
@@ -314,9 +307,10 @@ const NO_DESKTOP_SURFACE: Record<DesktopUnavailableReason, readonly string[]> = 
     '/reload_skills'
   ],
   // /voice arms SERVER-side capture (voice.record → PortAudio on the backend
-  // host) — meaningless on desktop, which has its own composer-native voice
-  // conversation (mic menu / Ctrl+B) with client-side capture and playback.
-  // Point the user at the button instead of a generic "advanced" shrug.
+  // host). The desktop no longer has any voice surface, and the reason string
+  // is still emitted by the backend catalog (fulilian_cli/commands.py), so the
+  // entry stays — otherwise specFromCatalog() would fall through to exec() and
+  // arm the server-side microphone. Only the copy changed.
   'composer-voice': ['/voice']
 }
 
@@ -427,8 +421,7 @@ function isAliasCommand(command: string): boolean {
 const UNAVAILABLE_MESSAGE: Record<DesktopUnavailableReason, (command: string) => string> = {
   advanced: command =>
     `${command} is not shown in the desktop slash palette. Use the relevant desktop control or terminal interface instead.`,
-  'composer-voice': () =>
-    'Voice chat lives in the composer here: click the microphone button and choose "Start voice chat" (or press Ctrl+B).',
+  'composer-voice': () => 'Voice chat is not available in Fulilian Desktop.',
   messaging: command => `${command} is only used from messaging platforms.`,
   settings: command => `${command} is managed from the desktop sidebar.`,
   terminal: command => `${command} is only available in the terminal interface.`

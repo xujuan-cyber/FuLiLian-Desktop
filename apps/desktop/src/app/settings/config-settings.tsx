@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getElevenLabsVoices, getFulilianConfigSchema, saveFulilianConfig } from '@/fulilian'
+import { getFulilianConfigSchema, saveFulilianConfig } from '@/fulilian'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { confirm } from '@/store/confirm'
@@ -38,8 +38,7 @@ import {
   getNested,
   isExternalMemoryProvider,
   sectionFieldEntries,
-  setNested,
-  voiceFieldVisible
+  setNested
 } from './helpers'
 import { MemoryConnect } from './memory/connect'
 import { ProviderConfigPanel } from './memory/provider-config-panel'
@@ -118,8 +117,6 @@ function ConfigSettingsInner({
   })
 
   const schema = schemaResponse?.fields ?? null
-  const [elevenLabsVoiceOptions, setElevenLabsVoiceOptions] = useState<string[] | null>(null)
-  const [elevenLabsVoiceLabels, setElevenLabsVoiceLabels] = useState<Record<string, string>>({})
   const saveVersionRef = useRef(0)
   const savedDiscoverySignatureRef = useRef<string | undefined>(undefined)
   const [saveVersion, setSaveVersion] = useState(0)
@@ -148,43 +145,6 @@ function ConfigSettingsInner({
     saveVersionRef.current = 0
     setSaveVersion(0)
   })
-
-  // The live ElevenLabs voice list is consumed by exactly one field —
-  // `tts.elevenlabs.voice_id` — which renders only on the Voice section and only
-  // when the selected TTS provider is ElevenLabs (voiceFieldVisible). Gate the
-  // account-scoped fetch on that same condition: every other section/provider
-  // skips it. Step 17 · P4: this fetch was unconditional on every config-page
-  // mount, so opening Chat/Model/Workspace fired a useless voices request.
-  const wantsElevenLabsVoices =
-    activeSectionId === 'voice' && String(getNested(config ?? {}, 'tts.provider') ?? '') === 'elevenlabs'
-
-  useEffect(() => {
-    if (!wantsElevenLabsVoices) {
-      return
-    }
-
-    let cancelled = false
-
-    getElevenLabsVoices(scopeProfile)
-      .then(result => {
-        if (cancelled || !result.available) {
-          return
-        }
-
-        setElevenLabsVoiceOptions(result.voices.map(voice => voice.voice_id))
-        setElevenLabsVoiceLabels(Object.fromEntries(result.voices.map(voice => [voice.voice_id, voice.label])))
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setElevenLabsVoiceOptions(null)
-          setElevenLabsVoiceLabels({})
-        }
-      })
-
-    return () => void (cancelled = true)
-    // scopeProfile is constant per mount (the inner component is keyed on it);
-    // the gate flips only when the user switches the voice provider.
-  }, [scopeProfile, wantsElevenLabsVoices])
 
   // eslint-disable-next-line no-restricted-syntax -- autosave bookkeeping refs, not an atom mirror
   useEffect(() => {
@@ -370,8 +330,6 @@ function ConfigSettingsInner({
     return <SettingsSkeleton sections={[{ rows: 6 }]} />
   }
 
-  const visibleFields = activeSectionId === 'voice' ? fields.filter(([key]) => voiceFieldVisible(key, config)) : fields
-
   return (
     <SettingsContent>
       {/* Which profile's config.yaml this page edits — shared across every
@@ -406,11 +364,11 @@ function ConfigSettingsInner({
           where image-attachment behavior already lives, so this sits above the
           schema fields for that section. */}
       {activeSectionId === 'chat' ? <AttachmentSizeSetting /> : null}
-      {visibleFields.length === 0 && activeSectionId !== 'chat' ? (
+      {fields.length === 0 && activeSectionId !== 'chat' ? (
         <EmptyState description={c.emptyDesc} title={c.emptyTitle} />
-      ) : visibleFields.length === 0 ? null : (
+      ) : fields.length === 0 ? null : (
         <div className="grid gap-1">
-          {visibleFields.map(([key, field]) => (
+          {fields.map(([key, field]) => (
             <div className="scroll-mt-6 rounded-lg" id={`setting-field-${key}`} key={key}>
               <ConfigField
                 descriptionExtra={
@@ -418,13 +376,8 @@ function ConfigSettingsInner({
                     <MemoryConnect profile={scopeProfile} provider={String(getNested(config, key))} />
                   ) : undefined
                 }
-                enumOptions={
-                  key === 'tts.elevenlabs.voice_id'
-                    ? enumOptionsFor(key, getNested(config, key), config, elevenLabsVoiceOptions ?? undefined)
-                    : enumOptionsFor(key, getNested(config, key), config)
-                }
+                enumOptions={enumOptionsFor(key, getNested(config, key), config)}
                 onChange={value => updateConfig(setNested(config, key, value))}
-                optionLabels={key === 'tts.elevenlabs.voice_id' ? elevenLabsVoiceLabels : undefined}
                 schema={field}
                 schemaKey={key}
                 value={getNested(config, key)}

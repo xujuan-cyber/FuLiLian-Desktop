@@ -16,7 +16,7 @@ export const GHOST_ICON_BTN = cn(
   'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
 )
 
-// Send/voice-conversation primary: solid ink circle (reads as black-on-white in
+// Send primary: solid ink circle (reads as black-on-white in
 // light mode, white-on-black in dark mode) to match the ZCode composer's
 // high-contrast CTA — 32px, the one dark object in the row. Empty input parks it
 // at 30% (v3 §8.5) instead of tinting the fill, and hover only shifts the fill.
@@ -26,8 +26,3 @@ export const PRIMARY_ICON_BTN = cn(
   'disabled:opacity-30 disabled:hover:bg-(--v3-ink)',
   FOCUS_RING
 )
-
-/** A toggle that is currently ON — dictation, spoken replies, the wake word.
- *  Neutral grey, never accent: ZCode keeps the tool row colourless. */
-export const ACTIVE_ICON_BTN =
-  'bg-(--ui-bg-tertiary) text-foreground hover:bg-(--ui-bg-secondary) hover:text-foreground'

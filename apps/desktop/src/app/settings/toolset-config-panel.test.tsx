@@ -16,9 +16,9 @@ vi.mock('react-router', async importOriginal => ({
   useNavigate: () => navigateSpy
 }))
 
-// The inline VoiceProviderFields reads the shared config record through React
-// Query, so the panel needs a QueryClientProvider (fresh per render — cached
-// config from one test must not leak into the next).
+// The panel reads the shared config record through React Query, so it needs a
+// QueryClientProvider (fresh per render — cached config from one test must not
+// leak into the next).
 const render = (ui: ReactElement) =>
   rtlRender(
     <MemoryRouter>
@@ -158,55 +158,6 @@ afterEach(() => {
 })
 
 describe('ToolsetConfigPanel', () => {
-  it('renders inline voice/model fields for a TTS provider row carrying tts_provider', async () => {
-    // The Capabilities gap: provider rows only showed API keys — voice/model
-    // settings lived exclusively in Settings → Voice. Rows now carry the
-    // backend's tts_provider key and the panel renders the same config
-    // fields inline (here: OpenAI TTS Model + OpenAI Voice).
-    getToolsetConfig.mockResolvedValue(
-      config({
-        active_provider: 'OpenAI TTS',
-        providers: [
-          {
-            name: 'OpenAI TTS',
-            badge: 'paid',
-            tag: 'High quality voices',
-            env_vars: [
-              { key: 'VOICE_TOOLS_OPENAI_KEY', prompt: 'OpenAI API key', url: 'https://x', default: null, is_set: true }
-            ],
-            post_setup: null,
-            requires_nous_auth: false,
-            is_active: true,
-            tts_provider: 'openai'
-          }
-        ]
-      })
-    )
-
-    const { ToolsetConfigPanel } = await import('./toolset-config-panel')
-    render(<ToolsetConfigPanel onConfiguredChange={vi.fn()} toolset="tts" />)
-
-    expect(await screen.findByText('OpenAI TTS Model')).toBeTruthy()
-    expect(screen.getByText('OpenAI Voice')).toBeTruthy()
-    // Voice/model names are free-input comboboxes seeded with the current
-    // config value — a custom voice ID must be typeable, not gated by a
-    // closed Select.
-    const voiceInput = screen.getByDisplayValue('alloy')
-    fireEvent.change(voiceInput, { target: { value: 'marin' } })
-    await waitFor(() => expect(saveFulilianConfig).toHaveBeenCalled(), { timeout: 3000 })
-    const saved = saveFulilianConfig.mock.calls.at(-1)?.[0] as Record<string, Record<string, Record<string, string>>>
-    expect(saved.tts.openai.voice).toBe('marin')
-  })
-
-  it('renders no inline voice fields for rows without tts_provider (older backend)', async () => {
-    const { ToolsetConfigPanel } = await import('./toolset-config-panel')
-    render(<ToolsetConfigPanel onConfiguredChange={vi.fn()} toolset="tts" />)
-
-    await screen.findByText('Microsoft Edge TTS')
-    expect(screen.queryByText('Edge Voice')).toBeNull()
-    expect(screen.queryByText('OpenAI Voice')).toBeNull()
-  })
-
   it('lists providers from the config endpoint', async () => {
     const { ToolsetConfigPanel } = await import('./toolset-config-panel')
     render(<ToolsetConfigPanel onConfiguredChange={vi.fn()} toolset="tts" />)

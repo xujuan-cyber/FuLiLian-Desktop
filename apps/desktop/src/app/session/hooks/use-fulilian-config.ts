@@ -16,11 +16,7 @@ import {
   setDefaultReasoningEffort,
   setIntroPersonality
 } from '@/store/session'
-import {
-  applyAutoSpeakFromConfig,
-  applyThinkingSoundFromConfig,
-  applyVoiceStopPhraseFromConfig
-} from '@/store/voice-prefs'
+import { applyThinkingSoundFromConfig } from '@/store/voice-prefs'
 
 const DEFAULT_VOICE_SECONDS = 120
 const FAST_TIERS = new Set(['fast', 'priority', 'on'])
@@ -147,8 +143,6 @@ export function useFulilianConfig({ activeSessionIdRef }: FulilianConfigOptions)
           return
         }
 
-        applyAutoSpeakFromConfig(config)
-        applyVoiceStopPhraseFromConfig(config)
         applyThinkingSoundFromConfig(config)
       } catch {
         // Config is nice-to-have; chat still works without it.

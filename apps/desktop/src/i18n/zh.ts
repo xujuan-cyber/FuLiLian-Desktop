@@ -158,26 +158,6 @@ export const zh: Translations = {
       openaiRejectedApiKeyWithStatus: status => `OpenAI 拒绝了该 API key (${status} invalid_api_key)。`,
       openaiTtsNeedsKey: 'OpenAI TTS 需要 VOICE_TOOLS_OPENAI_KEY 或 OPENAI_API_KEY。'
     },
-    voice: {
-      configureSpeechToText: '配置语音转文字后即可使用语音模式。',
-      couldNotStartSession: '无法启动语音会话',
-      microphoneAccessDenied: '麦克风访问被拒绝。',
-      microphoneConstraintsUnsupported: '此设备不支持当前麦克风约束。',
-      microphoneFailed: '麦克风出错',
-      microphoneInUse: '麦克风正被其他应用占用。',
-      microphonePermissionDenied: '麦克风权限被拒绝。',
-      microphoneStartFailed: '无法开始麦克风录音。',
-      microphoneUnsupported: '当前运行环境不支持麦克风录音。',
-      noMicrophone: '未找到麦克风。',
-      noSpeechDetected: '没有检测到语音',
-      playbackFailed: '语音播放失败',
-      recordingFailed: '语音录制失败',
-      sayStopToEnd: phrase => `说“${phrase}”即可结束语音对话。`,
-      transcriptionFailed: '语音转写失败',
-      transcriptionUnavailable: '语音转写暂不可用。',
-      tryRecordingAgain: '请再录一次。',
-      unavailable: '语音不可用'
-    },
     native: {
       approvalTitle: '需要批准',
       approveAction: '批准',
@@ -315,7 +295,6 @@ export const zh: Translations = {
       'workspace.openFolder': '打开文件夹为项目',
       'composer.focus': '聚焦输入框',
       'composer.modelPicker': '打开模型选择器',
-      'composer.voice': '开始 / 停止语音对话',
       'view.toggleSidebar': '切换会话侧边栏',
       'view.toggleRightSidebar': '切换文件浏览器',
       'view.toggleReview': '切换审查面板',
@@ -452,8 +431,7 @@ export const zh: Translations = {
     },
     chipsNote: '取证、CTF 与闲时任务入口为静态占位，随 kind 数据层落地启用。',
     section: {
-      title: '从这里开始',
-      more: '模板库'
+      title: '从这里开始'
     },
     modeCards: {
       project: '编程项目',
@@ -699,7 +677,6 @@ export const zh: Translations = {
       workspace: '工作区',
       safety: '安全',
       memory: '记忆与上下文',
-      voice: '语音',
       advanced: '高级'
     },
     searchPlaceholder: {
@@ -932,80 +909,6 @@ export const zh: Translations = {
         enabled: '文件检查点',
         maxSnapshots: '检查点上限'
       },
-      voice: {
-        recordKey: '语音快捷键',
-        maxRecordingSeconds: '最长录音时长',
-        autoTts: '朗读回复'
-      },
-      stt: {
-        enabled: '语音转文字',
-        provider: '语音转文字提供方',
-        local: {
-          model: '本地转写模型',
-          language: '转写语言'
-        },
-        openai: {
-          model: 'OpenAI STT 模型'
-        },
-        groq: {
-          model: 'Groq STT 模型'
-        },
-        mistral: {
-          model: 'Mistral STT 模型'
-        },
-        elevenlabs: {
-          modelId: 'ElevenLabs STT 模型',
-          languageCode: 'ElevenLabs 语言',
-          tagAudioEvents: '标记音频事件',
-          diarize: '说话人区分'
-        }
-      },
-      tts: {
-        provider: '文字转语音提供方',
-        edge: {
-          voice: 'Edge 语音'
-        },
-        openai: {
-          model: 'OpenAI TTS 模型',
-          voice: 'OpenAI 语音'
-        },
-        elevenlabs: {
-          voiceId: 'ElevenLabs 语音',
-          modelId: 'ElevenLabs 模型'
-        },
-        xai: {
-          voiceId: 'xAI (Grok) 语音',
-          language: 'xAI 语言',
-          speed: '播放速度',
-          autoSpeechTags: '自动语音标签',
-          optimizeStreamingLatency: '流式延迟优化',
-          sampleRate: '采样率',
-          bitRate: '比特率'
-        },
-        minimax: {
-          model: 'MiniMax TTS 模型',
-          voiceId: 'MiniMax 语音'
-        },
-        mistral: {
-          model: 'Mistral TTS 模型',
-          voiceId: 'Mistral 语音'
-        },
-        gemini: {
-          model: 'Gemini TTS 模型',
-          voice: 'Gemini 语音'
-        },
-        neutts: {
-          model: 'NeuTTS 模型',
-          device: 'NeuTTS 设备'
-        },
-        kittentts: {
-          model: 'KittenTTS 模型',
-          voice: 'KittenTTS 语音'
-        },
-        piper: {
-          voice: 'Piper 语音'
-        }
-      },
       memory: {
         memoryEnabled: '持久记忆',
         userProfileEnabled: '用户画像',
@@ -1080,15 +983,6 @@ export const zh: Translations = {
       },
       compression: {
         enabled: '当对话变大时对较早的上下文进行摘要。'
-      },
-      voice: {
-        autoTts: '自动朗读助手回复。'
-      },
-      stt: {
-        enabled: '启用本地或提供方支持的语音转写。',
-        elevenlabs: {
-          languageCode: '可选的 ISO-639-3 语言代码。留空让 ElevenLabs 自动检测。'
-        }
       },
       updates: {
         nonInteractiveLocalChanges:
@@ -2912,32 +2806,11 @@ export const zh: Translations = {
       '再深入一点',
       '调整或继续'
     ],
-    startVoice: '开始语音对话',
     openDirective: '打开',
     queueMessage: '排队消息',
     steer: '引导当前运行',
     stop: '停止',
     send: '发送',
-    speaking: '讲话中',
-    transcribing: '转写中',
-    thinking: '思考中',
-    muted: '已静音',
-    listening: '聆听中',
-    muteMic: '麦克风静音',
-    unmuteMic: '取消麦克风静音',
-    stopListening: '停止聆听并发送',
-    stopShort: '停止',
-    endConversation: '结束语音对话',
-    endShort: '结束',
-    stopDictation: '停止听写',
-    transcribingDictation: '正在转写听写',
-    voiceControls: '语音',
-    voiceDictation: '语音听写',
-    speakReplies: '朗读回复',
-    stopSpeakingReplies: '停止朗读回复',
-    wakeWordListening: phrase => `唤醒词:"${phrase}" — 正在监听`,
-    wakeWordOff: phrase => `唤醒词:"${phrase}" — 已关闭`,
-    wakeWordPausedVoice: phrase => `唤醒词:"${phrase}" — 语音对话期间暂停`,
     lookupLoading: '查找中…',
     lookupNoMatches: '没有匹配项。',
     lookupTry: '试试',
@@ -2988,10 +2861,6 @@ export const zh: Translations = {
     previewLabel: label => `预览 ${label}`,
     couldNotPreview: label => `无法预览 ${label}`,
     removeAttachment: label => `移除 ${label}`,
-    dictating: '听写中',
-    preparingAudio: '正在准备音频',
-    speakingResponse: '正在朗读回复',
-    readingAloud: '朗读中',
     themeSuggestions: '桌面主题建议',
     noMatchingThemes: '没有匹配的主题。',
     themeTryPre: '试试 ',
@@ -3784,10 +3653,6 @@ export const zh: Translations = {
       errorSendDiagnostics: '发送诊断信息',
       filesChanged: count => `${count} 个文件已更改`,
       reviewChanges: '查看',
-      readAloudFailed: '朗读失败',
-      preparingAudio: '正在准备音频...',
-      stopReading: '停止朗读',
-      readAloud: '朗读',
       editMessage: '编辑消息',
       expandMessage: '展开消息',
       scrollToBottom: '滚动到底部',

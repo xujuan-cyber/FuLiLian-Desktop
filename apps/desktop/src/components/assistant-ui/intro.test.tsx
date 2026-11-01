@@ -90,7 +90,6 @@ describe('Intro (v3 empty state: left axis greeting, lede, quick chips, entry ca
     expect(grid.className).toContain('sm:grid-cols-3')
     expect(grid.className).toContain('gap-3')
 
-    expect(screen.getByTestId('intro-more').textContent).toContain(en.home.section.more)
     expect(screen.getByText(en.home.section.title)).toBeTruthy()
   })
 

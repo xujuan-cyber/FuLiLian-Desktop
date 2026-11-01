@@ -17,7 +17,6 @@ import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
 import { DATA_IMAGE_URL_RE } from '@/lib/embedded-images'
 import { triggerHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
-import { interceptsTypedVoiceStop } from '@/lib/voice-stop-word'
 import { sessionCompacting } from '@/store/compaction'
 import { browseBackward, browseForward, deriveUserHistory, isBrowsingHistory } from '@/store/composer-input-history'
 import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
@@ -27,7 +26,6 @@ import { sessionBlockingPrompt } from '@/store/prompts'
 import { toggleReview } from '@/store/review'
 import { $gatewayState } from '@/store/session'
 import { $threadScrolledUp } from '@/store/thread-scroll'
-import { $autoSpeakReplies } from '@/store/voice-prefs'
 import { useTheme } from '@/themes'
 
 import { ApprovalModePill } from './approval-mode-pill'
@@ -59,7 +57,6 @@ import { useComposerSubmit } from './hooks/use-composer-submit'
 import { triggerKeyUpHandler, useComposerTrigger } from './hooks/use-composer-trigger'
 import { useComposerUndo } from './hooks/use-composer-undo'
 import { useComposerUrlDialog } from './hooks/use-composer-url-dialog'
-import { useComposerVoice } from './hooks/use-composer-voice'
 import { useDollarCompletions } from './hooks/use-dollar-completions'
 import { useEmojiCompletions } from './hooks/use-emoji-completions'
 import { useHashCompletions } from './hooks/use-hash-completions'
@@ -88,7 +85,6 @@ import type { ChatBarProps } from './types'
 import { isRedoShortcut, isUndoShortcut } from './undo-history'
 import { UrlDialog } from './url-dialog'
 import { chipTypedUrlOnSpace, linkifyUrls } from './url-refs'
-import { VoiceActivity, VoicePlaybackActivity } from './voice-activity'
 
 export function ChatBar({
   busy,
@@ -96,7 +92,6 @@ export function ChatBar({
   disabled,
   focusKey,
   gateway,
-  maxRecordingSeconds = 120,
   queueSessionKey,
   sessionId,
   state,
@@ -112,7 +107,6 @@ export function ChatBar({
   onRemoveAttachment,
   onSteer,
   onSubmit: onSubmitProp,
-  onTranscribeAudio,
   variant = 'docked'
 }: ChatBarProps) {
   // Where this bar lives (v3 §8.3/§8.5). `inline` is the empty-state card in the
@@ -128,32 +122,11 @@ export function ChatBar({
     workspaceTransfer: hudWindowing?.workspaceTransfer === true
   })
 
-  // Typed stop phrase during an active voice conversation ends it — same
-  // semantics as SAYING "stop" (voice-stop-word.ts) or clicking the pill's
-  // end control. Populated after useComposerVoice below (the submit wrapper
-  // is created first); render-time assignment keeps the ref current.
-  const voiceStopRef = useRef<{ active: boolean; end: () => void }>({ active: false, end: () => {} })
-
   // Every send (typed, queued, voice) passes through the contributed
   // middleware chain first — rewrite / pass-through / cancel. Empty chain =
   // exact pass-through, so surfaces without contributions are byte-identical.
   const onSubmit = useCallback<ChatBarProps['onSubmit']>(
     async (value, options) => {
-      // Bare stop phrase typed while the voice conversation is live: end the
-      // conversation (mic off, pill dismissed) instead of sending "stop" to
-      // the agent. Spoken transcripts are already stop-checked inside
-      // use-voice-conversation, so this only catches typed/queued sends.
-      // Outside a voice conversation, typed "stop" is a normal message.
-      const voiceStop = voiceStopRef.current
-
-      if (interceptsTypedVoiceStop(voiceStop.active, value, options?.attachments?.length ?? 0)) {
-        voiceStop.end()
-
-        // Consumed (not rejected): report accepted so the submit engine
-        // clears the draft instead of restoring "stop" into the composer.
-        return true
-      }
-
       const draft = await runComposerMiddleware({ text: value, attachments: options?.attachments })
 
       if (!draft) {
@@ -171,7 +144,6 @@ export function ChatBar({
   const attachments = useStore(scope.attachments.$attachments)
   const compacting = useStore(useMemo(() => sessionCompacting(sessionId ?? null), [sessionId]))
   const scrolledUp = useStore($threadScrolledUp)
-  const autoSpeak = useStore($autoSpeakReplies)
   // The turn is parked on the user (clarify / approval / sudo / secret). Esc must
   // not interrupt it — there's nothing actively running to stop, and stopping
   // would discard a question the user may want to come back to. The blocking
@@ -352,7 +324,7 @@ export function ChatBar({
     return onCancel()
   }, [activeQueueSessionKeyRef, onCancel])
 
-  const { compactPill, foldVoice, minimal, stacked } = useComposerMetrics({
+  const { compactPill, minimal, stacked } = useComposerMetrics({
     composerDockRef,
     composerRef,
     composerSurfaceRef,
@@ -1016,35 +988,6 @@ export function ChatBar({
   // Same explicit-halt semantics as the Stop button: park the queue.
   useComposerEscCancel({ awaitingInput, busy, onCancel: haltRun, target: scope.target })
 
-  const {
-    conversation,
-    dictate,
-    endConversation,
-    handleToggleAutoSpeak,
-    startConversation,
-    voiceActivityState,
-    voiceConversationActive,
-    voiceStatus
-  } = useComposerVoice({
-    busy,
-    clearDraft,
-    disabled,
-    focusInput,
-    insertText,
-    maxRecordingSeconds,
-    // Voice barge-in mid-generation halts the run like the Stop button.
-    onInterrupt: haltRun,
-    onSubmit,
-    onTranscribeAudio,
-    sessionId,
-    target: scope.target
-  })
-
-  // Keep the typed-stop interceptor (see onSubmit above) in sync with the
-  // live conversation state. Render-time ref assignment, same pattern as
-  // dispatchSubmitRef — no effect needed for a plain mirror.
-  voiceStopRef.current = { active: voiceConversationActive, end: endConversation }
-
   const contextMenu = (
     <ContextMenu
       onInsertText={insertText}
@@ -1059,35 +1002,20 @@ export function ChatBar({
 
   const controls = (
     <ComposerControls
-      autoSpeak={autoSpeak}
       busy={busy}
       busyAction={busyAction}
       canSubmit={canSubmit}
       compactModelPill={poppedOut || compactPill}
-      conversation={{
-        active: voiceConversationActive,
-        level: conversation.level,
-        muted: conversation.muted,
-        onEnd: endConversation,
-        onStart: startConversation,
-        onStopTurn: conversation.stopTurn,
-        onToggleMute: conversation.toggleMute,
-        status: conversation.status
-      }}
       disabled={disabled}
-      foldVoice={foldVoice}
       hasComposerPayload={hasComposerPayload}
       minimal={minimal}
-      onDictate={dictate}
       onQueue={queueDraft}
-      onToggleAutoSpeak={handleToggleAutoSpeak}
       state={state}
-      voiceStatus={voiceStatus}
     />
   )
 
   // v3 §8.5 zones. Left: attach (`+`) · contributed leading actions ·
-  // permission chip. Right: contributed actions · model · voice · send.
+  // permission chip. Right: contributed actions · model · wake word · send.
   // The permission chip keeps the R5 approval control's exact behaviour —
   // only its home and skin changed.
   const leftZone = (
@@ -1437,8 +1365,6 @@ export function ChatBar({
                     additions beside the "+" menu and before the controls.
                     All four render nothing until something contributes. */}
                   <ContribSlot area={COMPOSER_AREAS.top} />
-                  <VoiceActivity state={voiceActivityState} />
-                  <VoicePlaybackActivity />
                   {queueEdit && editingQueuedPrompt && (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-[color-mix(in_srgb,var(--dt-composer-ring)_32%,transparent)] bg-accent/18 px-2 py-1">
                       <div className="min-w-0 text-[0.7rem] text-muted-foreground/88">

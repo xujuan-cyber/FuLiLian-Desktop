@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react'
 
 import { requestComposerFocus } from '@/app/chat/composer/focus'
 import { useI18n } from '@/i18n'
-import { ChevronRight, GitBranch } from '@/lib/icons'
+import { GitBranch } from '@/lib/icons'
 
 export type IntroProps = {
   /** v3 §8.3: the empty-state composer node, mounted by the caller and
@@ -77,12 +77,6 @@ export function Intro({ composer }: IntroProps) {
 
         <div className="mt-10 flex items-baseline justify-between gap-3">
           <span className="v3-label">{h.section.title}</span>
-          {/* Not clickable yet — the template library lands with the data
-              layer, so this stays plain text rather than a dead link. */}
-          <span className="v3-meta inline-flex items-center gap-1" data-testid="intro-more">
-            {h.section.more}
-            <ChevronRight aria-hidden className="size-3 text-(--v3-ink-3) rtl:-scale-x-100" />
-          </span>
         </div>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-3">

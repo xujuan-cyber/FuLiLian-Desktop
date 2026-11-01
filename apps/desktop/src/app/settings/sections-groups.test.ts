@@ -16,7 +16,6 @@ const EXPECTED_SECTION_IDS = [
   'workspace',
   'model',
   'memory',
-  'voice',
   'browser',
   'advanced',
   'safety'
@@ -119,7 +118,6 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
     expect(groupOf.get('config:model')).toBe('model-capabilities')
     expect(groupOf.get('providers')).toBe('model-capabilities')
     expect(groupOf.get('config:memory')).toBe('model-capabilities')
-    expect(groupOf.get('config:voice')).toBe('model-capabilities')
     expect(groupOf.get('config:browser')).toBe('model-capabilities')
     expect(groupOf.get('config:advanced')).toBe('model-capabilities')
     // Security & compliance
@@ -151,7 +149,7 @@ describe('settings sections / groups (DESIGN_PROPOSAL §5.5)', () => {
       expect(views).toContain(page)
     }
 
-    // 9 config sections + 17 page views = 26 rows in the regrouped nav.
+    // 8 config sections + 17 page views = 25 rows in the regrouped nav.
     expect(views.length).toBe(SECTIONS.length + EXPECTED_PAGE_VIEWS.length)
   })
 })

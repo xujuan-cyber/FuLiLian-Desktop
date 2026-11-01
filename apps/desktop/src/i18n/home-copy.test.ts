@@ -28,7 +28,6 @@ function renderedHome(t: Translations): Record<string, string> {
     'chips.idle': h.chips.idle,
     'chips.placeholderTip': h.chips.placeholderTip,
     'section.title': h.section.title,
-    'section.more': h.section.more,
     'modeCards.project': h.modeCards.project,
     'modeCards.projectDesc': h.modeCards.projectDesc
   }

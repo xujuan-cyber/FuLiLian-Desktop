@@ -9,13 +9,12 @@ import type { ChatActions, SidebarActions } from './types'
  *
  * OPTIONAL handlers must stay optional. Several children gate on a handler's
  * *presence*, not just call it — `onDismissError` renders the dismiss button
- * only when it exists (assistant-message.tsx), `onRestoreToMessage` gates the
- * restore-confirm flow (thread/index.tsx), and `onTranscribeAudio` gates voice
- * recording/conversation (use-voice-recorder, use-voice-conversation). An
- * unconditional arrow wrapper is always truthy, which would render a dead
- * dismiss button and let voice recording proceed with no transcription backend.
- * So wrap an optional field only when it is currently present, and re-read the
- * latest value inside the wrapper for the stale-closure fix.
+ * only when it exists (assistant-message.tsx), and `onRestoreToMessage` gates
+ * the restore-confirm flow (thread/index.tsx). An unconditional arrow wrapper
+ * is always truthy, which would render a dead dismiss button and let a flow
+ * run with no handler behind it. So wrap an optional field only when it is
+ * currently present, and re-read the latest value inside the wrapper for the
+ * stale-closure fix.
  */
 function latestOptional<A extends unknown[], R>(
   read: () => ((...args: A) => R) | undefined

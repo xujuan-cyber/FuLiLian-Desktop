@@ -212,26 +212,6 @@ export interface Translations {
       openaiRejectedApiKeyWithStatus: (status: string) => string
       openaiTtsNeedsKey: string
     }
-    voice: {
-      configureSpeechToText: string
-      couldNotStartSession: string
-      microphoneAccessDenied: string
-      microphoneConstraintsUnsupported: string
-      microphoneFailed: string
-      microphoneInUse: string
-      microphonePermissionDenied: string
-      microphoneStartFailed: string
-      microphoneUnsupported: string
-      noMicrophone: string
-      noSpeechDetected: string
-      playbackFailed: string
-      recordingFailed: string
-      sayStopToEnd: (phrase: string) => string
-      transcriptionFailed: string
-      transcriptionUnavailable: string
-      tryRecordingAgain: string
-      unavailable: string
-    }
     // Native OS notification copy (titles + generic fallback bodies). Dynamic
     // bodies (the agent's reply, a command, an error) are passed through raw.
     native: {
@@ -423,7 +403,6 @@ export interface Translations {
     chipsNote: string
     section: {
       title: string
-      more: string
     }
     modeCards: {
       project: string
@@ -2372,32 +2351,11 @@ export interface Translations {
     placeholderFollowUp: string
     newSessionPlaceholders: readonly string[]
     followUpPlaceholders: readonly string[]
-    startVoice: string
     openDirective: string
     queueMessage: string
     steer: string
     stop: string
     send: string
-    speaking: string
-    transcribing: string
-    thinking: string
-    muted: string
-    listening: string
-    muteMic: string
-    unmuteMic: string
-    stopListening: string
-    stopShort: string
-    endConversation: string
-    endShort: string
-    stopDictation: string
-    transcribingDictation: string
-    voiceControls: string
-    voiceDictation: string
-    speakReplies: string
-    stopSpeakingReplies: string
-    wakeWordListening: (phrase: string) => string
-    wakeWordOff: (phrase: string) => string
-    wakeWordPausedVoice: (phrase: string) => string
     lookupLoading: string
     lookupNoMatches: string
     lookupTry: string
@@ -2432,10 +2390,6 @@ export interface Translations {
     previewLabel: (label: string) => string
     couldNotPreview: (label: string) => string
     removeAttachment: (label: string) => string
-    dictating: string
-    preparingAudio: string
-    speakingResponse: string
-    readingAloud: string
     themeSuggestions: string
     noMatchingThemes: string
     themeTryPre: string
@@ -3179,10 +3133,6 @@ export interface Translations {
       errorSendDiagnostics: string
       filesChanged: (count: number) => string
       reviewChanges: string
-      readAloudFailed: string
-      preparingAudio: string
-      stopReading: string
-      readAloud: string
       editMessage: string
       expandMessage: string
       scrollToBottom: string

@@ -23,7 +23,7 @@ describe('desktop i18n runtime translator', () => {
     setRuntimeI18nLocale('zh')
 
     expect(translateNow('boot.ready')).toBe('Fulilian 桌面版已就绪')
-    expect(translateNow('notifications.voice.noSpeechDetected')).toBe('没有检测到语音')
+    expect(translateNow('notifications.errors.diskFull')).toBe('磁盘已满 — 请腾出一些空间后再试。')
     expect(translateNow('composer.lookupNoMatches')).toBe('没有匹配项。')
     expect(translateNow('assistant.tool.statusRecovered')).toBe('已恢复')
   })

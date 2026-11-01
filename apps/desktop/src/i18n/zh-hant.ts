@@ -158,26 +158,6 @@ export const zhHant = defineLocale({
       openaiRejectedApiKeyWithStatus: status => `OpenAI 拒絕了該 API 金鑰 (${status} invalid_api_key)。`,
       openaiTtsNeedsKey: 'OpenAI TTS 需要 VOICE_TOOLS_OPENAI_KEY 或 OPENAI_API_KEY。'
     },
-    voice: {
-      configureSpeechToText: '設定語音轉文字後即可使用語音模式。',
-      couldNotStartSession: '無法啟動語音工作階段',
-      microphoneAccessDenied: '麥克風存取被拒絕。',
-      microphoneConstraintsUnsupported: '此裝置不支援目前的麥克風限制條件。',
-      microphoneFailed: '麥克風發生錯誤',
-      microphoneInUse: '麥克風正被其他應用程式使用中。',
-      microphonePermissionDenied: '麥克風權限被拒絕。',
-      microphoneStartFailed: '無法開始麥克風錄音。',
-      microphoneUnsupported: '目前執行環境不支援麥克風錄音。',
-      noMicrophone: '找不到麥克風。',
-      noSpeechDetected: '未偵測到語音',
-      playbackFailed: '語音播放失敗',
-      recordingFailed: '語音錄製失敗',
-      sayStopToEnd: phrase => `說「${phrase}」即可結束語音對話。`,
-      transcriptionFailed: '語音轉寫失敗',
-      transcriptionUnavailable: '語音轉寫暫不可用。',
-      tryRecordingAgain: '請再錄製一次。',
-      unavailable: '語音不可用'
-    },
     native: {
       approvalTitle: '需要核准',
       approveAction: '核准',
@@ -324,7 +304,6 @@ export const zhHant = defineLocale({
       'workspace.openFolder': '以專案開啟資料夾',
       'composer.focus': '聚焦輸入框',
       'composer.modelPicker': '開啟模型選擇器',
-      'composer.voice': '開始 / 停止語音對話',
       'view.toggleSidebar': '切換工作階段側邊欄',
       'view.toggleRightSidebar': '切換檔案瀏覽器',
       'view.toggleReview': '切換審查面板',
@@ -449,8 +428,7 @@ export const zhHant = defineLocale({
     },
     chipsNote: '取證、CTF 與閒時任務入口為靜態佔位，隨 kind 資料層落地啟用。',
     section: {
-      title: '從這裡開始',
-      more: '模板庫'
+      title: '從這裡開始'
     },
     modeCards: {
       project: '程式設計專案',
@@ -705,7 +683,6 @@ export const zhHant = defineLocale({
       workspace: '工作區',
       safety: '安全性',
       memory: '記憶與上下文',
-      voice: '語音',
       advanced: '進階'
     },
     searchPlaceholder: {
@@ -939,80 +916,6 @@ export const zhHant = defineLocale({
         enabled: '檔案檢查點',
         maxSnapshots: '檢查點上限'
       },
-      voice: {
-        recordKey: '語音快捷鍵',
-        maxRecordingSeconds: '最長錄音時間',
-        autoTts: '朗讀回覆'
-      },
-      stt: {
-        enabled: '語音轉文字',
-        provider: '語音轉文字提供方',
-        local: {
-          model: '本機轉寫模型',
-          language: '轉寫語言'
-        },
-        openai: {
-          model: 'OpenAI STT 模型'
-        },
-        groq: {
-          model: 'Groq STT 模型'
-        },
-        mistral: {
-          model: 'Mistral STT 模型'
-        },
-        elevenlabs: {
-          modelId: 'ElevenLabs STT 模型',
-          languageCode: 'ElevenLabs 語言',
-          tagAudioEvents: '標記音訊事件',
-          diarize: '說話者分離'
-        }
-      },
-      tts: {
-        provider: '文字轉語音提供方',
-        edge: {
-          voice: 'Edge 語音'
-        },
-        openai: {
-          model: 'OpenAI TTS 模型',
-          voice: 'OpenAI 語音'
-        },
-        elevenlabs: {
-          voiceId: 'ElevenLabs 語音',
-          modelId: 'ElevenLabs 模型'
-        },
-        xai: {
-          voiceId: 'xAI (Grok) 語音',
-          language: 'xAI 語言',
-          speed: '播放速度',
-          autoSpeechTags: '自動語音標籤',
-          optimizeStreamingLatency: '串流延遲最佳化',
-          sampleRate: '取樣率',
-          bitRate: '位元率'
-        },
-        minimax: {
-          model: 'MiniMax TTS 模型',
-          voiceId: 'MiniMax 語音'
-        },
-        mistral: {
-          model: 'Mistral TTS 模型',
-          voiceId: 'Mistral 語音'
-        },
-        gemini: {
-          model: 'Gemini TTS 模型',
-          voice: 'Gemini 語音'
-        },
-        neutts: {
-          model: 'NeuTTS 模型',
-          device: 'NeuTTS 裝置'
-        },
-        kittentts: {
-          model: 'KittenTTS 模型',
-          voice: 'KittenTTS 語音'
-        },
-        piper: {
-          voice: 'Piper 語音'
-        }
-      },
       memory: {
         memoryEnabled: '持久記憶',
         userProfileEnabled: '使用者設定檔',
@@ -1087,15 +990,6 @@ export const zhHant = defineLocale({
       },
       compression: {
         enabled: '對話變大時摘要較早的上下文。'
-      },
-      voice: {
-        autoTts: '自動朗讀助手回覆。'
-      },
-      stt: {
-        enabled: '啟用本機或提供方支援的語音轉寫。',
-        elevenlabs: {
-          languageCode: '可選的 ISO-639-3 語言代碼。留空讓 ElevenLabs 自動偵測。'
-        }
       },
       updates: {
         nonInteractiveLocalChanges:
@@ -2906,32 +2800,11 @@ export const zhHant = defineLocale({
       '再深入一點',
       '調整或繼續'
     ],
-    startVoice: '開始語音對話',
     openDirective: '開啟',
     queueMessage: '排隊訊息',
     steer: '引導目前執行',
     stop: '停止',
     send: '傳送',
-    speaking: '說話中',
-    transcribing: '轉寫中',
-    thinking: '思考中',
-    muted: '已靜音',
-    listening: '聆聽中',
-    muteMic: '麥克風靜音',
-    unmuteMic: '取消麥克風靜音',
-    stopListening: '停止聆聽並傳送',
-    stopShort: '停止',
-    endConversation: '結束語音對話',
-    endShort: '結束',
-    stopDictation: '停止聽寫',
-    transcribingDictation: '正在轉寫聽寫',
-    voiceControls: '語音',
-    voiceDictation: '語音聽寫',
-    speakReplies: '朗讀回覆',
-    stopSpeakingReplies: '停止朗讀回覆',
-    wakeWordListening: phrase => `喚醒詞:「${phrase}」— 正在聆聽`,
-    wakeWordOff: phrase => `喚醒詞:「${phrase}」— 已關閉`,
-    wakeWordPausedVoice: phrase => `喚醒詞:「${phrase}」— 語音對話期間暫停`,
     lookupLoading: '查詢中…',
     lookupNoMatches: '沒有相符項目。',
     lookupTry: '試試',
@@ -2982,10 +2855,6 @@ export const zhHant = defineLocale({
     previewLabel: label => `預覽 ${label}`,
     couldNotPreview: label => `無法預覽 ${label}`,
     removeAttachment: label => `移除 ${label}`,
-    dictating: '聽寫中',
-    preparingAudio: '正在準備音訊',
-    speakingResponse: '正在朗讀回覆',
-    readingAloud: '朗讀中',
     themeSuggestions: '桌面主題建議',
     noMatchingThemes: '沒有相符的主題。',
     themeTryPre: '試試 ',
@@ -3779,10 +3648,6 @@ export const zhHant = defineLocale({
       errorSendDiagnostics: '傳送診斷資訊',
       filesChanged: count => `${count} 個檔案已變更`,
       reviewChanges: '檢視',
-      readAloudFailed: '朗讀失敗',
-      preparingAudio: '正在準備音訊...',
-      stopReading: '停止朗讀',
-      readAloud: '朗讀',
       editMessage: '編輯訊息',
       expandMessage: '展開訊息',
       scrollToBottom: '捲動到底部',
