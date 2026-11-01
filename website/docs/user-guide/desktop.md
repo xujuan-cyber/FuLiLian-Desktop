@@ -547,7 +547,7 @@ with Fulilian' stable signing identities it survives every update:
 grant, and `fulilian setup` shows this tip on macOS when it doesn't.
 
 macOS remembers permission grants (Full Disk Access, Desktop/Downloads/Documents,
-Accessibility, Automation, microphone) against the app's *code-signing identity*,
+Accessibility, Automation) against the app's *code-signing identity*,
 not its path. Locally built and self-updated apps are signed with a stable
 identifier-pinned ad-hoc signature, so grants persist across updates.
 
