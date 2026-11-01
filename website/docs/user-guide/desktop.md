@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: "Fulilian Desktop"
-description: "The native Fulilian desktop app — a polished experience for chatting with Fulilian, with streaming tool output, side-by-side previews, a file browser, voice, cron, profiles, skills, and settings. macOS, Windows, and Linux."
+description: "The native Fulilian desktop app — a polished experience for chatting with Fulilian, with streaming tool output, side-by-side previews, a file browser, cron, profiles, skills, and settings. macOS, Windows, and Linux."
 ---
 
 # Fulilian Desktop
@@ -123,10 +123,6 @@ The **Memory Graph** (command palette → *Memory Graph*, or the status-bar item
 
 Quick Entry is a small always-available composer summoned by a **global hotkey from anywhere on your system** — fire off a prompt without switching to (or even opening) the main window. Enable it in **Settings → Advanced → Quick Entry**; the default shortcut is **Ctrl/Cmd+Shift+Space** and you can set your own (it needs at least one modifier). If another app already owns the chord, the settings row tells you so you can pick a different one.
 
-### Voice
-
-Talk to Fulilian and hear it back, the same [voice mode](./features/voice-mode.md) available elsewhere. On macOS the OS will prompt once for microphone access.
-
 ### HUD mode
 
 **⌘/Ctrl+Shift+H** (or the titlebar button) detaches the chat into a chrome-free, always-on-top floating bar that sits over whatever you are working in. The app window steps aside; the HUD keeps your live conversation and a composer. Where you park it is context — the bar's position tells Fulilian which app and screen you're asking about, so "this", "here", and "that page" resolve to what's underneath it.
@@ -169,7 +165,7 @@ First-run onboarding has been redesigned on a unified overlay design system, and
 
 #### Per-profile settings: the "Applies to" scope
 
-When you have two or more [profiles](./profiles.md), the config-backed settings pages — **Model, Workspace, Safety, Memory & Context, Voice, Chat, Advanced, and Tools & Keys** — and the **Messaging** overlay show a shared **Applies to** chip row at the top. It selects which profile your edits target:
+When you have two or more [profiles](./profiles.md), the config-backed settings pages — **Model, Workspace, Safety, Memory & Context, Chat, Advanced, and Tools & Keys** — and the **Messaging** overlay show a shared **Applies to** chip row at the top. It selects which profile your edits target:
 
 - The default selection **follows the active profile**, which behaves exactly as before — edit the profile you're using.
 - Pick another profile to view and edit *its* settings without switching the whole app; the selection persists as you move between settings pages.

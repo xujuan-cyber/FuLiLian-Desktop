@@ -469,11 +469,11 @@ def _(rid, params: dict) -> dict:
     def _mirror_voice_sections() -> bool:
         """Copy voice config (stt/tts/voice) from the launch profile.
 
-        Desktop dictation and TTS are profile-scoped: /api/audio/transcribe
-        resolves the ``stt`` section inside the TARGET profile's home. A
-        freshly created profile has only a ``model`` section, so voice fell
-        back to defaults (local whisper, often not installed) and dictation
+        A freshly created profile has only a ``model`` section, so voice fell
+        back to defaults (local whisper, often not installed) and voice
         "didn't work in bot mode" while working on the primary profile.
+        Mirroring the launch profile's voice sections keeps a new profile
+        usable without re-running voice setup.
 
         Reads/writes go through the canonical loaders scoped to the target
         profile via the context-local FULILIAN_HOME override — the same

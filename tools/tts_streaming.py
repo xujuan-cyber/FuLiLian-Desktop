@@ -89,8 +89,8 @@ _THINK_BLOCK_RE = re.compile(r"<think[\s>].*?</think>", flags=re.DOTALL)
 class SentenceChunker:
     """Incremental sentence cutter for LLM token deltas.
 
-    Shared by the speaker pipeline (`stream_tts_to_speaker`) and the
-    speak-stream WebSocket so every surface cuts speech identically. Strips
+    Shared by the speaker pipeline (`stream_tts_to_speaker`) so speech is cut
+    identically wherever it plays. Strips
     ``<think>`` blocks (even split across deltas) and merges fragments shorter
     than *min_len* into the following sentence, so "Ha!" rides along with the
     sentence after it instead of stalling as a tiny clip.
