@@ -4,7 +4,6 @@ import type {
   BackendUpdateCheckResponse,
   CuratorStatusResponse,
   DebugShareResponse,
-  ElevenLabsVoicesResponse,
   MemoryProviderConfig,
   MemoryProviderOAuthStatus,
   MemoryStatusResponse
@@ -131,13 +130,6 @@ export function getActionStatus(name: string, lines = 200, profile?: ProfileScop
   return window.fulilianDesktop.api<ActionStatusResponse>({
     ...capabilityScoped(profile),
     path: `/api/actions/${encodeURIComponent(name)}/status?lines=${Math.max(1, lines)}`
-  })
-}
-
-export function getElevenLabsVoices(profile?: null | string): Promise<ElevenLabsVoicesResponse> {
-  return fulilianApi<ElevenLabsVoicesResponse>({
-    path: '/api/audio/elevenlabs/voices',
-    ...profileScoped(profile)
   })
 }
 

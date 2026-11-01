@@ -16,17 +16,6 @@ export interface ConfigSchemaResponse {
   fields: Record<string, ConfigFieldSchema>
 }
 
-export interface ElevenLabsVoice {
-  label: string
-  name: string
-  voice_id: string
-}
-
-export interface ElevenLabsVoicesResponse {
-  available: boolean
-  voices: ElevenLabsVoice[]
-}
-
 export interface OAuthProviderStatus {
   error?: string
   expires_at?: null | string

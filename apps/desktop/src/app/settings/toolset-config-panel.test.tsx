@@ -42,7 +42,6 @@ const pollOAuthSession = vi.fn()
 const getFulilianConfigRecord = vi.fn()
 const getFulilianConfigSchema = vi.fn()
 const saveFulilianConfig = vi.fn()
-const getElevenLabsVoices = vi.fn()
 
 vi.mock('@/fulilian', () => ({
   getToolsetConfig: (name: string) => getToolsetConfig(name),
@@ -62,7 +61,6 @@ vi.mock('@/fulilian', () => ({
   getFulilianConfigRecord: () => getFulilianConfigRecord(),
   getFulilianConfigSchema: () => getFulilianConfigSchema(),
   saveFulilianConfig: (config: unknown) => saveFulilianConfig(config),
-  getElevenLabsVoices: () => getElevenLabsVoices(),
   // @/store/profile (pulled in transitively via use-config-record's
   // normalizeProfileKey import) calls this at module-init; the full-replacement
   // mock must provide it or the module graph throws on load.
@@ -149,7 +147,6 @@ beforeEach(() => {
   })
   getFulilianConfigSchema.mockResolvedValue({ fields: {}, category_order: [] })
   saveFulilianConfig.mockResolvedValue({ ok: true })
-  getElevenLabsVoices.mockResolvedValue({ available: false, voices: [] })
 })
 
 afterEach(() => {

@@ -57,8 +57,6 @@ export type {
   CustomEndpointUpdate,
   CustomEndpointValidationResponse,
   DebugShareResponse,
-  ElevenLabsVoice,
-  ElevenLabsVoicesResponse,
   EnvVarInfo,
   FulilianConfig,
   FulilianConfigRecord,
