@@ -28,15 +28,13 @@ const SESSION_WINDOW_MIN_HEIGHT = 620
 // (the "Fulilian idles at 20% CPU while minimized" bug). The preload path is
 // injected because it depends on the Electron entry's __dirname.
 //
-// `autoplayPolicy: 'no-user-gesture-required'` is load-bearing for voice:
+// `autoplayPolicy: 'no-user-gesture-required'` is load-bearing for audio:
 // Chromium's default autoplay policy suspends audio (HTMLAudioElement.play()
-// and AudioContext) until the user has interacted with the frame. A voice
-// conversation started by the "Hey Fulilian" wake word has NO preceding click,
-// so the FIRST reply's audio playback was rejected (NotAllowedError, silently
-// swallowed) and only turn 2+ spoke — the very "first message in a new voice
-// session is silent" bug. Manual voice-start worked only because the button
-// click counted as the gesture. This is a native app the user deliberately
-// launched; there is no drive-by-autoplay concern to protect against.
+// and AudioContext) until the user has interacted with the frame, so any
+// playback that isn't triggered by a click — ambient/thinking sounds,
+// programmatic playback — is rejected with NotAllowedError and silently
+// swallowed. This is a native app the user deliberately launched; there is no
+// drive-by-autoplay concern to protect against.
 //
 // `focusOnNavigation: false` keeps renderer-driven work passive. Electron's
 // default is true, so an in-page/SPA navigation can activate a blurred chat

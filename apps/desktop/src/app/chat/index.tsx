@@ -90,7 +90,6 @@ interface ChatViewProps extends Omit<React.ComponentProps<'div'>, 'onSubmit'> {
   onAddContextRef: (refText: string, label?: string, detail?: string) => void
   onAddUrl: (url: string) => void
   onBranchInNewChat?: (messageId: string) => void
-  maxVoiceRecordingSeconds?: number
   onAttachImageBlob: (blob: Blob) => Promise<boolean | void> | boolean | void
   onAttachDroppedItems: (candidates: DroppedFile[]) => Promise<boolean | void> | boolean | void
   onAttachPrCommentUrl?: (url: string) => boolean
@@ -106,7 +105,6 @@ interface ChatViewProps extends Omit<React.ComponentProps<'div'>, 'onSubmit'> {
   onReload: (parentId: string | null) => Promise<void>
   onRestoreToMessage?: (messageId: string, target?: { text?: string; userOrdinal?: number | null }) => Promise<void>
   onRetryResume: (sessionId: string) => void
-  onTranscribeAudio?: (audio: Blob) => Promise<string>
   onDismissError?: (messageId: string) => void
 }
 
@@ -375,7 +373,6 @@ const ChatViewContent = memo(function ChatViewContent({
   onAttachDroppedItems,
   onAttachPrCommentUrl,
   onBranchInNewChat,
-  maxVoiceRecordingSeconds,
   onPasteClipboardImage,
   onPickFiles,
   onPickFolders,
@@ -388,7 +385,6 @@ const ChatViewContent = memo(function ChatViewContent({
   onReload,
   onRestoreToMessage,
   onRetryResume,
-  onTranscribeAudio,
   onDismissError
 }: ChatViewProps) {
   const location = useLocation()
@@ -557,10 +553,6 @@ const ChatViewContent = memo(function ChatViewContent({
         enabled: true,
         label: 'Add context',
         suggestions: contextSuggestions
-      },
-      voice: {
-        enabled: true,
-        active: false
       }
     }),
     [contextSuggestions, currentModel, currentProvider, gatewayOpen, modelMenuContent, quickModels]
@@ -620,7 +612,6 @@ const ChatViewContent = memo(function ChatViewContent({
         disabled={!gatewayOpen}
         focusKey={activeSessionId}
         gateway={gateway}
-        maxRecordingSeconds={maxVoiceRecordingSeconds}
         onAddContextRef={onAddContextRef}
         onAddUrl={onAddUrl}
         onAttachDroppedItems={onAttachDroppedItems}
@@ -634,7 +625,6 @@ const ChatViewContent = memo(function ChatViewContent({
         onRemoveAttachment={onRemoveAttachment}
         onSteer={onSteer}
         onSubmit={onSubmit}
-        onTranscribeAudio={onTranscribeAudio}
         queueSessionKey={queueSessionKey}
         sessionId={activeSessionId}
         state={chatBarState}

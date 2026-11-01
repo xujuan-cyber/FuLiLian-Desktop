@@ -3788,7 +3788,6 @@ export const en: Translations = {
     noProfileNamed: (target, available) => `No profile named "${target}". Available: ${available}`,
     newChatsProfile: name => `New chats will use profile ${name}.`,
     setProfileFailed: 'Failed to set profile',
-    sttDisabled: 'Speech-to-text is disabled in settings.',
     stopFailed: 'Stop failed',
     regenerateFailed: 'Regenerate failed',
     editFailed: 'Edit failed',

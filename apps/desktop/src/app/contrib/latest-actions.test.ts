@@ -27,8 +27,7 @@ function makeChatActions(): ChatActions {
     onSteer: vi.fn(),
     onSubmit: vi.fn(),
     onThreadMessagesChange: vi.fn(),
-    onToggleSelectedPin: vi.fn(),
-    onTranscribeAudio: vi.fn()
+    onToggleSelectedPin: vi.fn()
   }
 }
 
@@ -80,22 +79,19 @@ describe('latestActions adapters', () => {
 
   // An absent optional handler must stay absent through the adapter. Children
   // gate on PRESENCE, not just invocation: onDismissError renders the dismiss
-  // button only when defined, onRestoreToMessage gates the restore-confirm
-  // flow, and onTranscribeAudio gates voice recording. Wrapping an undefined
-  // field in an arrow function makes it unconditionally truthy, which would
-  // paint a dead dismiss button and let voice recording run with no
-  // transcription backend.
+  // button only when defined, and onRestoreToMessage gates the restore-confirm
+  // flow. Wrapping an undefined field in an arrow function makes it
+  // unconditionally truthy, which would paint a dead dismiss button and let the
+  // restore flow run with no handler behind it.
   it('leaves absent optional handlers undefined instead of always-truthy wrappers', () => {
     const chat = makeChatActions()
     chat.onDismissError = undefined
     chat.onRestoreToMessage = undefined
-    chat.onTranscribeAudio = undefined
 
     const adaptedChat = latestChatActions(chat)
 
     expect(adaptedChat.onDismissError).toBeUndefined()
     expect(adaptedChat.onRestoreToMessage).toBeUndefined()
-    expect(adaptedChat.onTranscribeAudio).toBeUndefined()
 
     const sidebar = makeSidebarActions()
     sidebar.onLoadMoreMessaging = undefined
@@ -106,17 +102,18 @@ describe('latestActions adapters', () => {
   })
 
   it('still late-binds a PRESENT optional handler to the latest closure', async () => {
-    const staleTranscribe = vi.fn(async () => 'stale')
-    const latestTranscribe = vi.fn(async () => 'latest')
+    const staleRestore = vi.fn(async () => undefined)
+    const latestRestore = vi.fn(async () => undefined)
     const actions = makeChatActions()
-    actions.onTranscribeAudio = staleTranscribe
+    actions.onRestoreToMessage = staleRestore
 
     const adapted = latestChatActions(actions)
 
-    actions.onTranscribeAudio = latestTranscribe
+    actions.onRestoreToMessage = latestRestore
 
-    expect(adapted.onTranscribeAudio).toBeTypeOf('function')
-    await expect(adapted.onTranscribeAudio!(new Blob())).resolves.toBe('latest')
-    expect(staleTranscribe).not.toHaveBeenCalled()
+    expect(adapted.onRestoreToMessage).toBeTypeOf('function')
+    await adapted.onRestoreToMessage!('message-1')
+    expect(staleRestore).not.toHaveBeenCalled()
+    expect(latestRestore).toHaveBeenCalledWith('message-1')
   })
 })

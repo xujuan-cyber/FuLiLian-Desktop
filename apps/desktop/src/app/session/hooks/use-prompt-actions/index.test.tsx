@@ -201,7 +201,6 @@ function Harness({
     runtimeIdByStoredSessionIdRef,
     selectedStoredSessionIdRef,
     startFreshSessionDraft: () => undefined,
-    sttEnabled: false,
     updateSessionState: (sessionId, updater, storedSessionId) => {
       // Seed with interrupted:true so we can prove a fresh submit clears it.
       const next = updater(stateRef.current) as unknown as Record<string, unknown>

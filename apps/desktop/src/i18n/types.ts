@@ -3291,7 +3291,6 @@ export interface Translations {
     noProfileNamed: (target: string, available: string) => string
     newChatsProfile: (name: string) => string
     setProfileFailed: string
-    sttDisabled: string
     stopFailed: string
     regenerateFailed: string
     editFailed: string

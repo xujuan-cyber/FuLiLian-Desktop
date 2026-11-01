@@ -401,7 +401,6 @@ import {
   stopSafeVenvBlockers
 } from './venv-blocker-scan'
 import { fetchMarketplaceThemes, searchMarketplaceThemes } from './vscode-marketplace'
-import { createWakeIndicatorWindowController } from './wake-indicator-window'
 import { enumerateWindowsFrontToBack, enumerationFailed, readWindowBelow } from './window-below'
 import { registrySshScopeForWindowRoute, WindowConnectionRouteRegistry } from './window-connection-route'
 import { installWindowRendererLifecycle } from './window-renderer-lifecycle'
@@ -1016,8 +1015,8 @@ function writePersistedTranslucency(state) {
 let translucencyState = readPersistedTranslucency()
 
 // Chat windows whose webContents backing follows translucency (primary,
-// instance peers, session windows). The HUD / pet overlay / quick entry /
-// wake indicator are `transparent: true` windows that own their backgrounds —
+// instance peers, session windows). The HUD / pet overlay / quick entry
+// are `transparent: true` windows that own their backgrounds —
 // painting a themed backing onto them would turn them into opaque rectangles.
 const translucencyBackedWindows = new WeakSet()
 
@@ -1103,7 +1102,7 @@ function applyWindowTranslucency(win, changed = { backing: true, material: true,
 // themed anti-flash backing.
 //
 // Call sites also register the window in translucencyBackedWindows so a live
-// toggle can re-apply. The HUD, pet overlay, quick entry and wake indicator
+// toggle can re-apply. The HUD, pet overlay and quick entry
 // are `transparent: true` windows that own their backgrounds and are
 // deliberately not chat windows.
 function chatWindowSurfaceOptions() {
@@ -13030,18 +13029,6 @@ function createInstanceWindow() {
   return win
 }
 
-// A macOS-only ambient wake cue. It is deliberately a gateway-less helper
-// window: the active renderer owns voice state and sends only the visual phase.
-const wakeIndicatorController = createWakeIndicatorWindowController({
-  devServer: DEV_SERVER,
-  isMac: IS_MAC,
-  loadWindowUrl,
-  log: rememberLog,
-  preloadPath: PRELOAD_PATH,
-  rendererIndex: resolveRendererIndex,
-  wireWindow: window => wireCommonWindowHandlers(window, zoomWiringForWindowKind('wakeIndicator'))
-})
-
 // The pet overlay: a single transparent, frameless, always-on-top window that
 // hosts ONLY the floating mascot. Shift-clicking the in-window pet "pops it out"
 // here so it can leave the app's bounds and stay visible while Fulilian is
@@ -14021,7 +14008,6 @@ function createWindow() {
   // the closed wrapper remains truthy, so clear only the window this callback owns.
   mainWindow.on('closed', () => {
     closePetOverlay()
-    wakeIndicatorController.close()
 
     if (mainWindow === createdMainWindow) {
       mainWindow = null
@@ -14414,10 +14400,6 @@ ipcMain.handle('fulilian:window:openInTerminal', async (_event, sessionId, opts)
 
     return { ok: false, error: error.message }
   }
-})
-ipcMain.handle('fulilian:wake-indicator:get', () => wakeIndicatorController.getState())
-ipcMain.on('fulilian:wake-indicator:set', (_event, state) => {
-  wakeIndicatorController.setState(state)
 })
 
 // --- Text size (zoom) -------------------------------------------------------
@@ -17381,16 +17363,6 @@ app.whenReady().then(() => {
     })
   )
 
-  if (IS_MAC) {
-    const reposition = () => wakeIndicatorController.reposition()
-
-    screen.on('display-added', reposition)
-
-    screen.on('display-metrics-changed', reposition)
-
-    screen.on('display-removed', reposition)
-  }
-
   // A hard crash can interrupt the in-memory restore loop after exact remote
   // serves were drained. The owner-only recovery journal survives that crash;
   // its worker waits for the install marker to clear, then reopens every scope
@@ -17567,7 +17539,6 @@ app.on('before-quit', event => {
   // The always-on-top overlay isn't a "real" app window; close it so a stray
   // pet can't keep the process alive or float over a quit app.
   closePetOverlay()
-  wakeIndicatorController.close()
 
   // Same for the HUD — an always-on-top panel outliving the app would leave a
   // floating composer with nothing behind it. Close it directly rather than via

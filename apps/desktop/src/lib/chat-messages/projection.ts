@@ -53,11 +53,11 @@ export function messageVisibility(message: ChatMessage): MessageProjectionClass 
 /** 严格 assistant 气泡谓词：`role === 'assistant' && !hidden`。
  *
  *  四值 visibility 把 system 通告行归入 visibleAssistant（它们确实上屏），
- *  但既有消费端中的六处（coalesce 前邻检查、reconcileLocalAssistantTimeline、
- *  collectUnspokenTurnSpeech、spoken-reply 序数、composer voice 尾选择）在
- *  语义上要求「assistant 行且非 system 通告行」——例如把 tool-only 后续行
- *  coalesce 进 system 行会让其 tool parts 在 system 渲染分支中丢失。这些点
- *  必须经本谓词等价迁移，而非四值 visibility（T-F1b 回执偏差申报 #1）。 */
+ *  但既有消费端（coalesce 前邻检查、reconcileLocalAssistantTimeline、
+ *  collectUnspokenTurnSpeech）在语义上要求「assistant 行且非 system 通告行」
+ *  ——例如把 tool-only 后续行 coalesce 进 system 行会让其 tool parts 在
+ *  system 渲染分支中丢失。这些点必须经本谓词等价迁移，而非四值 visibility
+ *  （T-F1b 回执偏差申报 #1）。 */
 export interface AssistantMessageLike {
   hidden?: boolean | undefined
   role: string

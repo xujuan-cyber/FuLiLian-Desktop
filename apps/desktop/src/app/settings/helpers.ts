@@ -122,24 +122,6 @@ export function clearsEnabledToolsets(prev: FulilianConfigRecord, next: Fulilian
   return hadToolsets && clearsToolsets
 }
 
-// Voice renders only fields for the selected TTS/STT provider. Search and the
-// page share this rule so every indexed field can actually mount when opened.
-export function voiceFieldVisible(key: string, config: FulilianConfigRecord): boolean {
-  const match = /^(tts|stt)\.([^.]+)\./.exec(key)
-
-  if (!match) {
-    return true
-  }
-
-  const [, domain, provider] = match
-
-  if (domain === 'stt' && !getNested(config, 'stt.enabled')) {
-    return false
-  }
-
-  return provider === String(getNested(config, `${domain}.provider`) ?? '')
-}
-
 export function inferFieldSchema(value: unknown): ConfigFieldSchema {
   if (typeof value === 'boolean') {
     return { type: 'boolean' }

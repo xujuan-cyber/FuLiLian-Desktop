@@ -1,4 +1,4 @@
-import { type MutableRefObject, useCallback, useRef, useState } from 'react'
+import { type MutableRefObject, useCallback, useRef } from 'react'
 
 import { setTerminalFontFamilyFromConfig } from '@/app/right-sidebar/terminal/terminal-font'
 import { getFulilianConfig, getFulilianConfigDefaults } from '@/fulilian'
@@ -18,12 +18,7 @@ import {
 } from '@/store/session'
 import { applyThinkingSoundFromConfig } from '@/store/voice-prefs'
 
-const DEFAULT_VOICE_SECONDS = 120
 const FAST_TIERS = new Set(['fast', 'priority', 'on'])
-
-function recordingLimit(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : DEFAULT_VOICE_SECONDS
-}
 
 /** config.yaml hands back whatever the user wrote — `reasoning_effort: false`
  *  (or `off`/`no`, which YAML also parses to boolean false) means thinking
@@ -47,8 +42,6 @@ interface FulilianConfigOptions {
 }
 
 export function useFulilianConfig({ activeSessionIdRef }: FulilianConfigOptions) {
-  const [voiceMaxRecordingSeconds, setVoiceMaxRecordingSeconds] = useState(DEFAULT_VOICE_SECONDS)
-  const [sttEnabled, setSttEnabled] = useState(true)
   const profileRefreshEpochRef = useRef(0)
 
   const refreshFulilianConfig = useCallback(
@@ -129,13 +122,6 @@ export function useFulilianConfig({ activeSessionIdRef }: FulilianConfigOptions)
           return
         }
 
-        setVoiceMaxRecordingSeconds(recordingLimit(config.voice?.max_recording_seconds))
-        setSttEnabled(config.stt?.enabled !== false)
-
-        if (!canPublish()) {
-          return
-        }
-
         setDisplayTimestampsFromConfig(config.display?.timestamps)
         setTerminalFontFamilyFromConfig(config.terminal?.font_family)
 
@@ -151,5 +137,5 @@ export function useFulilianConfig({ activeSessionIdRef }: FulilianConfigOptions)
     [activeSessionIdRef]
   )
 
-  return { refreshFulilianConfig, sttEnabled, voiceMaxRecordingSeconds }
+  return { refreshFulilianConfig }
 }

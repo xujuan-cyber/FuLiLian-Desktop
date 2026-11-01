@@ -21,7 +21,6 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useSyncExterna
 
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { useModelControls } from '@/app/session/hooks/use-model-controls'
-import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { resolveStoredSession } from '@/app/session/hooks/use-session-actions/utils'
 import { ModelMenuPanel } from '@/app/shell/model-menu-panel'
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
@@ -30,11 +29,9 @@ import { findGroupOfPane } from '@/components/pane-shell/tree/model'
 import { $layoutTree, closeTreePane, moveTreePane, setTreeGroupTabStrip } from '@/components/pane-shell/tree/store'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { transcribeAudio } from '@/fulilian'
 import { useI18n } from '@/i18n'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { NEW_SESSION_TITLE, sessionTitle } from '@/lib/chat-runtime'
-import { transcribeAudioClientDirect } from '@/lib/voice-client-direct'
 import { createComposerAttachmentScope, draftTitleFor } from '@/store/composer'
 import { $pinnedSessionIds, pinSession, unpinSession } from '@/store/layout'
 import { $activeGatewayProfile } from '@/store/profile'
@@ -136,21 +133,8 @@ function buildTileView(storedSessionId: string): SessionView {
 }
 
 // Module-level constants so these ChatView props are referentially stable —
-// tiles have no pin/delete affordance, and transcription needs no per-tile state.
+// tiles have no pin/delete affordance.
 const noop = () => undefined
-
-const tileTranscribeAudio = async (audio: Blob) => {
-  // Client-direct first (profile's own STT provider, no gateway audio hop);
-  // relay when the provider is not client-callable. Same ladder as the main
-  // composer's transcribeVoiceAudio.
-  const direct = await transcribeAudioClientDirect(audio)
-
-  if (direct !== null) {
-    return direct
-  }
-
-  return (await transcribeAudio(await blobToDataUrl(audio), audio.type)).transcript
-}
 
 function TileChat({
   runtimeId,
@@ -276,7 +260,6 @@ function TileChat({
             onSubmit={actions.submitText}
             onThreadMessagesChange={actions.handleThreadMessagesChange}
             onToggleSelectedPin={noop}
-            onTranscribeAudio={tileTranscribeAudio}
           />
         </Suspense>
       </ComposerScopeProvider>

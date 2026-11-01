@@ -37,16 +37,6 @@ contextBridge.exposeInMainWorld('fulilianDesktop', {
     return () => ipcRenderer.removeListener('fulilian:browser-popout:closed', listener)
   },
   claimAmbientCue: key => ipcRenderer.invoke('fulilian:ambient:claim', key),
-  wakeIndicator: {
-    getState: () => ipcRenderer.invoke('fulilian:wake-indicator:get'),
-    setState: state => ipcRenderer.send('fulilian:wake-indicator:set', state),
-    onState: callback => {
-      const listener = (_event, state) => callback(state)
-      ipcRenderer.on('fulilian:wake-indicator:state', listener)
-
-      return () => ipcRenderer.removeListener('fulilian:wake-indicator:state', listener)
-    }
-  },
   petOverlay: {
     // Main renderer → main process: window lifecycle + drag. `request` is
     // `{ bounds, screen }`; resolves with the screen bounds it actually used.

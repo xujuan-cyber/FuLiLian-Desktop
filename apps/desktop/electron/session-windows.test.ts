@@ -242,10 +242,10 @@ test('chatWindowWebPreferences passes the preload path through and keeps the har
   assert.equal(prefs.nodeIntegration, false)
 })
 
-test('chatWindowWebPreferences allows autoplay so wake-started voice speaks its first reply', () => {
+test('chatWindowWebPreferences allows gesture-free autoplay', () => {
   // Regression: Chromium's default autoplay policy suspends audio until a user
-  // gesture. A wake-word-started voice conversation has no preceding click, so
-  // the first reply's playback was rejected and only turn 2+ spoke. A native
+  // gesture, so playback that isn't triggered by a click (ambient/thinking
+  // sounds, programmatic playback) is rejected and silently swallowed. A native
   // app the user launched should not gate audio on a gesture.
   const prefs = chatWindowWebPreferences('/tmp/preload.cjs')
 

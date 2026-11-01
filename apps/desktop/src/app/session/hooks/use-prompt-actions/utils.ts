@@ -1,6 +1,6 @@
 import type { AppendMessage } from '@assistant-ui/react'
 
-import { translateNow, type Translations } from '@/i18n'
+import { type Translations } from '@/i18n'
 import { type ChatMessage, messageVisibility } from '@/lib/chat-messages'
 import { type CommandsCatalogLike, filterDesktopCommandsCatalog } from '@/lib/desktop-slash-commands'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
@@ -18,22 +18,6 @@ export function isSessionIdCandidate(value: string): boolean {
   const trimmed = value.trim()
 
   return /^\d{8}_\d{6}_[A-Fa-f0-9]{6}$/.test(trimmed) || /^[A-Fa-f0-9]{32}$/.test(trimmed)
-}
-
-export function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.addEventListener('load', () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result)
-      } else {
-        reject(new Error(translateNow('desktop.audioReadFailed')))
-      }
-    })
-    reader.addEventListener('error', () => reject(reader.error || new Error(translateNow('desktop.audioReadFailed'))))
-    reader.readAsDataURL(blob)
-  })
 }
 
 export function isProviderSetupError(error: unknown) {

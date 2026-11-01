@@ -3955,7 +3955,6 @@ export const ar = defineLocale({
     noProfileNamed: (target, available) => `لا يوجد ملف باسم ${target}. المتاح: ${available}`,
     newChatsProfile: name => `المحادثات الجديدة تستخدم ${name}`,
     setProfileFailed: 'فشل ضبط الملف الشخصي',
-    sttDisabled: 'تحويل الكلام إلى نص معطل',
     stopFailed: 'فشل الإيقاف',
     regenerateFailed: 'فشلت إعادة التوليد',
     editFailed: 'فشل التحرير',

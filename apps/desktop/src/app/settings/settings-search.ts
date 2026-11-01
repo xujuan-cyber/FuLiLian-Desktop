@@ -5,7 +5,7 @@ import type { ConfigFieldSchema, EnvVarInfo, FulilianConfigRecord } from '@/type
 import { FIELD_LABELS, SECTIONS } from './constants'
 import { credentialRowLabel } from './credential-key-ui'
 import { fieldCopyForSchemaKey } from './field-copy'
-import { prettyName, sectionFieldEntries, voiceFieldVisible } from './helpers'
+import { prettyName, sectionFieldEntries } from './helpers'
 import type { DesktopConfigSection, SettingsView } from './types'
 
 export type CredentialSettingsView = 'settings' | 'tools'
@@ -95,9 +95,8 @@ export function buildConfigSearchEntries(
   return sections.flatMap(section => {
     const context = copy.sections[section.id] ?? section.label
     const fields = sectionFields.get(section.id) ?? []
-    const visibleFields = section.id === 'voice' ? fields.filter(([key]) => voiceFieldVisible(key, config)) : fields
 
-    return visibleFields.map(([key, field]) => ({
+    return fields.map(([key, field]) => ({
       context,
       description: configFieldDescription(key, field, copy),
       icon: section.icon,

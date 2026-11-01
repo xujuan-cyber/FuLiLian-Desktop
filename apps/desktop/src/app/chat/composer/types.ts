@@ -28,7 +28,6 @@ export interface ChatBarState {
     modelMenuContent?: ReactNode
   }
   tools: { enabled: boolean; label: string; suggestions?: ContextSuggestion[] }
-  voice: { enabled: boolean; active: boolean }
 }
 
 export interface ChatBarProps {
@@ -43,7 +42,6 @@ export interface ChatBarProps {
    *    width, no bottom mask, no measured clearance. Mounting is the caller's
    *    job; the bar itself changes nothing but presentation. */
   variant?: 'docked' | 'inline'
-  maxRecordingSeconds?: number
   state: ChatBarState
   gateway?: FulilianGateway | null
   queueSessionKey?: string | null
@@ -64,13 +62,4 @@ export interface ChatBarProps {
   onRemoveAttachment?: (id: string) => void
   onSteer?: (text: string) => Promise<boolean> | boolean
   onSubmit: (value: string, options?: SubmitTextOptions) => Promise<boolean> | boolean
-  onTranscribeAudio?: (audio: Blob) => Promise<string>
-}
-
-export type VoiceStatus = 'idle' | 'recording' | 'transcribing'
-
-export interface VoiceActivityState {
-  elapsedSeconds: number
-  level: number
-  status: VoiceStatus
 }

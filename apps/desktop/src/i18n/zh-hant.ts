@@ -3834,7 +3834,6 @@ export const zhHant = defineLocale({
     noProfileNamed: (target, available) => `沒有名為「${target}」的設定檔。可用的：${available}`,
     newChatsProfile: name => `新聊天將使用設定檔 ${name}。`,
     setProfileFailed: '設定設定檔失敗',
-    sttDisabled: '設定中已停用語音轉文字。',
     stopFailed: '停止失敗',
     regenerateFailed: '重新生成失敗',
     editFailed: '編輯失敗',

@@ -11,8 +11,7 @@ vi.mock('./model-pill', () => ({ ModelPill: () => null }))
 
 const state: ChatBarState = {
   model: { canSwitch: false, model: '', provider: '' },
-  tools: { enabled: false, label: '' },
-  voice: { active: false, enabled: false }
+  tools: { enabled: false, label: '' }
 }
 
 function renderControls(overrides: Partial<React.ComponentProps<typeof ComposerControls>> = {}) {

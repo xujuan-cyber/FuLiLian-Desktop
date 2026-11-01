@@ -108,7 +108,6 @@ describe('ChatView render isolation', () => {
   it('does not re-render chat history when an unrelated parent idle tick updates', () => {
     const props = {
       gateway: null,
-      maxVoiceRecordingSeconds: 120,
       onAddContextRef: vi.fn(),
       onAddUrl: vi.fn(),
       onAttachDroppedItems: vi.fn(),
@@ -127,8 +126,7 @@ describe('ChatView render isolation', () => {
       onSteer: vi.fn(),
       onSubmit: vi.fn(),
       onThreadMessagesChange: vi.fn(),
-      onToggleSelectedPin: vi.fn(),
-      onTranscribeAudio: vi.fn()
+      onToggleSelectedPin: vi.fn()
     }
 
     const queryClient = new QueryClient({

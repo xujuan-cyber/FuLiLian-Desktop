@@ -88,7 +88,6 @@ export const DESKTOP_EVENT_TYPES = [
   'voice.transcript',
   'voice.status',
   'voice.interrupted',
-  'wake.detected',
   'tool.output_risk',
   'preview.restart.progress',
   'preview.restart.complete',
