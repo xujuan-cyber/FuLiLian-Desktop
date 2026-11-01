@@ -1,8 +1,6 @@
 import type {
   ActionResponse,
   ActionStatusResponse,
-  AudioSpeakResponse,
-  AudioTranscriptionResponse,
   BackendUpdateCheckResponse,
   CuratorStatusResponse,
   DebugShareResponse,
@@ -13,37 +11,6 @@ import type {
 } from '@/types/fulilian'
 
 import { capabilityScoped, fulilianApi, type ProfileScope, profileScoped } from './client'
-
-export const AUDIO_SPEAK_MIN_REQUEST_TIMEOUT_MS = 180_000
-export const AUDIO_SPEAK_MAX_REQUEST_TIMEOUT_MS = 600_000
-const AUDIO_SPEAK_TIMEOUT_MS_PER_CHAR = 35
-
-export function audioSpeakRequestTimeoutMs(text: string): number {
-  const estimated = Math.max(
-    AUDIO_SPEAK_MIN_REQUEST_TIMEOUT_MS,
-    Math.ceil(String(text || '').length * AUDIO_SPEAK_TIMEOUT_MS_PER_CHAR)
-  )
-
-  return Math.min(AUDIO_SPEAK_MAX_REQUEST_TIMEOUT_MS, estimated)
-}
-
-export const AUDIO_TRANSCRIBE_MIN_REQUEST_TIMEOUT_MS = 180_000
-export const AUDIO_TRANSCRIBE_MAX_REQUEST_TIMEOUT_MS = 600_000
-// The transcribe payload is the base64 audio data URL itself, so its string
-// length tracks clip size. ~0.1ms/char keeps short clips at the floor while
-// letting multi-minute recordings scale toward the cap (a base64 char is
-// ~0.75 bytes, so at 128kbps ≈ 21k chars/s of audio this budgets ~2s of
-// timeout per 1s of audio before the cap clamps it).
-const AUDIO_TRANSCRIBE_TIMEOUT_MS_PER_CHAR = 0.1
-
-export function audioTranscribeRequestTimeoutMs(dataUrl: string): number {
-  const estimated = Math.max(
-    AUDIO_TRANSCRIBE_MIN_REQUEST_TIMEOUT_MS,
-    Math.ceil(String(dataUrl || '').length * AUDIO_TRANSCRIBE_TIMEOUT_MS_PER_CHAR)
-  )
-
-  return Math.min(AUDIO_TRANSCRIBE_MAX_REQUEST_TIMEOUT_MS, estimated)
-}
 
 // surface=declared serves the curated desktop schema; the dashboard consumes the raw plugin schema.
 export function getMemoryProviderConfig(provider: string, profile?: null | string): Promise<MemoryProviderConfig> {
@@ -164,35 +131,6 @@ export function getActionStatus(name: string, lines = 200, profile?: ProfileScop
   return window.fulilianDesktop.api<ActionStatusResponse>({
     ...capabilityScoped(profile),
     path: `/api/actions/${encodeURIComponent(name)}/status?lines=${Math.max(1, lines)}`
-  })
-}
-
-export function transcribeAudio(dataUrl: string, mimeType?: string): Promise<AudioTranscriptionResponse> {
-  return fulilianApi<AudioTranscriptionResponse>({
-    path: '/api/audio/transcribe',
-    method: 'POST',
-    ...profileScoped(),
-    body: {
-      data_url: dataUrl,
-      mime_type: mimeType
-    },
-    // Transcription blocks until provider STT, file handling, and response
-    // encoding finish. Remote providers and long clips regularly exceed the
-    // default 15s Electron backend timeout.
-    timeoutMs: audioTranscribeRequestTimeoutMs(dataUrl)
-  })
-}
-
-export function speakText(text: string): Promise<AudioSpeakResponse> {
-  return fulilianApi<AudioSpeakResponse>({
-    ...profileScoped(),
-    path: '/api/audio/speak',
-    method: 'POST',
-    body: { text },
-    // TTS blocks until provider synthesis, file read, and base64 encoding
-    // finish. Remote providers and large messages regularly exceed the
-    // default 15s Electron backend timeout.
-    timeoutMs: audioSpeakRequestTimeoutMs(text)
   })
 }
 

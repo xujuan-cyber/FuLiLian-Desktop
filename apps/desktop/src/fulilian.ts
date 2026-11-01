@@ -37,8 +37,6 @@ export type {
   AnalyticsSkillEntry,
   AnalyticsSkillsSummary,
   AnalyticsTotals,
-  AudioSpeakResponse,
-  AudioTranscriptionResponse,
   AutomationBlueprint,
   AutomationBlueprintField,
   AuxiliaryModelsResponse,

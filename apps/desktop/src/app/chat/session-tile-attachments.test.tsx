@@ -31,8 +31,7 @@ vi.mock('@/i18n', () => ({
 vi.mock('@/fulilian', () => ({
   FulilianGateway: class {},
   PROMPT_SUBMIT_REQUEST_TIMEOUT_MS: 1_000,
-  setApiRequestProfile: vi.fn(),
-  transcribeAudio: vi.fn()
+  setApiRequestProfile: vi.fn()
 }))
 
 const RUNTIME_ID = 'runtime-tile'

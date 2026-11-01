@@ -1,12 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  AUDIO_SPEAK_MAX_REQUEST_TIMEOUT_MS,
-  AUDIO_SPEAK_MIN_REQUEST_TIMEOUT_MS,
-  AUDIO_TRANSCRIBE_MAX_REQUEST_TIMEOUT_MS,
-  AUDIO_TRANSCRIBE_MIN_REQUEST_TIMEOUT_MS,
-  audioSpeakRequestTimeoutMs,
-  audioTranscribeRequestTimeoutMs,
   deleteProfile,
   deleteSession,
   getAllSessionMessages,
@@ -29,8 +23,6 @@ import {
   resetSidebarBatchCapability,
   setApiRequestConnection,
   setApiRequestProfile,
-  speakText,
-  transcribeAudio,
   triggerCronJob
 } from './fulilian'
 import { refreshActiveProfile } from './store/profile'
@@ -600,64 +592,6 @@ describe('Fulilian REST helpers', () => {
     await expect(getAllSessionMessages('session-1', null, { maxJsonChars: 1 })).rejects.toThrow(
       'Desktop safe-load limit'
     )
-  })
-
-  it('bounds blocking TTS synthesis timeouts by text length', () => {
-    expect(audioSpeakRequestTimeoutMs('short message')).toBe(AUDIO_SPEAK_MIN_REQUEST_TIMEOUT_MS)
-    expect(audioSpeakRequestTimeoutMs('x'.repeat(8_000))).toBe(280_000)
-    expect(audioSpeakRequestTimeoutMs('x'.repeat(100_000))).toBe(AUDIO_SPEAK_MAX_REQUEST_TIMEOUT_MS)
-  })
-
-  it('routes blocking TTS synthesis through the active profile backend', async () => {
-    setApiRequestProfile('rhaegal')
-    api.mockResolvedValueOnce({
-      data_url: 'data:audio/mpeg;base64,AA==',
-      mime_type: 'audio/mpeg',
-      ok: true,
-      provider: 'openai'
-    })
-
-    await expect(speakText('Read this aloud')).resolves.toEqual({
-      data_url: 'data:audio/mpeg;base64,AA==',
-      mime_type: 'audio/mpeg',
-      ok: true,
-      provider: 'openai'
-    })
-
-    expect(api).toHaveBeenCalledWith({
-      body: { text: 'Read this aloud' },
-      method: 'POST',
-      path: '/api/audio/speak',
-      profile: 'rhaegal',
-      timeoutMs: AUDIO_SPEAK_MIN_REQUEST_TIMEOUT_MS
-    })
-  })
-
-  it('bounds blocking transcription timeouts by payload length', () => {
-    expect(audioTranscribeRequestTimeoutMs('data:audio/webm;base64,AA==')).toBe(AUDIO_TRANSCRIBE_MIN_REQUEST_TIMEOUT_MS)
-    expect(audioTranscribeRequestTimeoutMs('x'.repeat(3_000_000))).toBe(300_000)
-    expect(audioTranscribeRequestTimeoutMs('x'.repeat(9_000_000))).toBe(AUDIO_TRANSCRIBE_MAX_REQUEST_TIMEOUT_MS)
-  })
-
-  it('uses an extended timeout for blocking transcription', async () => {
-    api.mockResolvedValueOnce({
-      ok: true,
-      provider: 'openai',
-      text: 'transcribed text'
-    })
-
-    await expect(transcribeAudio('data:audio/webm;base64,AA==', 'audio/webm')).resolves.toEqual({
-      ok: true,
-      provider: 'openai',
-      text: 'transcribed text'
-    })
-
-    expect(api).toHaveBeenCalledWith({
-      body: { data_url: 'data:audio/webm;base64,AA==', mime_type: 'audio/webm' },
-      method: 'POST',
-      path: '/api/audio/transcribe',
-      timeoutMs: AUDIO_TRANSCRIBE_MIN_REQUEST_TIMEOUT_MS
-    })
   })
 
   it('defaults model options to configured providers only', async () => {
