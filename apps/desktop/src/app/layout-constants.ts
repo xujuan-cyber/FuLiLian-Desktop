@@ -23,3 +23,9 @@ export const PAGE_MAX_W = 'max-w-[75rem]'
 // the responsive collapse point.
 export const SIDEBAR_COLLAPSE_BREAKPOINT_PX = 768
 export const SIDEBAR_COLLAPSE_MEDIA_QUERY = `(max-width: ${SIDEBAR_COLLAPSE_BREAKPOINT_PX}px)`
+
+// How long an un-pinned narrow overlay lingers after the pointer leaves it
+// before closing. The grace window is what keeps in-overlay interaction
+// (scrollbar, drag sash, slight pointer jitter at the border) from collapsing
+// the pane mid-use — hover-reveal without it reads as "unusable".
+export const NARROW_OVERLAY_CLOSE_DELAY_MS = 140

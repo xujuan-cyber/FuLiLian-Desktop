@@ -3,18 +3,27 @@
  * collapse. Collapsible panes leave the grid below the sidebar-collapse
  * breakpoint; an edge strip (hover) or PANE_TOGGLE_REVEAL_EVENT (⌘B / ⌘G /
  * titlebar toggles route here on narrow) slides the pane OVER the layout
- * instead of squeezing it. Event reveals pin; hover reveals follow the mouse.
+ * instead of squeezing it. Event reveals pin; hover reveals follow the mouse
+ * (with a close-delay grace window so in-overlay interaction survives).
+ *
+ * The overlay floats over a scrim: clicking the scrim closes it, and its
+ * inner edge carries a drag sash that writes the SAME pane-width override the
+ * docked sidebar sash does — so narrow ↔ wide keeps one continuous width.
  */
 
 import { useStore } from '@nanostores/react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 
+import { NARROW_OVERLAY_CLOSE_DELAY_MS } from '@/app/layout-constants'
 import { PaneTab, PaneTabLabel, PaneTabStrip } from '@/components/ui/pane-tab'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import type { Contribution } from '@/contrib/types'
 import { ESCAPE_PRIORITY, isTopEscapeLayer, pushEscapeLayer } from '@/lib/escape-layers'
+import { rafCoalesce } from '@/lib/raf-coalesce'
 import { cn } from '@/lib/utils'
+import { $sidebarWidth, CHAT_SIDEBAR_PANE_ID, SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH } from '@/store/layout'
+import { $paneStates, clearPaneWidthOverride, setPaneWidthOverride } from '@/store/panes'
 
 import { PANE_TOGGLE_REVEAL_EVENT } from '../..'
 import { allPaneIds, findGroupOfPane } from '../model'
@@ -22,17 +31,70 @@ import { $hiddenTreePanes, $layoutTree, $narrowViewport } from '../store'
 
 import { paneChrome } from './track-model'
 
+/** Parse an authored px/rem length ("237px", "20rem"); anything else → fallback. */
+const pxOf = (value: string | undefined, fallback: number): number => {
+  const match = value?.match(/^\s*(\d+(?:\.\d+)?)\s*(px|rem)?\s*$/)
+
+  if (!match) {
+    return fallback
+  }
+
+  const n = Number.parseFloat(match[1])
+
+  return match[2] === 'rem' ? n * 16 : n
+}
+
+/** The pane-state id the overlay's width override is written through — the
+ *  reveal aliases ARE the pane-state ids (chat-sidebar / file-browser / …),
+ *  so a revealed pane shares its docked twin's width channel. */
+const widthChannelOf = (pane: Contribution): string => paneChrome(pane).revealAliases?.[0] ?? pane.id
+
+/** Drag bounds: the pane's authored clamps (falling back to the sidebar's
+ *  store bounds), capped so the overlay never eats more than 85vw. */
+const widthBoundsOf = (pane: Contribution): { max: number; min: number } => {
+  const data = pane.data as { maxWidth?: string; minWidth?: string } | undefined
+  const min = Math.max(SIDEBAR_MIN_WIDTH, pxOf(data?.minWidth, SIDEBAR_MIN_WIDTH))
+  const vwCap = Math.max(min, Math.round(window.innerWidth * 0.85))
+  const max = Math.max(min, Math.min(pxOf(data?.maxWidth, SIDEBAR_MAX_WIDTH), vwCap))
+
+  return { max, min }
+}
+
 export function NarrowOverlays() {
   const narrow = useStore($narrowViewport)
   const tree = useStore($layoutTree)
   const panes = useContributions('panes')
   const hiddenPanes = useStore($hiddenTreePanes)
+  const paneStates = useStore($paneStates)
+  const sidebarWidth = useStore($sidebarWidth)
   const [reveal, setReveal] = useState<{ id: string; pinned: boolean } | null>(null)
 
   // Own an Escape layer only while something is revealed, so Escape closes the
   // overlay only when it's the top layer (never under a dialog / edit mode).
   const revealActive = reveal !== null
   useEffect(() => (revealActive ? pushEscapeLayer(ESCAPE_PRIORITY.narrowOverlay) : undefined), [revealActive])
+
+  // Un-pinned (hover) reveals close on mouse-leave, but through a grace
+  // window: the pointer grazing the border, hitting the scrollbar, or crossing
+  // onto the drag sash must not kill the overlay mid-interaction.
+  const closeTimerRef = useRef<number | null>(null)
+
+  const cancelPendingClose = () => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+  }
+
+  const schedulePendingClose = () => {
+    cancelPendingClose()
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null
+      setReveal(current => (current?.pinned ? current : null))
+    }, NARROW_OVERLAY_CLOSE_DELAY_MS)
+  }
+
+  useEffect(() => cancelPendingClose, [])
 
   const inTree = useMemo(() => new Set(tree ? allPaneIds(tree) : []), [tree])
 
@@ -109,6 +171,82 @@ export function NarrowOverlays() {
   const revealed = reveal ? collapsibles.find(p => p.id === reveal.id) : undefined
   const sides = [...new Set(collapsibles.map(sideOf))]
 
+  // The overlay's live width: its channel's override (written by THIS sash or
+  // the docked one — one shared state, so narrow ↔ wide is continuous), else
+  // the shared sidebar width for the chat sidebar, else the authored width.
+  const widthPxOf = (pane: Contribution): number => {
+    const channel = widthChannelOf(pane)
+    const override = paneStates[channel]?.widthOverride
+
+    if (typeof override === 'number') {
+      return override
+    }
+
+    if (channel === CHAT_SIDEBAR_PANE_ID) {
+      return sidebarWidth
+    }
+
+    return pxOf((pane.data as { width?: string } | undefined)?.width, 240)
+  }
+
+  // Drag the overlay's inner edge to resize. Writes go through the pane's
+  // width channel per frame (rafCoalesce), the same `setPaneWidthOverride`
+  // path the docked sash uses; the overlay width reads that store, so the
+  // panel tracks the pointer. A drag pins the reveal — the gesture must not
+  // race the delayed hover close.
+  const startWidthDrag = (event: ReactPointerEvent<HTMLDivElement>, pane: Contribution) => {
+    if (event.button !== 0) {
+      return
+    }
+
+    event.preventDefault()
+
+    const handle = event.currentTarget
+    const { pointerId } = event
+    const startX = event.clientX
+    const startWidth = widthPxOf(pane)
+    const { max, min } = widthBoundsOf(pane)
+    const channel = widthChannelOf(pane)
+    const restoreCursor = document.body.style.cursor
+    const restoreSelect = document.body.style.userSelect
+
+    try {
+      handle.setPointerCapture?.(pointerId)
+    } catch {
+      // Synthetic events.
+    }
+
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    setReveal(current => (current ? { ...current, pinned: true } : current))
+
+    const resize = rafCoalesce((width: number) => setPaneWidthOverride(channel, width))
+    let done = false
+
+    const cleanup = () => {
+      if (done) {
+        return
+      }
+
+      done = true
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', cleanup)
+      window.removeEventListener('pointercancel', cleanup)
+      document.body.style.cursor = restoreCursor
+      document.body.style.userSelect = restoreSelect
+      resize.finish()
+    }
+
+    const onMove = (ev: PointerEvent) => {
+      const delta = sideOf(pane) === 'left' ? ev.clientX - startX : startX - ev.clientX
+      resize.push(Math.round(Math.max(min, Math.min(max, startWidth + delta))))
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', cleanup)
+    window.addEventListener('pointercancel', cleanup)
+  }
+
   // The revealed pane's ZONE-mates that also left the grid (the sessions zone
   // stacks SESSIONS | BOTS): the overlay mirrors the zone's tab strip so a
   // pane docked into a collapsed zone stays reachable on narrow viewports —
@@ -127,20 +265,41 @@ export function NarrowOverlays() {
 
   return (
     <>
-      {/* Hover-intent strips on each edge that has a collapsed pane. */}
+      {/* Hover-intent strips on each edge that has a collapsed pane. Wide
+          enough (12px) to actually hit at the window edge; the overlay (z-40)
+          covers them while revealed, so they only START a reveal. */}
       {sides.map(side => (
         <div
-          className={cn('absolute inset-y-0 z-30 w-1.5', side === 'left' ? 'left-0' : 'right-0')}
+          className={cn('absolute inset-y-0 z-30 w-3', side === 'left' ? 'left-0' : 'right-0')}
+          data-narrow-overlay-edge={side}
           key={side}
           onMouseEnter={() => {
             const first = collapsibles.find(p => sideOf(p) === side)
 
             if (first) {
+              cancelPendingClose()
               setReveal(current => (current?.pinned ? current : { id: first.id, pinned: false }))
             }
           }}
         />
       ))}
+
+      {/* Scrim between the layout and the overlay: makes "this is modal"
+          legible and gives the pinned overlay a plain click-to-close, which
+          it previously lacked (only Escape / re-toggle worked). Same z-30
+          rung as the strips but rendered AFTER them, so it covers them while
+          staying under the z-40 overlay. */}
+      {reveal && (
+        <div
+          aria-hidden
+          className="absolute inset-0 z-30 bg-black/25"
+          data-narrow-overlay-scrim=""
+          onPointerDown={() => {
+            cancelPendingClose()
+            setReveal(null)
+          }}
+        />
+      )}
 
       {revealed && (
         <div
@@ -154,10 +313,12 @@ export function NarrowOverlays() {
           // panes beneath it — a see-through overlay reads as text bleeding
           // through text. Contract: `[data-glass-opaque]` in styles.css.
           data-glass-opaque=""
-          onMouseLeave={() => setReveal(current => (current?.pinned ? current : null))}
-          // Match the pane's docked width (sessions ~237px, files its rail
-          // width) instead of a fat fixed 20rem — capped for tiny screens.
-          style={{ width: `min(${(revealed.data as { width?: string } | undefined)?.width ?? '18rem'}, 85vw)` }}
+          data-narrow-overlay-panel=""
+          onMouseEnter={cancelPendingClose}
+          // Only schedules the close — the grace window decides, and a pin
+          // (event reveal, drag) cancels it at fire time.
+          onMouseLeave={schedulePendingClose}
+          style={{ width: `${Math.round(widthPxOf(revealed))}px` }}
         >
           {/* Zone-mates share the overlay through the zone's own tab strip
               (SESSIONS | BOTS) — a lone pane keeps the stripless form. */}
@@ -172,6 +333,7 @@ export function NarrowOverlays() {
                   onPointerDown={event => {
                     if (event.button === 0) {
                       event.preventDefault()
+                      cancelPendingClose()
                       setReveal(current => ({ id: pane.id, pinned: current?.pinned ?? false }))
                     }
                   }}
@@ -184,6 +346,22 @@ export function NarrowOverlays() {
           <ContribBoundary id={revealed.id}>
             {revealed.render && <ContribRender render={revealed.render} />}
           </ContribBoundary>
+          {/* Drag sash on the overlay's inner edge — the narrow counterpart
+              of the docked sash (same width channel, same double-click
+              reset; cursor and capture semantics match tree-split). */}
+          <div
+            aria-hidden
+            className={cn(
+              'absolute inset-y-0 z-10 w-1.5 cursor-col-resize',
+              sideOf(revealed) === 'left' ? 'right-0' : 'left-0'
+            )}
+            data-narrow-overlay-sash=""
+            onDoubleClick={() => {
+              // Reset to the shared default — the docked sash's behavior.
+              clearPaneWidthOverride(widthChannelOf(revealed))
+            }}
+            onPointerDown={event => startWidthDrag(event, revealed)}
+          />
         </div>
       )}
     </>
