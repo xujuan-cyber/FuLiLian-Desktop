@@ -54,6 +54,7 @@ afterEach(() => {
   $layoutTree.set(null)
   clearPaneWidthOverride('sessions')
   clearPaneWidthOverride('bots')
+  clearPaneWidthOverride('chat-sidebar')
   vi.useRealTimers()
   disposers.splice(0).forEach(dispose => dispose())
 })
@@ -233,5 +234,57 @@ describe('narrow overlay drag resize (F3)', () => {
     revealPane('sessions')
 
     expect(overlayPanel()!.style.width).toBe('320px')
+  })
+})
+
+// F4 ground truth for the dynamic collapse threshold: the narrow mode must
+// engage through the REAL signal path — a window resized into the anomaly
+// interval (sidebar 640px persisted, window 800px) — with no manual atom pin.
+// Inside [768, 821] the old static media query read "docked" while the docked
+// main pane was crushed below its 22vw floor; now the sidebar auto-hides and
+// the overlay mechanism takes over.
+describe('narrow overlay via the dynamic resize signal (F4)', () => {
+  const setInnerWidth = (px: number) =>
+    Object.defineProperty(window, 'innerWidth', { value: px, configurable: true })
+
+  let originalInnerWidth: number
+
+  beforeEach(() => {
+    originalInnerWidth = window.innerWidth
+  })
+
+  afterEach(() => {
+    setInnerWidth(originalInnerWidth)
+  })
+
+  it('auto-hides the sidebar when a resize lands inside [768, threshold]', () => {
+    // Baseline: docked. The flip below must come from the resize path alone.
+    $narrowViewport.set(false)
+
+    act(() => {
+      setPaneWidthOverride('chat-sidebar', 640)
+      setInnerWidth(800)
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    // The dynamic signal — not the beforeEach manual pin — flipped narrow.
+    expect($narrowViewport.get()).toBe(true)
+
+    const { getByTestId } = render(<NarrowOverlays />)
+    revealPane('sessions')
+
+    // The grid dropped the collapsible panes and the overlay is reachable.
+    expect(getByTestId('sessions-body')).toBeTruthy()
+    expect(document.querySelector('[data-narrow-overlay-scrim]')).toBeTruthy()
+  })
+
+  it('stays docked on a wide window with the same max-width sidebar (zero change)', () => {
+    act(() => {
+      setPaneWidthOverride('chat-sidebar', 640)
+      setInnerWidth(1200)
+      window.dispatchEvent(new Event('resize'))
+    })
+
+    expect($narrowViewport.get()).toBe(false)
   })
 })

@@ -6,13 +6,13 @@
 
 import { atom, computed, type ReadableAtom } from 'nanostores'
 
-import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from '@/app/layout-constants'
+import { sidebarCollapseThresholdPx } from '@/app/layout-constants'
 import { setPluginEnabled } from '@/contrib/plugins-store'
 import { registry } from '@/contrib/registry'
 import { translateNow } from '@/i18n'
 import { readJson, readKey, writeJson, writeKey } from '@/lib/storage'
 import { notify } from '@/store/notifications'
-import { clearAllPaneSizeOverrides } from '@/store/panes'
+import { $paneStates, clearAllPaneSizeOverrides } from '@/store/panes'
 import { isBrowserWindow, isSecondaryWindow } from '@/store/windows'
 
 import {
@@ -707,12 +707,10 @@ function shownPanesInGroup(group: { panes: readonly string[] }): string[] {
     }
 
     // Match TreeGroup's paneShown for the narrow breakpoint — collapsible
-    // panes drop out of the strip when the viewport collapses them.
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia?.(SIDEBAR_COLLAPSE_MEDIA_QUERY).matches &&
-      Boolean((pane.data as { collapsible?: boolean } | undefined)?.collapsible)
-    ) {
+    // panes drop out of the strip when the viewport collapses them. Reads the
+    // dynamic signal (same source the renderer subscribes to), not a live
+    // media query, so the two can never disagree about the collapse state.
+    if (isNarrowViewport() && Boolean((pane.data as { collapsible?: boolean } | undefined)?.collapsible)) {
       return false
     }
 
@@ -1098,15 +1096,94 @@ export function revealTreePane(paneId: string) {
  * Narrow viewport (the app's sidebar-collapse breakpoint): panes whose
  * contribution declares `collapsible: true` leave the grid and become
  * edge overlays (see NarrowOverlays in renderer.tsx).
+ *
+ * DYNAMIC source of truth. The threshold depends on the sidebar's current
+ * width (user-draggable + persisted via $paneStates widthOverride, default
+ * 240px from the contrib declaration), so a fixed media query cannot express
+ * it — a 640px sidebar makes windows in [768, ~821] tear the docked layout
+ * while `(max-width: 768px)` still reads false. Instead the atom recomputes
+ * from `window.innerWidth < sidebarCollapseThresholdPx(sidebarWidth)` on:
+ *   - `window.resize`, and
+ *   - `$paneStates` changes touching the chat-sidebar width key,
+ * so the collapse state always reflects the real available room.
  */
-// Optional-chained + `typeof window` guarded like every other matchMedia call
-// site: this module is imported by non-DOM code paths (session actions) whose
-// test env has no `window`/`matchMedia` — an unguarded call throws at load.
-const narrowQuery = typeof window !== 'undefined' ? window.matchMedia?.(SIDEBAR_COLLAPSE_MEDIA_QUERY) : undefined
 
-export const $narrowViewport = atom(Boolean(narrowQuery?.matches))
+// Mirrors CHAT_SIDEBAR_PANE_ID ('chat-sidebar', store/layout.ts). Inlined
+// because layout.ts imports THIS module — importing the constant back would
+// create a cycle. Keep in sync with the contrib channel id.
+const CHAT_SIDEBAR_CHANNEL_ID = 'chat-sidebar'
 
-narrowQuery?.addEventListener('change', event => $narrowViewport.set(event.matches))
+// The contrib declaration gives the sidebar `width: '240px'` (controller.tsx);
+// without a persisted widthOverride that is its effective docked width.
+const CHAT_SIDEBAR_DEFAULT_WIDTH_PX = 240
+
+const sidebarWidthOverridePx = (): number => {
+  const override = $paneStates.get()[CHAT_SIDEBAR_CHANNEL_ID]?.widthOverride
+
+  return typeof override === 'number' && Number.isFinite(override) ? override : CHAT_SIDEBAR_DEFAULT_WIDTH_PX
+}
+
+const computeNarrowViewport = (): boolean => {
+  // Optional-chained + `typeof window` guarded like every other media-query
+  // call site: this module is imported by non-DOM code paths (session actions)
+  // whose test env has no `window` — an unguarded read throws at load. SSR /
+  // no-window environments must resolve to false (docked), never throw.
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  return window.innerWidth < sidebarCollapseThresholdPx(sidebarWidthOverridePx())
+}
+
+export const $narrowViewport = atom(computeNarrowViewport())
+
+const syncNarrowViewport = (): void => {
+  const next = computeNarrowViewport()
+
+  // Guard the set: $narrowViewport drives sdk refresh + renderer re-renders,
+  // and tests may pin it manually — never clobber with an unchanged value.
+  if ($narrowViewport.get() !== next) {
+    $narrowViewport.set(next)
+  }
+}
+
+// Both dynamic-threshold listeners, wired guarded and detachable (HMR / test
+// teardown) so the resize + paneStates subscriptions never leak.
+let detachNarrowViewportSignals: (() => void) | undefined
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', syncNarrowViewport)
+
+  const unsubscribePaneStates = $paneStates.listen((snapshot, prev) => {
+    // Filter to the chat-sidebar width key: other panes' state churn must not
+    // recompute (or fight a manually pinned value in tests).
+    const nextOverride = snapshot[CHAT_SIDEBAR_CHANNEL_ID]?.widthOverride
+    const prevOverride = prev?.[CHAT_SIDEBAR_CHANNEL_ID]?.widthOverride
+
+    if (nextOverride !== prevOverride) {
+      syncNarrowViewport()
+    }
+  })
+
+  detachNarrowViewportSignals = () => {
+    window.removeEventListener('resize', syncNarrowViewport)
+    unsubscribePaneStates()
+  }
+}
+
+/** Detaches both narrow-viewport listeners (resize + $paneStates). Test/HMR
+ *  teardown hook — after calling it the atom stops tracking the window. */
+export function disposeNarrowViewportSignals(): void {
+  detachNarrowViewportSignals?.()
+  detachNarrowViewportSignals = undefined
+}
+
+/** Non-React read of the same dynamic source ($narrowViewport). Store actions
+ *  (reveal/toggle routing) call this instead of re-deriving a media query, so
+ *  every consumer shares one collapse decision. */
+export function isNarrowViewport(): boolean {
+  return $narrowViewport.get()
+}
 
 /** The titlebar flip toggle (⌘\): mirror the whole layout left↔right. */
 export function mirrorLayoutTree() {

@@ -1,9 +1,7 @@
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores'
 
-import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
-import { isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
-import { matchesQuery } from '@/hooks/use-media-query'
+import { isNarrowViewport, isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
 import { connectionScopedAtom } from '@/lib/connection-scoped'
 import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
 import { arraysEqual, insertUniqueId, readKey } from '@/lib/storage'
@@ -510,7 +508,10 @@ export function setSidebarWidth(width: number) {
 // caller (titlebar, keybinds, session-search, reveal-file) inherits it instead
 // of re-deriving the narrow branch. Returns true when it handled the intent.
 function revealNarrowPane(id: string, mode: 'close' | 'open' | 'toggle'): boolean {
-  if (typeof window === 'undefined' || !matchesQuery(SIDEBAR_COLLAPSE_MEDIA_QUERY)) {
+  // Reads the dynamic narrow-viewport signal (sidebar-width-aware threshold),
+  // same source the renderer subscribes to. Covers the no-window guard: the
+  // atom resolves false outside the DOM, so this returns false there.
+  if (!isNarrowViewport()) {
     return false
   }
 
