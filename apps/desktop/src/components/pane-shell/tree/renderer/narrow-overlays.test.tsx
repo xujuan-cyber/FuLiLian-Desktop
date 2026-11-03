@@ -4,8 +4,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { NARROW_OVERLAY_CLOSE_DELAY_MS } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { registry } from '@/contrib/registry'
-import { stubResizeObserver } from '@/test/jsdom'
 import { $paneStates, clearPaneWidthOverride, setPaneWidthOverride } from '@/store/panes'
+import { stubResizeObserver } from '@/test/jsdom'
 
 import { group, split } from '../model'
 import { $hiddenTreePanes, $layoutTree, $narrowViewport, declareDefaultTree } from '../store'
