@@ -7,9 +7,8 @@
 //                              settings page.
 //
 // "Spawn-free" is a hard property: resolution only stats PATH candidates, so
-// asking the settings page what will run can never start a process (contrast
-// `resolveDefaultWslDistro`, which shells out to wsl.exe). Everything external
-// is injected, so tests drive it without touching the real filesystem.
+// asking the settings page what will run can never start a process. Everything
+// external is injected, so tests drive it without touching the real filesystem.
 import fs from 'node:fs'
 import path from 'node:path'
 

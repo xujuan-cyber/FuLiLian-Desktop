@@ -755,23 +755,17 @@ export const ja = defineLocale({
       terminalFontReset: '既定値を使用',
       terminalShell: {
         sectionTitle: 'ターミナルのコマンド実行環境',
-        sectionDesc: '新しいターミナルタブで使うローカルシェルと、ターミナルスイッチャーの既定 WSL ディストリビューションを選択します。',
+        sectionDesc: '新しいターミナルタブで使うローカルシェルを選択します。',
         localShellTitle: 'ローカルシェル',
         shellAuto: '自動検出',
         shellPwsh: 'PowerShell 7',
         shellPowershell: 'Windows PowerShell 5.1',
         shellCmd: 'cmd',
-        wslDistroTitle: '既定の WSL ディストリビューション',
-        wslDistroHint: 'ターミナルスイッチャーで事前選択されます。FULILIAN_DESKTOP_SHELL 環境変数が常に優先されます。',
         saveFailed: 'ターミナルシェル設定を保存できませんでした',
         effectiveShellTitle: '実際に使われるシェル',
         shellFallbackPwsh: 'PowerShell 7 が見つからないため、Windows PowerShell 5.1 にフォールバックしました',
         envSideTitle: '起動側',
-        envSideWindows: 'Windows（ローカル）',
-        envSideWsl: 'WSL',
-        wslDetectAction: 'WSL ディストリビューションを検出',
-        wslDetectHint: '起動時は WSL に触れません。クリックしたときだけ wsl.exe を 1 回実行します。',
-        wslDetectEmpty: '利用できる WSL ディストリビューションが見つかりません（WSL 未導入の可能性）。'
+        envSideWindows: 'Windows（ローカル）'
       },
       translucencyTitle: 'ウィンドウの透過',
       translucencyDesc: 'テキストも含めウィンドウ全体を透過させてデスクトップを表示します。',
@@ -1613,20 +1607,6 @@ export const ja = defineLocale({
         selectedMessage: backend => `ターミナルコマンドは ${backend} で実行されます。新しいセッションに適用されます。`,
         failedSelect: backend => `${backend} の選択に失敗しました`,
         needsSetupHint: 'このバックエンドは今すぐ選択できますが、セットアップが完了するまでコマンドは失敗します。'
-      },
-      wslCli: {
-        sectionTitle: 'WSL コマンドラインツール',
-        hint: '検出された WSL コマンドラインツールはターミナルペインで開けます。検出は WSL 内で実行されます。',
-        loading: 'WSL CLI を検出中…',
-        reprobe: '再検出',
-        available: '利用可能',
-        unavailable: '利用不可',
-        unknown: '不明',
-        probeFailedTitle: '検出できません',
-        probeFailedBody: reason => `検出に失敗しました（${reason}）。利用可否は不明です。選択内容は保持されます。`,
-        failedProbe: 'WSL CLI の検出に失敗しました',
-        failedOptin: cli => `${cli} を更新できませんでした`,
-        bridgeUnavailable: 'WSL CLI の検出はデスクトップアプリでのみ利用できます。'
       }
     }
   },
@@ -3517,15 +3497,8 @@ export const ja = defineLocale({
     terminalHide: 'ターミナルを非表示',
     terminalsAria: 'ターミナル',
     terminalNew: '新しいターミナル',
-    wslCliSwitcher: 'ターミナル CLI',
-    wslCliMenuLabel: 'ターミナルの実行先',
-    wslCliLocal: 'ローカルシェル',
-    wslCliDistroLabel: 'ディストリビューション',
     terminalCloseOthers: '他を閉じる',
     terminalCloseAll: 'すべて閉じる',
-    terminalRestoreTitle: 'WSL セッションは待機中',
-    terminalRestoreDesc: '起動時に wsl.exe を呼ばないため、このタブの WSL セッションは自動で再開されていません。',
-    terminalRestoreAction: 'セッションを復元',
     addToChat: 'チャットに追加'
   },
 

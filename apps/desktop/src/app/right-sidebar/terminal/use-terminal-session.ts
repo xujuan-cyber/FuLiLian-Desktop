@@ -11,7 +11,6 @@ import { markRightPanePerf } from '@/debug/right-pane-events'
 import { triggerHaptic } from '@/lib/haptics'
 import { isComposerChord } from '@/lib/keybinds/chords'
 import { $previewTarget } from '@/store/preview'
-import type { WslCliTarget } from '@/store/wsl-cli'
 import { useTheme } from '@/themes/context'
 
 import { $terminalInjection } from '../store'
@@ -246,11 +245,6 @@ interface UseTerminalSessionOptions {
   reviveBuffer?: string
   /** Reports the resolved shell name once the PTY is live (for the tab label). */
   onShell?: (shell: string) => void
-  /** WSL CLI target (step09 contract §四 C). Non-null starts this PTY as the CLI
-   *  inside that distro; null/absent keeps the existing local/ssh shell.
-   *  Snapshotted once per mount — changing it remounts the instance instead
-   *  (see the CLI-keyed instance in workspace.tsx). */
-  wsl?: null | WslCliTarget
 }
 
 // Parse a working directory out of a cwd-reporting OSC payload. Covers OSC 7
@@ -393,7 +387,6 @@ export function useTerminalSession({
   onAddSelectionToChat,
   restoreCwd,
   reviveBuffer,
-  wsl,
   onShell
 }: UseTerminalSessionOptions) {
   // Key off renderedMode (the painted surface type), not resolvedMode (the
@@ -859,14 +852,13 @@ export function useTerminalSession({
     const startSession = () =>
       void terminalApi
         // Payload assembled by start-options.ts: it owns the "prior cwd wins"
-        // rule and the WSL pass-through, and is unit-tested there.
+        // rule and is unit-tested there.
         .start(
           terminalStartOptions({
             cols: term.cols,
             cwd,
             restoreCwd: initialRestoreCwdRef.current ?? undefined,
-            rows: term.rows,
-            wsl
+            rows: term.rows
           })
         )
         .then(session => {
@@ -982,11 +974,8 @@ export function useTerminalSession({
     }
     // `id` is stable for the instance's life (keyed by tab id), so listing it
     // doesn't re-create the shell — it just satisfies the deps check for the
-    // closeTerminal(id) call in onExit. `wsl` is listed for the distro-change
-    // case: the workspace key only carries the CLI name, so the same CLI picked
-    // in another distro changes this prop without a remount — and the PTY must
-    // restart there too.
-  }, [addSelectionToChat, cwd, id, latestFontFamilyRef, mountedRef, wsl])
+    // closeTerminal(id) call in onExit.
+  }, [addSelectionToChat, cwd, id, latestFontFamilyRef, mountedRef])
 
   useEffect(() => {
     const term = termRef.current

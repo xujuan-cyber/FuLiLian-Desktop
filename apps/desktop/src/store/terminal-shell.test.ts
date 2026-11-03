@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TerminalShellPref } from '@/global'
-import { $wslCliDistro, selectWslCliDistro } from '@/store/wsl-cli'
 
 import { $terminalShellPref, loadTerminalShellPref, setTerminalShellPref } from './terminal-shell'
 
-const PREF: TerminalShellPref = { local: 'pwsh', wslDistro: 'kali-linux' }
+const PREF: TerminalShellPref = { local: 'pwsh' }
 
 const get = vi.fn()
 const set = vi.fn()
@@ -16,7 +15,7 @@ function installBridge() {
     value: {
       terminalShell: {
         get: () => get(),
-        set: (patch: { local?: TerminalShellPref['local']; wslDistro?: null | string }) => set(patch)
+        set: (patch: { local?: TerminalShellPref['local'] }) => set(patch)
       }
     }
   })
@@ -25,12 +24,10 @@ function installBridge() {
 beforeEach(() => {
   vi.clearAllMocks()
   $terminalShellPref.set(null)
-  $wslCliDistro.set(null)
   get.mockResolvedValue(PREF)
-  set.mockImplementation((patch: { local?: unknown; wslDistro?: unknown }) =>
+  set.mockImplementation((patch: { local?: unknown }) =>
     Promise.resolve({
-      local: (patch.local === undefined ? PREF.local : patch.local) as TerminalShellPref['local'],
-      wslDistro: (patch.wslDistro === undefined ? PREF.wslDistro : patch.wslDistro) as null | string
+      local: (patch.local === undefined ? PREF.local : patch.local) as TerminalShellPref['local']
     } satisfies TerminalShellPref)
   )
   installBridge()
@@ -41,39 +38,18 @@ afterEach(() => {
 })
 
 describe('terminal-shell store', () => {
-  it('loads the preference and mirrors wslDistro into the rail distro atom', async () => {
+  it('loads the preference', async () => {
     const state = await loadTerminalShellPref()
 
     expect(state).toEqual(PREF)
     expect($terminalShellPref.get()).toEqual(PREF)
-    expect($wslCliDistro.get()).toBe('kali-linux')
   })
 
-  it('loads without touching the distro atom when no wslDistro is persisted', async () => {
-    get.mockResolvedValue({ local: 'cmd', wslDistro: null })
-
-    await loadTerminalShellPref()
-
-    expect($terminalShellPref.get()?.local).toBe('cmd')
-    expect($wslCliDistro.get()).toBeNull()
-  })
-
-  it('merge-writes a patch and mirrors wslDistro on wslDistro patches', async () => {
-    await setTerminalShellPref({ wslDistro: 'docker-desktop' })
-
-    expect(set).toHaveBeenCalledWith({ wslDistro: 'docker-desktop' })
-    expect($terminalShellPref.get()?.wslDistro).toBe('docker-desktop')
-    expect($wslCliDistro.get()).toBe('docker-desktop')
-  })
-
-  it('a local-only patch does not clobber the rail distro atom', async () => {
-    selectWslCliDistro('kali-linux')
-
+  it('merge-writes a local patch', async () => {
     await setTerminalShellPref({ local: 'cmd' })
 
     expect(set).toHaveBeenCalledWith({ local: 'cmd' })
     expect($terminalShellPref.get()?.local).toBe('cmd')
-    expect($wslCliDistro.get(), 'the rail pick stays untouched').toBe('kali-linux')
   })
 
   it('degrades silently when the bridge is absent or rejects', async () => {

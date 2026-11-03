@@ -78,10 +78,9 @@ test('get seeds and returns the normalized preference (N1 default: pwsh / window
   const { resolvedShell, ...state } = handlerFor('fulilian:terminal-shell:get')(null, undefined) as {
     local: string
     resolvedShell: { choice: string; degraded: boolean; path: null | string }
-    wslDistro: null
   } & Record<string, unknown>
 
-  assert.deepEqual(state, { envSide: 'windows', local: 'pwsh', wslDistro: null })
+  assert.deepEqual(state, { envSide: 'windows', local: 'pwsh' })
   // R-4: the effective shell rides along as an additive, read-only field.
   assert.equal(resolvedShell.choice, 'pwsh')
   assert.equal(typeof resolvedShell.degraded, 'boolean')
@@ -154,36 +153,30 @@ test('set merges the patch, whitelists it, and returns the resulting state', () 
 
   const { resolvedShell, ...state } = handlerFor('fulilian:terminal-shell:set')(null, {
     local: 'pwsh',
-    wslDistro: 'kali-linux'
-  }) as { local: string; resolvedShell: { choice: string }; wslDistro: null | string } & Record<string, unknown>
+    envSide: 'windows'
+  }) as { local: string; resolvedShell: { choice: string } } & Record<string, unknown>
 
-  assert.deepEqual(state, { envSide: 'windows', local: 'pwsh', wslDistro: 'kali-linux' })
+  assert.deepEqual(state, { envSide: 'windows', local: 'pwsh' })
   assert.equal(resolvedShell.choice, 'pwsh')
   assert.equal(
-    rememberLog.mock.calls.some(([line]) => String(line) === '[terminal-shell] set local=pwsh wslDistro=kali-linux'),
+    rememberLog.mock.calls.some(([line]) => String(line) === '[terminal-shell] set local=pwsh envSide=windows'),
     true,
     'the write is still logged as before'
   )
 
-  // A hostile payload cannot smuggle an unknown choice or a path-y distro.
+  // A hostile payload cannot smuggle an unknown choice, and the legacy `wsl`
+  // side is no longer whitelisted — it keeps the stored (windows) state.
   const { resolvedShell: _ignored, ...hostile } = handlerFor('fulilian:terminal-shell:set')(null, {
     local: 'zsh',
-    wslDistro: '../../etc'
-  }) as { local: string; wslDistro: null | string } & Record<string, unknown>
+    envSide: 'wsl'
+  }) as { local: string } & Record<string, unknown>
 
-  assert.deepEqual(hostile, { envSide: 'windows', local: 'pwsh', wslDistro: null }, 'junk patch values keep the stored state')
+  assert.deepEqual(hostile, { envSide: 'windows', local: 'pwsh' }, 'junk patch values keep the stored state')
 
   // A non-object payload degrades to a no-op merge.
   const noop = handlerFor('fulilian:terminal-shell:set')(null, 42) as { local: string }
 
   assert.equal(noop.local, 'pwsh')
-
-  // Clearing the distro works (null patch value is applied).
-  const cleared = handlerFor('fulilian:terminal-shell:set')(null, { wslDistro: null }) as {
-    wslDistro: null | string
-  }
-
-  assert.equal(cleared.wslDistro, null)
 })
 
 test('an unwritable userData directory degrades to in-memory state, not a throw', () => {

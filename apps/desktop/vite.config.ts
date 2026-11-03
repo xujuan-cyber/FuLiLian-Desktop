@@ -369,6 +369,25 @@ export default defineConfig(({ command }) => ({
     strictPort: true,
     fs: {
       allow: fsAllow
+    },
+    // N-5 (dev renderer): in dev every module is transformed on demand, so the
+    // first open of a lazy page (Settings above all) triggers a cascade of
+    // hundreds of per-module transforms while the user stares at the skeleton
+    // — the production build prefetches page chunks instead (see
+    // src/app/prefetch-page-chunks.ts), but dev had no equivalent. `warmup`
+    // runs the same transform pass in the background right after server start,
+    // so by the time the user reaches for Settings the graph is hot. Scoped to
+    // the page-level dirs whose FIRST navigation is user-visible; their shared
+    // imports (components/ui, lib, store) overlap the boot graph, which the
+    // chat surface transforms anyway, so the residual cold cost after this is
+    // small. Files are transformed, nothing is evaluated — no side effects.
+    warmup: {
+      clientFiles: [
+        './src/app/settings/**',
+        './src/app/overlays/**',
+        './src/app/skills/**',
+        './src/app/right-sidebar/**'
+      ]
     }
   },
   preview: {

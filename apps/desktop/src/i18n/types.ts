@@ -662,8 +662,6 @@ export interface Translations {
         shellPwsh: string
         shellPowershell: string
         shellCmd: string
-        wslDistroTitle: string
-        wslDistroHint: string
         saveFailed: string
         /** R-4: which shell actually runs, and where it lives. */
         effectiveShellTitle: string
@@ -671,11 +669,6 @@ export interface Translations {
         /** N1: which side new sessions start on. */
         envSideTitle: string
         envSideWindows: string
-        envSideWsl: string
-        /** R-2: the WSL distro probe is strictly on-demand. */
-        wslDetectAction: string
-        wslDetectHint: string
-        wslDetectEmpty: string
       }
       translucencyTitle: string
       translucencyDesc: string
@@ -1318,20 +1311,6 @@ export interface Translations {
         selectedMessage: (backend: string) => string
         failedSelect: (backend: string) => string
         needsSetupHint: string
-      }
-      wslCli: {
-        sectionTitle: string
-        hint: string
-        loading: string
-        reprobe: string
-        available: string
-        unavailable: string
-        unknown: string
-        probeFailedTitle: string
-        probeFailedBody: (reason: string) => string
-        failedProbe: string
-        failedOptin: (cli: string) => string
-        bridgeUnavailable: string
       }
     }
   }
@@ -2908,16 +2887,8 @@ export interface Translations {
     terminalHide: string
     terminalsAria: string
     terminalNew: string
-    wslCliSwitcher: string
-    wslCliMenuLabel: string
-    wslCliLocal: string
-    wslCliDistroLabel: string
     terminalCloseOthers: string
     terminalCloseAll: string
-    /** R-3: a restored WSL tab that is intentionally NOT auto-spawned. */
-    terminalRestoreTitle: string
-    terminalRestoreDesc: string
-    terminalRestoreAction: string
     addToChat: string
   }
 

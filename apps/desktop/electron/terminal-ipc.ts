@@ -25,8 +25,6 @@ import {
   type ShellResolveDeps
 } from './terminal-shell-resolve'
 import { buildWindowsInteractiveCommand } from './windows-remote-lifecycle'
-import { windowsToWslPosix } from './wsl-cli-paths'
-import { WSL_CLI_NAMES, type WslCliName } from './wsl-cli-probe'
 
 export interface TerminalIpcDeps {
   isWindows: boolean
@@ -36,7 +34,7 @@ export interface TerminalIpcDeps {
   ensureBackend: (webContentsId: number) => Promise<unknown>
   getSshConnectionState: (scope: string) => undefined | { remotePlatform?: string }
   /** Persisted shell preference (step17); defaults to the real reader. */
-  readShellPref?: () => { local?: unknown; wslDistro?: unknown } | null
+  readShellPref?: () => { local?: unknown } | null
 }
 
 export interface TerminalIpcApi {
@@ -325,32 +323,6 @@ export function registerTerminalIpc({
     }
   }
 
-  /**
-   * Resolve the renderer-supplied `wsl` payload into a terminal target, or null
-   * when this is not a WSL request that can be honored.
-   *
-   * Only the five contract CLI names are accepted: `cli` is handed to
-   * `bash -lc` as a single argv element, so an arbitrary string would be
-   * arbitrary shell. `distro` is passed to `wsl.exe -d` and must be non-empty.
-   * A payload that fails either check degrades to the existing local/SSH path
-   * rather than spawning a malformed wsl.exe (step09 契约 §四 C).
-   */
-  function wslTerminalTargetFrom(raw) {
-    if (!raw || typeof raw !== 'object') {
-      return null
-    }
-
-    const candidate = raw as { cli?: unknown; distro?: unknown }
-    const distro = String(candidate.distro ?? '').trim()
-    const cli = String(candidate.cli ?? '').trim()
-
-    if (!distro || !WSL_CLI_NAMES.includes(cli as WslCliName)) {
-      return null
-    }
-
-    return { cli: cli as WslCliName, distro }
-  }
-
   ipcMain.handle('fulilian:terminal:start', async (event, payload = {}) => {
     ensureNodePtySpawnHelper()
 
@@ -360,14 +332,7 @@ export function registerTerminalIpc({
     const cols = Math.max(2, Number.parseInt(String(payload?.cols || 80), 10) || 80)
     const rows = Math.max(2, Number.parseInt(String(payload?.rows || 24), 10) || 24)
 
-    // A non-empty `wsl` short-circuits *before* SSH resolution: WSL is a local
-    // target and the contract forbids stacking it on a tunnel (step09 §四 C #1),
-    // so the SSH lookup is skipped entirely rather than merely ignored.
-    const wslTarget = wslTerminalTargetFrom(payload?.wsl)
-
-    const sshTarget = wslTarget
-      ? null
-      : await resolveTerminalConnectionForSender(event.sender.id, activeSshTerminalTarget, ensureBackend)
+    const sshTarget = await resolveTerminalConnectionForSender(event.sender.id, activeSshTerminalTarget, ensureBackend)
 
     const remote = Boolean(sshTarget)
     const remoteState = remote ? getSshConnectionState(sshTarget.scope) : null
@@ -377,34 +342,15 @@ export function registerTerminalIpc({
         ? buildWindowsInteractiveCommand(String(payload?.cwd || '').trim())
         : undefined
 
-    // `payload.cwd` is a Windows path; `wsl.exe --cd` wants its POSIX form. A
-    // cwd that does not translate into an absolute POSIX path is omitted (wsl
-    // then starts in the distro's home) instead of being passed through.
-    const wslPosixCwd = wslTarget ? windowsToWslPosix(String(payload?.cwd || '').trim()) : ''
-
-    const ptyProcess = wslTarget
+    const ptyProcess = remote
       ? nodePty.spawn(
-          'wsl.exe',
-          [
-            '-d',
-            wslTarget.distro,
-            ...(wslPosixCwd.startsWith('/') ? ['--cd', wslPosixCwd] : []),
-            '-e',
-            'bash',
-            '-lc',
-            wslTarget.cli
-          ],
+          process.platform === 'win32'
+            ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'OpenSSH', 'ssh.exe')
+            : 'ssh',
+          buildInteractiveSshArgs(sshTarget.ssh, String(payload?.cwd || '').trim(), undefined, remoteCommand),
           { cols, cwd: app.getPath('home'), env: terminalShellEnv(), name: 'xterm-256color', rows }
         )
-      : remote
-        ? nodePty.spawn(
-            process.platform === 'win32'
-              ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'OpenSSH', 'ssh.exe')
-              : 'ssh',
-            buildInteractiveSshArgs(sshTarget.ssh, String(payload?.cwd || '').trim(), undefined, remoteCommand),
-            { cols, cwd: app.getPath('home'), env: terminalShellEnv(), name: 'xterm-256color', rows }
-          )
-        : nodePty.spawn(command, args, { cols, cwd, env: terminalShellEnv(), name: 'xterm-256color', rows })
+      : nodePty.spawn(command, args, { cols, cwd, env: terminalShellEnv(), name: 'xterm-256color', rows })
 
     const send = (suffix, payload) => {
       if (event.sender.isDestroyed()) {
@@ -428,10 +374,7 @@ export function registerTerminalIpc({
       outputBuffer,
       pty: ptyProcess,
       webContentsId: event.sender.id,
-      ...(remote ? { sshScope: sshTarget.scope, remoteCwd: String(payload?.cwd || '') } : {}),
-      // Same-shape scope marker as sshScope, so a future scoped teardown can
-      // close every pane riding one distro.
-      ...(wslTarget ? { wslTarget: { cli: wslTarget.cli, distro: wslTarget.distro } } : {})
+      ...(remote ? { sshScope: sshTarget.scope, remoteCwd: String(payload?.cwd || '') } : {})
     })
 
     ptyProcess.onData(data => outputBuffer.push(data))
@@ -449,10 +392,7 @@ export function registerTerminalIpc({
       disposeTerminalSession(id)
     })
 
-    // A WSL session reports `shell = <cli 名>` and `cwd = null`, matching the
-    // SSH target: the POSIX cwd cannot be handed back as a local path
-    // (step09 契约 §四 C #3).
-    return { cwd: remote || wslTarget ? null : cwd, id, shell: wslTarget ? wslTarget.cli : remote ? 'ssh' : name }
+    return { cwd: remote ? null : cwd, id, shell: remote ? 'ssh' : name }
   })
 
   ipcMain.handle('fulilian:terminal:write', (_event, id, data) => {
@@ -488,11 +428,9 @@ export function registerTerminalIpc({
       return null
     }
 
-    // Like an SSH session, a WSL pane's cwd lives on the other side of
-    // wsl.exe: there is no Windows-side process cwd to report.
-    return sessionInfo.sshScope !== undefined || sessionInfo.wslTarget !== undefined
-      ? null
-      : readProcessCwd(sessionInfo.pty.pid)
+    // An SSH pane's cwd lives on the other side of the tunnel: there is no
+    // local process cwd to report.
+    return sessionInfo.sshScope !== undefined ? null : readProcessCwd(sessionInfo.pty.pid)
   })
 
   ipcMain.handle('fulilian:terminal:dispose', (_event, id) => disposeTerminalSession(String(id || '')))

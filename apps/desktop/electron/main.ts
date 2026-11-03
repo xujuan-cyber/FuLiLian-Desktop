@@ -357,7 +357,6 @@ import { preflightStateDb } from './state-db-preflight'
 import { createStreamThrottle } from './stream-throttle'
 import { registerTerminalIpc } from './terminal-ipc'
 import { registerTerminalShellIpc } from './terminal-shell-ipc'
-import { registerWslCliIpc } from './wsl-cli-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
 import { createDesktopTray, type DesktopTray } from './tray'
 import {
@@ -16766,7 +16765,7 @@ registerFsIpc({
 // Git-driven features (worktrees, review pane, repo scan) — see git-ipc.ts.
 registerGitIpc({ resolveGitBinary, resolveGhBinary })
 
-// Terminal PTY host + WSL CLI probe/opt-in + shell preference — see terminal-ipc.ts / wsl-cli-ipc.ts / terminal-shell-ipc.ts.
+// Terminal PTY host + shell preference — see terminal-ipc.ts / terminal-shell-ipc.ts.
 const terminalIpc = registerTerminalIpc({
   isWindows: IS_WINDOWS,
   findOnPath,
@@ -16776,7 +16775,6 @@ const terminalIpc = registerTerminalIpc({
   getSshConnectionState: scope => sshConnections.get(scope)
 })
 
-registerWslCliIpc({ rememberLog })
 registerTerminalShellIpc({ rememberLog })
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession

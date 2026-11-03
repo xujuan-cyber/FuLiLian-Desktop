@@ -753,24 +753,17 @@ export const en: Translations = {
       terminalFontReset: 'Use default',
       terminalShell: {
         sectionTitle: 'Terminal Command Environment',
-        sectionDesc:
-          'Choose the shell new terminal tabs open with, and the default WSL distro for the terminal switcher.',
+        sectionDesc: 'Choose the shell new terminal tabs open with.',
         localShellTitle: 'Local shell',
         shellAuto: 'Auto-detect',
         shellPwsh: 'PowerShell 7',
         shellPowershell: 'Windows PowerShell 5.1',
         shellCmd: 'cmd',
-        wslDistroTitle: 'Default WSL distro',
-        wslDistroHint: 'Preselected in the terminal switcher; the FULILIAN_DESKTOP_SHELL override always wins.',
         saveFailed: 'Could not save the terminal shell preference',
         effectiveShellTitle: 'Effective shell',
         shellFallbackPwsh: 'PowerShell 7 was not found; falling back to Windows PowerShell 5.1',
         envSideTitle: 'Startup side',
-        envSideWindows: 'Windows (local)',
-        envSideWsl: 'WSL',
-        wslDetectAction: 'Detect WSL distros',
-        wslDetectHint: 'WSL is never touched at startup — one wsl.exe probe runs only when you click.',
-        wslDetectEmpty: 'No usable WSL distro found (or WSL is not installed).'
+        envSideWindows: 'Windows (local)'
       },
       translucencyTitle: 'Window Translucency',
       translucencyDesc: 'See your desktop through the whole window, text and all. Tuned separately for light and dark.',
@@ -1467,20 +1460,6 @@ export const en: Translations = {
         selectedMessage: backend => `Terminal commands now run via ${backend}. Applies to new sessions.`,
         failedSelect: backend => `Failed to select ${backend}`,
         needsSetupHint: 'You can select this backend now — commands will fail until setup is complete.'
-      },
-      wslCli: {
-        sectionTitle: 'WSL CLIs',
-        hint: 'Detected WSL command-line tools can be opened in the terminal pane. Detection runs inside WSL.',
-        loading: 'Detecting WSL CLIs…',
-        reprobe: 'Re-detect',
-        available: 'Available',
-        unavailable: 'Unavailable',
-        unknown: 'Unknown',
-        probeFailedTitle: 'Detection unavailable',
-        probeFailedBody: reason => `Detection failed (${reason}); availability is unknown. Your selections are kept.`,
-        failedProbe: 'WSL CLI detection failed',
-        failedOptin: cli => `Could not update ${cli}`,
-        bridgeUnavailable: 'WSL CLI detection is only available in the desktop app.'
       }
     }
   },
@@ -3361,16 +3340,8 @@ export const en: Translations = {
     terminalHide: 'Hide terminal',
     terminalsAria: 'Terminals',
     terminalNew: 'New terminal',
-    wslCliSwitcher: 'Terminal CLI',
-    wslCliMenuLabel: 'Run terminal via',
-    wslCliLocal: 'Local shell',
-    wslCliDistroLabel: 'Distribution',
     terminalCloseOthers: 'Close others',
     terminalCloseAll: 'Close all',
-    terminalRestoreTitle: 'WSL session paused',
-    terminalRestoreDesc:
-      'To avoid starting wsl.exe at launch, this tab did not re-open its WSL session automatically.',
-    terminalRestoreAction: 'Restore session',
     addToChat: 'Add to chat'
   },
 

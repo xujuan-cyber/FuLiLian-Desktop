@@ -97,9 +97,9 @@ export function SettingsSkeleton() {
 // every rail bar shares one height and radius.
 const NAV_ROWS = ['w-4/5', 'w-3/5', 'w-4/5', 'w-2/3', 'w-4/5', 'w-3/5', 'w-4/5', 'w-2/3']
 
-// A skeleton bar on the shared accent surface (Skeleton defaults to
-// `animate-pulse rounded-md bg-accent`; a step-17 P3a skeleton never invents
-// its own pulse animation).
+// A skeleton bar on a neutral surface (Skeleton defaults to
+// `animate-pulse rounded-md bg-foreground/10`; a step-17 P3a skeleton never
+// invents its own pulse animation).
 function Bar({ className }: { className?: string }) {
   return <Skeleton className={cn('shrink-0', className)} />
 }

@@ -8,8 +8,8 @@ import { zhHant } from './zh-hant'
 
 /**
  * The `settings.appearance.terminalShell` keys frozen by step17 (ten) plus the
- * N1/N2 additions (eight: effective-shell reporting, startup side, on-demand
- * WSL detection). `en.ts` is the single source of truth for the names.
+ * N1/N2 additions (effective-shell reporting, startup side). `en.ts` is the
+ * single source of truth for the names.
  */
 const TERMINAL_SHELL_KEYS = [
   'sectionTitle',
@@ -19,21 +19,15 @@ const TERMINAL_SHELL_KEYS = [
   'shellPwsh',
   'shellPowershell',
   'shellCmd',
-  'wslDistroTitle',
-  'wslDistroHint',
   'saveFailed',
   'effectiveShellTitle',
   'shellFallbackPwsh',
   'envSideTitle',
-  'envSideWindows',
-  'envSideWsl',
-  'wslDetectAction',
-  'wslDetectHint',
-  'wslDetectEmpty'
+  'envSideWindows'
 ] as const
 
 /** Product-name keys that are intentionally identical across locales. */
-const PRODUCT_NAME_KEYS = ['shellPwsh', 'shellPowershell', 'shellCmd', 'envSideWsl'] as const
+const PRODUCT_NAME_KEYS = ['shellPwsh', 'shellPowershell', 'shellCmd'] as const
 
 const LOCALES = [
   { copy: zh, name: 'zh' },

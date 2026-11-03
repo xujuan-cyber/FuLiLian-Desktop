@@ -7,7 +7,10 @@ import { ProfileRail } from './profile-switcher'
 // The rail's discoverability pills are navigation, not identity — assert the
 // multi-gateway entry point deep-links to Settings → Connections instead of
 // relying on someone finding the pane three levels into Settings (the exact
-// gap reported against the multi-connection registry launch).
+// gap reported against the multi-connection registry launch). The strip only
+// renders when there is something to switch: a second profile, or at-rest
+// fleet agents. The single-profile-with-nothing-to-switch case hides the rail
+// entirely; the dock ⋯ menu owns the manage doors then.
 
 const navigate = vi.fn()
 
@@ -100,6 +103,10 @@ afterEach(() => {
 
 describe('ProfileRail multi-gateway entry point', () => {
   it('deep-links to the unified Settings → Gateways page from the rail', () => {
+    profiles.set([
+      { is_default: true, name: 'default' },
+      { is_default: false, name: 'scout' }
+    ])
     render(<ProfileRail />)
 
     const pill = screen.getByRole('button', { name: 'Manage gateways…' })
@@ -108,22 +115,24 @@ describe('ProfileRail multi-gateway entry point', () => {
     expect(navigate).toHaveBeenCalledWith('/settings?tab=gateway')
   })
 
-  it('keeps the entry point visible for single-profile users', () => {
+  it('hides the rail when a single profile has nothing to switch (dock menu owns the doors)', () => {
     render(<ProfileRail />)
 
-    // The whole point is first-run discoverability: the pill must not be
-    // gated behind multiProfile the way the default↔all toggle is.
-    expect(screen.getByRole('button', { name: 'Manage gateways…' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Manage profiles…' })).toBeTruthy()
+    // Bottom-left trim: one profile on the only gateway renders no strip —
+    // the home pill would re-select the default and the manage pills
+    // duplicate the dock ⋯ menu's 「管理配置档 / 连接网关」 doors.
+    expect(screen.queryByRole('group', { name: 'Profiles' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Manage gateways…' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Manage profiles…' })).toBeNull()
   })
 
-  it('keeps the active profile explicit when gateway identity moves to the statusbar', () => {
+  it('stays hidden when extra connections are registered but carry no agents', () => {
     hasMultipleConnections.set(true)
     render(<ProfileRail />)
 
-    expect(screen.getByRole('button', { name: 'default' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Manage gateways…' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Manage profiles…' })).toBeTruthy()
+    // Registry entries alone don't force the strip back: without at-rest
+    // fleet agents (or a second profile) there is still nothing to switch.
+    expect(screen.queryByRole('group', { name: 'Profiles' })).toBeNull()
   })
 
   it('keeps thirteen profiles direct and condenses the fourteenth', () => {

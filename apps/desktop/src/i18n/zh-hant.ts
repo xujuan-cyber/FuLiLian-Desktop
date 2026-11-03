@@ -741,23 +741,17 @@ export const zhHant = defineLocale({
       terminalFontReset: '使用預設字型',
       terminalShell: {
         sectionTitle: '終端命令執行環境',
-        sectionDesc: '選擇新終端分頁使用的本地 shell，以及終端切換器的預設 WSL 發行版。',
+        sectionDesc: '選擇新終端分頁使用的本地 shell。',
         localShellTitle: '本地 shell',
         shellAuto: '自動探測',
         shellPwsh: 'PowerShell 7',
         shellPowershell: 'Windows PowerShell 5.1',
         shellCmd: 'cmd',
-        wslDistroTitle: '預設 WSL 發行版',
-        wslDistroHint: '將在終端切換器中預選；FULILIAN_DESKTOP_SHELL 環境變數始終優先。',
         saveFailed: '終端 shell 偏好儲存失敗',
         effectiveShellTitle: '目前生效的 shell',
         shellFallbackPwsh: '未偵測到 PowerShell 7，已回退至 Windows PowerShell 5.1',
         envSideTitle: '啟動側',
-        envSideWindows: 'Windows 本機',
-        envSideWsl: 'WSL',
-        wslDetectAction: '偵測 WSL 發行版',
-        wslDetectHint: '啟動期間不觸碰 WSL：僅在你點擊後執行一次 wsl.exe 探測。',
-        wslDetectEmpty: '未偵測到可用的 WSL 發行版（或本機未安裝 WSL）。'
+        envSideWindows: 'Windows 本機'
       },
       translucencyTitle: '視窗透明',
       translucencyDesc: '讓整個視窗（包括文字）透出桌面。',
@@ -1571,20 +1565,6 @@ export const zhHant = defineLocale({
         selectedMessage: backend => `終端命令現在透過 ${backend} 執行。將套用於新工作階段。`,
         failedSelect: backend => `選擇 ${backend} 失敗`,
         needsSetupHint: '現在即可選擇此後端——但在完成設定前命令將會失敗。'
-      },
-      wslCli: {
-        sectionTitle: 'WSL 命令列工具',
-        hint: '偵測到的 WSL 命令列工具可在終端面板中開啟。偵測會在 WSL 內執行。',
-        loading: '正在偵測 WSL CLI…',
-        reprobe: '重新偵測',
-        available: '可用',
-        unavailable: '不可用',
-        unknown: '未知',
-        probeFailedTitle: '無法偵測',
-        probeFailedBody: reason => `偵測失敗（${reason}），可用性未知。你的勾選已保留。`,
-        failedProbe: 'WSL CLI 偵測失敗',
-        failedOptin: cli => `更新 ${cli} 失敗`,
-        bridgeUnavailable: '僅桌面端支援 WSL CLI 偵測。'
       }
     }
   },
@@ -3423,15 +3403,8 @@ export const zhHant = defineLocale({
     terminalHide: '隱藏終端機',
     terminalsAria: '終端機',
     terminalNew: '新增終端機',
-    wslCliSwitcher: '終端 CLI',
-    wslCliMenuLabel: '終端執行於',
-    wslCliLocal: '本機 shell',
-    wslCliDistroLabel: '發行版',
     terminalCloseOthers: '關閉其他',
     terminalCloseAll: '全部關閉',
-    terminalRestoreTitle: 'WSL 工作階段待恢復',
-    terminalRestoreDesc: '為避免啟動時呼叫 wsl.exe，此分頁的 WSL 工作階段未自動重建。',
-    terminalRestoreAction: '恢復工作階段',
     addToChat: '新增至聊天'
   },
 

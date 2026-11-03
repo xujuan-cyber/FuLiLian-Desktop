@@ -357,6 +357,16 @@ export function ProfileRail({ refreshEnabled = true }: { refreshEnabled?: boolea
     setCreateOpen(true)
   }, [createRequest])
 
+  // Bottom-left declutter: when there is nothing to switch — a single profile
+  // on the only gateway and no at-rest fleet groups — the strip is pure noise:
+  // a home pill that re-selects the default, plus create/Manage shortcuts that
+  // duplicate the dock ⋯ menu's 「管理配置档」 (/profiles) door. Hide the rail
+  // entirely in that state; it reappears the moment a second profile exists or
+  // a second registered gateway reports agents (fleet mode).
+  if (!fleet && !multiProfile) {
+    return null
+  }
+
   // The sortable strip of the active gateway's named profiles (unchanged
   // from the single-gateway rail; fleet mode only decides where it sits).
   const activeStrip = (

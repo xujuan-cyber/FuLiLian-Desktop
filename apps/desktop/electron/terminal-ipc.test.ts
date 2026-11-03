@@ -90,8 +90,8 @@ test('keeps terminal routing isolated by renderer sender id', async () => {
 // The buffer is a pure module with an injectable clock, so these exercise the
 // four send-path rules (window, byte threshold, flush-before-exit, teardown)
 // without electron or node-pty. The wiring itself (that `data` is buffered and
-// `exit` is not, and that the flush precedes the close) is covered in
-// terminal-ipc.wsl-cli.test.ts.
+// `exit` is not, and that the flush precedes the close) is covered by the
+// registerTerminalIpc integration tests.
 
 test('P8/1 a burst of small chunks is coalesced into one message per window', () => {
   const sent: string[] = []

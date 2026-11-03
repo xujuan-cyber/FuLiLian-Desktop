@@ -10,7 +10,9 @@ import { ProfileRail } from './profile-switcher'
 // on the one strip — the active gateway's squares exactly as before, the rest
 // as at-rest groups behind a hairline + kind glyph. Clicking an at-rest square
 // performs the same re-home the statusbar switcher does, on that exact
-// (gateway, profile). Single-gateway rendering must stay byte-identical.
+// (gateway, profile). A single gateway with a single profile renders NOTHING
+// (bottom-left trim: nothing to switch); with a second profile the
+// single-gateway path renders exactly as it always did.
 
 const navigate = vi.fn()
 const selectConnection = vi.fn()
@@ -213,13 +215,12 @@ afterEach(() => {
 })
 
 describe('ProfileRail fleet mode', () => {
-  it('stays on the single-gateway path with one registered gateway', async () => {
+  it('renders nothing on the single-gateway path when a single profile has nothing to switch', async () => {
     const container = await renderFleet()
 
     expect(getAgentRoster).not.toHaveBeenCalled()
-    expect(screen.queryByRole('group', { name: /^Profiles on/ })).toBeNull()
-    expect(container.querySelector('[data-slot="profile-rail-divider"]')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Manage gateways…' })).toBeTruthy()
+    expect(container.querySelector('[data-slot="profile-rail"]')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Manage gateways…' })).toBeNull()
   })
 
   it('lays every other gateway on the strip as an at-rest group, in switcher order', async () => {

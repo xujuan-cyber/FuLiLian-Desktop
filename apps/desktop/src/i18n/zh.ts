@@ -735,23 +735,17 @@ export const zh: Translations = {
       terminalFontReset: '使用默认字体',
       terminalShell: {
         sectionTitle: '终端命令执行环境',
-        sectionDesc: '选择新终端标签页使用的本地 shell，以及终端切换器的默认 WSL 发行版。',
+        sectionDesc: '选择新终端标签页使用的本地 shell。',
         localShellTitle: '本地 shell',
         shellAuto: '自动探测',
         shellPwsh: 'PowerShell 7',
         shellPowershell: 'Windows PowerShell 5.1',
         shellCmd: 'cmd',
-        wslDistroTitle: '默认 WSL 发行版',
-        wslDistroHint: '将在终端切换器中预选；FULILIAN_DESKTOP_SHELL 环境变量始终优先。',
         saveFailed: '终端 shell 偏好保存失败',
         effectiveShellTitle: '当前生效的 shell',
         shellFallbackPwsh: '未检测到 PowerShell 7，已回退到 Windows PowerShell 5.1',
         envSideTitle: '启动侧',
-        envSideWindows: 'Windows 本地',
-        envSideWsl: 'WSL',
-        wslDetectAction: '检测 WSL 发行版',
-        wslDetectHint: '启动期不触碰 WSL：仅在你点击后执行一次 wsl.exe 探测。',
-        wslDetectEmpty: '未检测到可用的 WSL 发行版（或本机未安装 WSL）。'
+        envSideWindows: 'Windows 本地'
       },
       translucencyTitle: '窗口透明',
       translucencyDesc: '让整个窗口（包括文字）透出桌面。',
@@ -1569,20 +1563,6 @@ export const zh: Translations = {
         selectedMessage: backend => `终端命令现在通过 ${backend} 运行。将应用于新会话。`,
         failedSelect: backend => `选择 ${backend} 失败`,
         needsSetupHint: '现在即可选择此后端——但在完成设置前命令将会失败。'
-      },
-      wslCli: {
-        sectionTitle: 'WSL 命令行工具',
-        hint: '探测到的 WSL 命令行工具可在终端面板中打开。探测在 WSL 内执行。',
-        loading: '正在探测 WSL CLI…',
-        reprobe: '重新探测',
-        available: '可用',
-        unavailable: '不可用',
-        unknown: '未知',
-        probeFailedTitle: '无法探测',
-        probeFailedBody: reason => `探测失败（${reason}），可用性未知。你的勾选已保留。`,
-        failedProbe: 'WSL CLI 探测失败',
-        failedOptin: cli => `更新 ${cli} 失败`,
-        bridgeUnavailable: '仅桌面端支持 WSL CLI 探测。'
       }
     }
   },
@@ -3428,15 +3408,8 @@ export const zh: Translations = {
     terminalHide: '隐藏终端',
     terminalsAria: '终端',
     terminalNew: '新建终端',
-    wslCliSwitcher: '终端 CLI',
-    wslCliMenuLabel: '终端运行于',
-    wslCliLocal: '本地 shell',
-    wslCliDistroLabel: '发行版',
     terminalCloseOthers: '关闭其他',
     terminalCloseAll: '关闭全部',
-    terminalRestoreTitle: 'WSL 会话待恢复',
-    terminalRestoreDesc: '为避免启动时调用 wsl.exe，该标签页的 WSL 会话未自动重建。',
-    terminalRestoreAction: '恢复会话',
     addToChat: '添加到对话'
   },
 

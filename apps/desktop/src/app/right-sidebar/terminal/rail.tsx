@@ -1,5 +1,4 @@
 import { useStore } from '@nanostores/react'
-import { useEffect } from 'react'
 
 import { Codicon } from '@/components/ui/codicon'
 import {
@@ -9,44 +8,23 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import { Tip, TipHintLabel } from '@/components/ui/tooltip'
-import type { WslCliName } from '@/global'
 import { useI18n } from '@/i18n'
 import { formatCombo } from '@/lib/keybinds/combo'
 import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
 import { cn } from '@/lib/utils'
 import { $bindings } from '@/store/keybinds'
-import { loadTerminalShellPref, setTerminalShellPref } from '@/store/terminal-shell'
-import {
-  $wslCliDistro,
-  $wslCliEnabledClis,
-  $wslCliProbe,
-  selectWslCli,
-  selectWslCliDistro,
-  type WslCliTarget
-} from '@/store/wsl-cli'
 
 import { setTerminalTakeover } from '../store'
 
 import {
-  $activeTerminal,
   $activeTerminalId,
   $terminals,
   closeAllTerminals,
   closeOtherTerminals,
   closeTerminal,
   createTerminal,
-  resumeTerminal,
   selectTerminal,
-  setTerminalWslCli,
   type TerminalEntry
 } from './terminals'
 
@@ -60,64 +38,9 @@ export function TerminalRail() {
   const { t } = useI18n()
   const terminals = useStore($terminals)
   const activeId = useStore($activeTerminalId)
-  const activeTerminal = useStore($activeTerminal)
-  const enabledClis = useStore($wslCliEnabledClis)
-  const probe = useStore($wslCliProbe)
-  const distroPref = useStore($wslCliDistro)
   const bindings = useStore($bindings)
   const toggleHint = bindings['view.showTerminal']?.[0]
   const newHint = bindings['view.newTerminal']?.[0]
-  const currentCli = activeTerminal?.wsl?.cli ?? 'local'
-  const distros = probe?.distros ?? []
-  const currentDistro = activeTerminal?.wsl?.distro ?? distroPref ?? probe?.distro ?? ''
-
-  // The persisted default distro (step17) feeds the picker as its initial
-  // value; without one the probe's default distro applies as before.
-  useEffect(() => {
-    void loadTerminalShellPref()
-  }, [])
-
-  // The switcher re-targets the ACTIVE tab only. The workspace keys each
-  // instance on its CLI, so the tab's PTY is re-created inside WSL by remount
-  // (and re-created again when the same CLI is picked in another distro, since
-  // the `wsl` prop itself is in the mount effect's deps).
-  function switchCli(value: string) {
-    if (!activeTerminal) {
-      return
-    }
-
-    const distro = currentDistro
-
-    const target: null | WslCliTarget = value === 'local' ? null : distro ? { cli: value as WslCliName, distro } : null
-
-    if (value !== 'local' && !target) {
-      return
-    }
-
-    setTerminalWslCli(activeTerminal.id, target)
-    selectWslCli(target)
-  }
-
-  // The distro picker only re-targets an existing CLI tab. On the local shell it
-  // merely records the preference, so picking a distro never forces a tab into
-  // WSL; the next CLI pick then lands in that distro.
-  function switchDistro(distro: string) {
-    selectWslCliDistro(distro)
-    // Persist the pick so it survives a restart (step17); fire-and-forget, the
-    // in-memory atom above is already the source of truth for this session.
-    void setTerminalShellPref({ wslDistro: distro })
-
-    const cli = activeTerminal?.wsl?.cli
-
-    if (!activeTerminal || !cli) {
-      return
-    }
-
-    const target: WslCliTarget = { cli, distro }
-
-    setTerminalWslCli(activeTerminal.id, target)
-    selectWslCli(target)
-  }
 
   return (
     <div
@@ -161,42 +84,6 @@ export function TerminalRail() {
       </ul>
 
       <div className="flex shrink-0 flex-col items-center gap-0.5 pb-1.5">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              aria-label={`${t.rightSidebar.wslCliSwitcher}: ${currentCli}`}
-              className={cn(RAIL_ACTION, 'size-7')}
-              type="button"
-            >
-              <Codicon name="vm-active" size="0.8125rem" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-40" side="left">
-            <DropdownMenuLabel>{t.rightSidebar.wslCliMenuLabel}</DropdownMenuLabel>
-            <DropdownMenuRadioGroup onValueChange={switchCli} value={currentCli}>
-              <DropdownMenuRadioItem value="local">{t.rightSidebar.wslCliLocal}</DropdownMenuRadioItem>
-              {enabledClis.map(cli => (
-                <DropdownMenuRadioItem key={cli} value={cli}>
-                  {cli}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-            {/* A second level only earns its place when the probe found a real
-                choice; a single-distro machine sees the menu exactly as before. */}
-            {distros.length > 1 ? (
-              <>
-                <DropdownMenuLabel>{t.rightSidebar.wslCliDistroLabel}</DropdownMenuLabel>
-                <DropdownMenuRadioGroup onValueChange={switchDistro} value={currentDistro}>
-                  {distros.map(distro => (
-                    <DropdownMenuRadioItem key={distro} value={distro}>
-                      {distro}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
         <Tip label={t.rightSidebar.terminalHide} side="left">
           <button
             aria-label={t.rightSidebar.terminalHide}
@@ -222,10 +109,7 @@ interface TerminalRailItemProps {
 
 function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: TerminalRailItemProps) {
   const { t } = useI18n()
-  // R-3 (N1): a restored WSL tab whose PTY is intentionally not running yet.
-  // Clicking the rail entry is the documented "restore" gesture.
-  const pending = Boolean(term.wsl && term.resumePending)
-  const label = `${index + 1}. ${term.title}${pending ? ` · ${t.rightSidebar.terminalRestoreTitle}` : ''}`
+  const label = `${index + 1}. ${term.title}`
 
   return (
     <ContextMenu>
@@ -248,17 +132,12 @@ function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: T
                   : 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
               )}
               {...middleClickHandlers(() => closeTerminal(term.id))}
-              // ⌘-click closes (the pane-tab gesture); a plain click selects —
-              // and, for a paused WSL tab, resumes it (spawns the PTY).
+              // ⌘-click closes (the pane-tab gesture); a plain click selects.
               onClick={event => {
                 if (isMetaClose(event)) {
                   closeTerminal(term.id)
 
                   return
-                }
-
-                if (pending) {
-                  resumeTerminal(term.id)
                 }
 
                 selectTerminal(term.id)
@@ -268,7 +147,7 @@ function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: T
             >
               <Codicon
                 className={cn(term.kind === 'agent' && !active && 'text-primary')}
-                name={pending ? 'debug-pause' : term.kind === 'agent' ? 'agent' : 'terminal'}
+                name={term.kind === 'agent' ? 'agent' : 'terminal'}
                 size="0.875rem"
               />
             </button>

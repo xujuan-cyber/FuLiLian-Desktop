@@ -1,10 +1,9 @@
 // fulilian:terminal-shell:* IPC surface (step17 — shell preference).
 //
-// Registration style mirrors registerWslCliIpc: a register* factory with
-// injected deps, owning its ipcMain.handle wiring and returning an api object
-// main.ts can hold. All handlers delegate to terminal-shell-pref.ts; the two
-// channel names are NEW (they do not touch the frozen step09 `wsl-cli` or
-// `terminal` surfaces).
+// Registration style: a register* factory with injected deps, owning its
+// ipcMain.handle wiring and returning an api object main.ts can hold. All
+// handlers delegate to terminal-shell-pref.ts; the two channel names are NEW
+// (they do not touch the frozen step09 `terminal` surface).
 import { app, ipcMain } from 'electron'
 
 import {
@@ -43,9 +42,7 @@ export function registerTerminalShellIpc({ rememberLog }: TerminalShellIpcDeps):
   // writes, and an unwritable directory degrades to the in-memory default.
   const seeded = readTerminalShellPref()
 
-  rememberLog(
-    `[terminal-shell] pref seeded local=${seeded.local} envSide=${seeded.envSide} wslDistro=${String(seeded.wslDistro)}`
-  )
+  rememberLog(`[terminal-shell] pref seeded local=${seeded.local} envSide=${seeded.envSide}`)
 
   // R-4: the settings page shows which shell will ACTUALLY run and where it
   // lives. `resolvedShell` is a purely ADDITIVE field on the existing payload —
@@ -67,12 +64,12 @@ export function registerTerminalShellIpc({ rememberLog }: TerminalShellIpcDeps):
     // Defensive read: the renderer may send undefined / a non-object.
     const patch = (payload && typeof payload === 'object' ? payload : {}) as {
       local?: unknown
-      wslDistro?: unknown
+      envSide?: unknown
     }
 
     const state = writeTerminalShellPref(patch)
 
-    rememberLog(`[terminal-shell] set local=${state.local} wslDistro=${String(state.wslDistro)}`)
+    rememberLog(`[terminal-shell] set local=${state.local} envSide=${state.envSide}`)
 
     return withResolution(state)
   })
