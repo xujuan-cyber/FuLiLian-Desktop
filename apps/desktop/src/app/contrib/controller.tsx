@@ -491,10 +491,33 @@ const QUAD_TREE = split(
   [3, 1]
 )
 
+// Terminal docked LEFT: it owns the root row's FIRST column, so the tab rail
+// hugs the content side and the ⌃` collapse folds it flush against the window
+// edge. Sessions stays beside it (same 1-weight tier as the default's left
+// column); the right group keeps Default's review|files row, minus the
+// terminal — the terminal lives in exactly one zone, and it moved.
+const TERMINAL_LEFT_TREE = split(
+  'row',
+  [
+    group(['terminal'], { id: 'grp-terminal-left' }),
+    group(['sessions'], { id: 'grp-sessions' }),
+    group(['workspace'], { id: 'grp-main' }),
+    split(
+      'row',
+      [group(['review'], { id: 'grp-review' }), group(['files'], { id: 'grp-files' })],
+      [1, 1.2],
+      'spl-rail'
+    )
+  ],
+  [1, 1, 3.4, 1.25],
+  'spl-root-left'
+)
+
 registry.registerMany([
   { id: 'default', area: 'layouts', title: 'Default', order: 0, data: DEFAULT_TREE },
   { id: 'focus', area: 'layouts', title: 'Focus', order: 10, data: FOCUS_TREE },
   { id: 'terminal-deck', area: 'layouts', title: 'Terminal deck', order: 20, data: TERMINAL_TREE },
+  { id: 'terminal-left', area: 'layouts', title: 'Terminal left', order: 25, data: TERMINAL_LEFT_TREE },
   { id: 'quad', area: 'layouts', title: 'Quad', order: 30, data: QUAD_TREE }
 ])
 

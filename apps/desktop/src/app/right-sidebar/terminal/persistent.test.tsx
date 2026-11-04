@@ -98,6 +98,26 @@ function HiddenPaneHarness({ hidden }: { hidden: boolean }) {
   )
 }
 
+/** The terminal-left preset shape: the terminal zone is the root row's FIRST
+ *  column, nested one split deeper than the flat dock it used to own. Hidden
+ *  state arrives the same way (the tree group spreads hiddenPaneProps), but
+ *  the slot now has session/main siblings after it instead of sitting at the
+ *  window's bottom edge. */
+function LeftColumnHarness({ hidden }: { hidden: boolean }) {
+  return (
+    <>
+      <div className="flex">
+        <div {...hiddenPaneProps(hidden)}>
+          <TerminalSlot className="slot" />
+        </div>
+        <div className="slot" />
+        <div className="slot" />
+      </div>
+      <PersistentTerminal onAddSelectionToChat={() => undefined} />
+    </>
+  )
+}
+
 describe('PersistentTerminal rect tracking', () => {
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -363,6 +383,48 @@ describe('PersistentTerminal rect tracking', () => {
     expect(overlay.style.visibility).toBe('visible')
     expect(overlay.style.opacity).toBe('1')
     expect(overlay.style.pointerEvents).toBe('auto')
+    expect(mount.container!.querySelector('[data-testid="terminal-workspace"]')).toBe(workspace)
+  })
+
+  it('hides the overlay when the terminal column of a left-root row is hidden', () => {
+    // Terminal docked LEFT (terminal-left preset): the zone is a mid-row
+    // column now, not the bottom track. Collapsing it must still stand the
+    // overlay down — the hidden-pane walk has to find the marker through the
+    // deeper nesting, or the terminal keeps painting over the sessions/main
+    // columns it sits beside.
+    const raf = installRaf()
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect(10, 20, 240, 100))
+    $terminalTakeover.set(true)
+
+    mount.render(<LeftColumnHarness hidden={false} />)
+
+    const overlay = mount.container!.lastElementChild as HTMLElement
+    const workspace = mount.container!.querySelector('[data-testid="terminal-workspace"]')
+
+    expect(overlay.style.visibility).toBe('visible')
+    expect(overlay.style.left).toBe('20px')
+    expect(workspace).not.toBeNull()
+
+    // Let the initial changed-rect follow-up settle.
+    act(() => {
+      raf.runNext()
+    })
+    expect(raf.pending()).toBe(0)
+
+    act(() => {
+      mount.root!.render(<LeftColumnHarness hidden />)
+      mutationObserverCallback?.([], {} as MutationObserver)
+    })
+    expect(raf.pending()).toBe(1)
+
+    act(() => {
+      raf.runNext()
+    })
+
+    expect(overlay.style.visibility).toBe('hidden')
+    expect(overlay.style.opacity).toBe('0')
+    expect(overlay.style.pointerEvents).toBe('none')
+    // The PTY survives — only the overlay stands down.
     expect(mount.container!.querySelector('[data-testid="terminal-workspace"]')).toBe(workspace)
   })
 
