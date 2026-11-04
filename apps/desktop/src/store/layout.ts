@@ -1,7 +1,6 @@
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores'
 
-import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
-import { isNarrowViewport, isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
+import { isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
 import { connectionScopedAtom } from '@/lib/connection-scoped'
 import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
 import { arraysEqual, insertUniqueId, readKey } from '@/lib/storage'
@@ -502,45 +501,19 @@ export function setSidebarWidth(width: number) {
   setPaneWidthOverride(CHAT_SIDEBAR_PANE_ID, bounded)
 }
 
-// Below the collapse breakpoint a collapsible rail leaves the grid and lives as
-// a hover/pin overlay, so open/toggle must route through the reveal event — the
-// docked `open` flag renders a 0px track invisibly. Centralised here so every
-// caller (titlebar, keybinds, session-search, reveal-file) inherits it instead
-// of re-deriving the narrow branch. Returns true when it handled the intent.
-function revealNarrowPane(id: string, mode: 'close' | 'open' | 'toggle'): boolean {
-  // Reads the dynamic narrow-viewport signal (sidebar-width-aware threshold),
-  // same source the renderer subscribes to. Covers the no-window guard: the
-  // atom resolves false outside the DOM, so this returns false there.
-  if (!isNarrowViewport()) {
-    return false
-  }
-
-  window.dispatchEvent(new CustomEvent(PANE_TOGGLE_REVEAL_EVENT, { detail: { id, mode } }))
-
-  return true
-}
-
 export function setSidebarOpen(open: boolean) {
   setPaneOpen(CHAT_SIDEBAR_PANE_ID, open)
-  revealNarrowPane(CHAT_SIDEBAR_PANE_ID, open ? 'open' : 'close')
 }
 
 export function toggleSidebarOpen() {
-  if (!revealNarrowPane(CHAT_SIDEBAR_PANE_ID, 'toggle')) {
-    togglePane(CHAT_SIDEBAR_PANE_ID)
-  }
+  togglePane(CHAT_SIDEBAR_PANE_ID)
 }
 
 export function toggleFileBrowserOpen() {
-  if (revealNarrowPane(FILE_BROWSER_PANE_ID, 'toggle')) {
-    return
-  }
-
   // Ask the TREE, not the pane's boolean. `$fileBrowserOpen` stays true while
   // the tree pane sits behind a sibling tab in the shared right column (the
   // preview rail, the diff) or inside a minimized zone, so ⌘J spent its press
-  // re-asserting a value it already held and read as a dead key. Only fold the
-  // side when the tree is genuinely the thing on screen; otherwise bring it
+  // re-asserting a value it already held and read as a dead key. Bring it
   // forward through the reveal path, which fronts and un-minimizes.
   if (!isPaneVisible(FILES_PANE_ID) && $fileBrowserOpen.get()) {
     revealTreePane(FILES_PANE_ID)
@@ -553,7 +526,6 @@ export function toggleFileBrowserOpen() {
 
 export function setFileBrowserOpen(open: boolean) {
   setPaneOpen(FILE_BROWSER_PANE_ID, open)
-  revealNarrowPane(FILE_BROWSER_PANE_ID, open ? 'open' : 'close')
 }
 
 // "Reveal this file in the file-browser tree" — an absolute path the tree

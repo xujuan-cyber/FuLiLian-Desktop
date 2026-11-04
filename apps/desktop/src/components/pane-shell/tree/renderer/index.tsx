@@ -14,10 +14,10 @@
  * into that zone (joining its tab stack). Structure changes (splitting/merging/
  * resizing zones) belong to the zone editor, not the drag.
  *
- * This file owns only the composition: the recursive tree, the narrow-viewport
- * overlays, the edit palette, and the zone editor. The pieces live in sibling
- * modules — track-model (sizing), drag-session (drag), tree-split / tree-group
- * (nodes), layout-picker + edit-bar (edit mode), narrow-overlays.
+ * This file owns only the composition: the recursive tree, the edit palette,
+ * and the zone editor. The pieces live in sibling modules — track-model
+ * (sizing), drag-session (drag), tree-split / tree-group (nodes), layout-picker
+ * + edit-bar (edit mode).
  */
 
 import { useStore } from '@nanostores/react'
@@ -30,7 +30,6 @@ import { ZoneEditor } from '../zone-editor'
 
 import { TreeEditBar } from './edit-bar'
 import { FloatingPanes } from './floating-panes'
-import { NarrowOverlays } from './narrow-overlays'
 import { TreeNode } from './tree-node'
 
 export function LayoutTreeRoot({ children }: { children?: ReactNode }) {
@@ -73,7 +72,6 @@ export function LayoutTreeRoot({ children }: { children?: ReactNode }) {
         }
       `}</style>
       <TreeNode node={tree} root rootRow={tree.type === 'split' && tree.orientation === 'row'} />
-      <NarrowOverlays />
       {/* Non-tiling panes: fixed cards above the tree, outside every zone. */}
       <FloatingPanes />
       <TreeEditBar />

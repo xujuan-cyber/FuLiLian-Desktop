@@ -45,10 +45,10 @@ export interface PaneSizing {
 
 /** Chrome behavior flags a pane contributes. Read via `paneChrome`. */
 interface PaneChrome extends PaneSizing {
-  /** Leaves the grid on narrow viewports; revealed as an edge overlay. */
+  /** Legacy contribution flag (declared by app panes); no longer consumed —
+   *  pane visibility is user-controlled only. */
   collapsible?: boolean
-  /** Extra ids accepted from PANE_TOGGLE_REVEAL_EVENT (the real app's pane
-   *  ids, e.g. `chat-sidebar` for `sessions`). */
+  /** Legacy contribution flag (declared by app panes); no longer consumed. */
   revealAliases?: string[]
   /** Tiling role in the tree, or `'floating'` — the one NON-tiling placement:
    *  the pane is excluded from the tree entirely and rendered as a fixed card
@@ -151,8 +151,8 @@ export interface TrackContext {
   overrides: Record<string, { widthOverride?: number; heightOverride?: number }>
 }
 
-/** A group's panes that are actually on screen (not hidden / narrow-collapsed
- *  / unregistered). The one place the "shown" filter lives. */
+/** A group's panes that are actually on screen (not hidden / unregistered).
+ *  The one place the "shown" filter lives. */
 export const shownPaneIds = (group: GroupNode, ctx: TrackContext): string[] =>
   group.panes.filter(id => !ctx.paneGone(id))
 
@@ -283,7 +283,7 @@ export function fixedTrackSize(node: LayoutNode, axis: 'row' | 'column', ctx: Tr
   return cssMax(sizes) ?? null
 }
 
-/** True when every pane in the subtree is hidden/narrow-collapsed. */
+/** True when every pane in the subtree is hidden. */
 export function subtreeGone(node: LayoutNode, ctx: TrackContext): boolean {
   const ids = allPaneIds(node)
 

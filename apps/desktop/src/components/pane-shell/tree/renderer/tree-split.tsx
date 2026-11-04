@@ -23,7 +23,6 @@ import { allPaneIds } from '../model'
 import {
   $collapsedTreeSides,
   $hiddenTreePanes,
-  $narrowViewport,
   isCollapsePane,
   persistTree,
   presetSplitWeights,
@@ -91,7 +90,6 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
   const containerRef = useRef<HTMLDivElement>(null)
   const panes = useContributions('panes')
   const hiddenPanes = useStore($hiddenTreePanes)
-  const narrow = useStore($narrowViewport)
   const workspaceMode = useStore($workspaceMode)
   const workspaceOwnerKey = useStore($workspaceOwnerKey)
   // Scoped to THIS subtree's panes: a sash drag writes size overrides on every
@@ -120,25 +118,22 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
 
   // A pane leaves the grid when its contribution isn't registered (yet) — a
   // runtime plugin's pane collapses until the plugin loads, then appears; no
-  // placeholder flash — when a chrome toggle hides it, or when the viewport
-  // is narrow and the pane is collapsible (edge overlay instead).
+  // placeholder flash — or when a chrome toggle hides it.
   const paneFor = (id: string) => panes.find(p => p.id === id)
 
   // Layout-edit mode forces toggle-hidden panes (terminal off, review/preview
   // closed) visible so they're rearrangeable — only truly-absent (unregistered)
-  // or narrow-collapsed panes stay gone. Restores itself on exit (render-only).
+  // panes stay gone. Restores itself on exit (render-only).
   const paneGone = (id: string) =>
     !paneFor(id) ||
     !contributesToWorkspace(paneFor(id), workspaceMode, workspaceOwnerKey) ||
-    (!editMode && hiddenPanes.has(id)) ||
-    (narrow && Boolean(paneChrome(paneFor(id)).collapsible))
+    (!editMode && hiddenPanes.has(id))
 
   const trackCtx: TrackContext = { paneFor, paneGone, overrides }
 
   // Chrome-toggle collapse: a subtree whose every pane is gone renders
   // display:none (content stays MOUNTED — toggling back is instant), and its
-  // siblings absorb the space. Narrow-collapse UNMOUNTS instead, so the edge
-  // overlay owns the single live instance of the pane's content.
+  // siblings absorb the space.
   // EMPTY zones only exist in editor-authored trees (normalize prunes them on
   // every structural op) — they take space in edit mode as drop targets.
   const isEmptyZone = (child: LayoutNode) => child.type === 'group' && child.panes.length === 0
@@ -416,7 +411,7 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
     },
     // trackCtx is derived state rebuilt per render; the drag captures it once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [axis, editMode, horizontal, node.children, node.id, node.weights, hiddenPanes, narrow, overrides, panes]
+    [axis, editMode, horizontal, node.children, node.id, node.weights, hiddenPanes, overrides, panes]
   )
 
   // Double-click a sash: every neighbor returns to its DEFAULT size.
@@ -493,7 +488,7 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
       setTreeSplitWeights(node.id, !preset && !pinned ? weights.map(() => 1) : weights)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [axis, editMode, horizontal, node.children, node.id, node.weights, hiddenPanes, narrow, overrides, panes]
+    [axis, editMode, horizontal, node.children, node.id, node.weights, hiddenPanes, overrides, panes]
   )
 
   // A run of ONLY fixed tracks can't fill the container (grow-0 all around
@@ -520,19 +515,16 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
     return side !== null && collapsedSides.has(side)
   }
 
-  // One pass per child: collapse/minimize state, resolved fixed track, clamps,
-  // and narrow-unmount flag. fixedTrackSize + subtreeGone each re-walk the
-  // subtree, so resolve them ONCE here instead of per read below.
+  // One pass per child: collapse/minimize state, resolved fixed track, and
+  // clamps. fixedTrackSize + subtreeGone each re-walk the subtree, so resolve
+  // them ONCE here instead of per read below.
   const tracks = node.children.map((child, i) => {
     const minimized = isMinimized(child)
     const collapsed = isCollapsed(child) || sideGone(i)
     const track = minimized || collapsed ? null : fixedTrackSize(child, axis, trackCtx)
     const sizing = minimized || collapsed ? null : sizingFor(child, track)
-    // Narrow-collapse UNMOUNTS (the edge overlay owns the live instance) — but
-    // only for panes the breakpoint collapsed, not ones a chrome toggle hid.
-    const narrowCollapsed = narrow && collapsed && allPaneIds(child).some(id => !hiddenPanes.has(id))
 
-    return { child, collapsed, minimized, narrowCollapsed, sizing, track }
+    return { child, collapsed, minimized, sizing, track }
   })
 
   const growable = tracks.map((_, i) => i).filter(i => !tracks[i].collapsed && !tracks[i].minimized)
@@ -584,7 +576,7 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
       data-tree-split={node.id}
       ref={containerRef}
     >
-      {tracks.map(({ child, collapsed, minimized, narrowCollapsed, sizing, track }, i) => {
+      {tracks.map(({ child, collapsed, minimized, sizing, track }, i) => {
         const partner = collapsed ? -1 : seamPartner(i)
         const absorbs = i === absorberIndex
 
@@ -624,14 +616,12 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
                 onPointerDown={e => startSash(partner, i, e)}
               />
             )}
-            {!narrowCollapsed && (
-              <TreeNode
-                node={child}
-                parentAxis={axis}
-                railSide={horizontal ? railSideFor(i) : undefined}
-                rootRow={rootRow || childRootRow(child)}
-              />
-            )}
+            <TreeNode
+              node={child}
+              parentAxis={axis}
+              railSide={horizontal ? railSideFor(i) : undefined}
+              rootRow={rootRow || childRootRow(child)}
+            />
           </div>
         )
       })}

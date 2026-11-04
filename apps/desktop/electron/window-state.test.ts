@@ -17,6 +17,7 @@ import {
   DEFAULT_WIDTH,
   MIN_HEIGHT,
   MIN_WIDTH,
+  minWidthForDisplay,
   onScreen,
   sanitizeWindowState
 } from './window-state'
@@ -117,6 +118,23 @@ test('computeWindowOptions keeps the MIN floor on a sub-minimum display', () => 
 test('computeWindowOptions does not clamp when displays are unknown', () => {
   const saved = sanitizeWindowState({ width: 2560, height: 1440 })
   assert.deepEqual(computeWindowOptions(saved, []), { width: 2560, height: 1440 })
+})
+
+// ─── minWidthForDisplay ────────────────────────────────────────────────────
+
+test('minWidthForDisplay is a rounded quarter of the display work area', () => {
+  assert.equal(minWidthForDisplay({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }), 480)
+  assert.equal(minWidthForDisplay({ workArea: { x: 0, y: 0, width: 1366, height: 728 } }), 342) // 341.5 rounds up
+  assert.equal(minWidthForDisplay({ workArea: { x: 1920, y: 0, width: 2559, height: 1400 } }), 640)
+})
+
+test('minWidthForDisplay falls back to the static MIN_WIDTH on unusable input', () => {
+  assert.equal(minWidthForDisplay(null), MIN_WIDTH)
+  assert.equal(minWidthForDisplay(undefined), MIN_WIDTH)
+  assert.equal(minWidthForDisplay({}), MIN_WIDTH)
+  assert.equal(minWidthForDisplay({ workArea: null }), MIN_WIDTH)
+  assert.equal(minWidthForDisplay({ workArea: { x: 0, y: 0, width: 0, height: 480 } }), MIN_WIDTH)
+  assert.equal(minWidthForDisplay({ workArea: { x: 0, y: 0, width: NaN, height: 480 } }), MIN_WIDTH)
 })
 
 // ─── debounce ──────────────────────────────────────────────────────────────

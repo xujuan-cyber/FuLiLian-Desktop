@@ -40,7 +40,6 @@ import type { DropPosition, GroupNode } from '../model'
 import {
   $dropHint,
   $hiddenTreePanes,
-  $narrowViewport,
   $newSessionTabAction,
   $panesWithCloser,
   $treeDragging,
@@ -240,7 +239,6 @@ export function TreeGroup({
   const wcOverlap = useWindowControlsOverlap(ref, true)
 
   const hiddenPanes = useStore($hiddenTreePanes)
-  const narrow = useStore($narrowViewport)
   const workspaceMode = useStore($workspaceMode)
   const workspaceOwnerKey = useStore($workspaceOwnerKey)
   const newSessionTabAction = useStore($newSessionTabAction)
@@ -254,16 +252,15 @@ export function TreeGroup({
 
   const paneFor = (id: string) => panes.find(p => p.id === id)
 
-  // Unregistered (plugin not loaded), chrome-toggled-off, and narrow-collapsed
-  // panes drop out of the header; the active pane falls back to the first
-  // shown one (render-side — the tree keeps `active`).
+  // Unregistered (plugin not loaded) and chrome-toggled-off panes drop out of
+  // the header; the active pane falls back to the first shown one (render-side
+  // — the tree keeps `active`).
   // Edit mode forces toggle-hidden panes visible so they can be rearranged
   // (mirrors tree-split's paneGone) — restores itself on exit.
   const paneShown = (id: string) =>
     Boolean(paneFor(id)) &&
     contributesToWorkspace(paneFor(id), workspaceMode, workspaceOwnerKey) &&
-    (editMode || !hiddenPanes.has(id)) &&
-    !(narrow && paneChrome(paneFor(id)).collapsible)
+    (editMode || !hiddenPanes.has(id))
 
   const shown = node.panes.filter(paneShown)
   const memoryKey = workspaceScopeKey(workspaceMode, workspaceOwnerKey)

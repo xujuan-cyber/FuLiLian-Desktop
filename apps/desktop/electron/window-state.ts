@@ -18,6 +18,19 @@ const MIN_HEIGHT = 620
 // a saved position, so the title bar stays grabbable after a monitor unplugs.
 const MIN_VISIBLE = 48
 
+// The main window's minimum width scales with the display it lives on: a
+// quarter of that display's work-area width, so on any screen the user can
+// drag the window down to roughly 1/4 of that screen and no narrower. The
+// static MIN_WIDTH is the fallback when no usable work area is given
+// (callers resolve the display and its primary fallback).
+const MAIN_MIN_WIDTH_RATIO = 0.25
+
+function minWidthForDisplay(display) {
+  const width = display?.workArea?.width
+
+  return finite(width) && width > 0 ? Math.round(width * MAIN_MIN_WIDTH_RATIO) : MIN_WIDTH
+}
+
 const finite = v => typeof v === 'number' && Number.isFinite(v)
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi))
 
@@ -164,6 +177,7 @@ export {
   MIN_HEIGHT,
   MIN_VISIBLE,
   MIN_WIDTH,
+  minWidthForDisplay,
   onScreen,
   sanitizeWindowState
 }

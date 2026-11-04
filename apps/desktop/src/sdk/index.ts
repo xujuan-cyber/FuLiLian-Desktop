@@ -25,7 +25,6 @@ import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
 import { openSession, type OpenSessionIntent } from '@/app/open-session'
 import type { ClientSessionState } from '@/app/types'
 import {
-  $narrowViewport,
   $newSessionTabAction,
   $paneVisible,
   registerPaneCloser,
@@ -204,14 +203,14 @@ export interface PluginProfileRoute {
 export interface ViewportRect {
   width: number
   height: number
-  /** Below the app's sidebar-collapse breakpoint (rails become overlays). */
+  /** Always false: pane visibility is user-controlled only, no breakpoint. */
   narrow: boolean
 }
 
 const readViewport = (): ViewportRect => ({
   width: typeof window === 'undefined' ? 0 : window.innerWidth,
   height: typeof window === 'undefined' ? 0 : window.innerHeight,
-  narrow: $narrowViewport.get()
+  narrow: false
 })
 
 /** Runtime session id → mid-turn. Not gateway socket state. */
@@ -291,7 +290,6 @@ async function pluginRouteStillRegistered(route: PluginProfileRoute): Promise<bo
 if (typeof window !== 'undefined') {
   const refresh = () => $viewport.set(readViewport())
   window.addEventListener('resize', refresh)
-  $narrowViewport.listen(refresh)
 }
 
 /** Live usage of the FOCUSED session, projected out of the streamed session

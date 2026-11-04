@@ -8,11 +8,7 @@ vi.mock('@/app/chat/session-view', async () => {
   return { PRIMARY_SESSION_VIEW: { $awaitingResponse: atom(false), $busy: atom(false) } }
 })
 vi.mock('@/app/open-session', () => ({ openSession: vi.fn() }))
-vi.mock('@/components/pane-shell/tree/store', async () => {
-  const { atom } = await import('nanostores')
-
-  return { $narrowViewport: atom(false) }
-})
+vi.mock('@/components/pane-shell/tree/store', () => ({}))
 vi.mock('@/contrib/events', () => ({ onGatewayEvent: vi.fn() }))
 vi.mock('@/fulilian', () => ({ deleteProfile: vi.fn(), getLogs: vi.fn(), getStatus: vi.fn(), fulilianApi: vi.fn() }))
 vi.mock('@/store/notifications', () => ({ notify: vi.fn(), notifyError: vi.fn() }))

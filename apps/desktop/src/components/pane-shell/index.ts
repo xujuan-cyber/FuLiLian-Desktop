@@ -1,7 +1,4 @@
-/**
- * Cross-surface event: toggle-reveal a collapsed pane. Dispatched by the
- * keybinds (⌘B / ⌘G / titlebar toggles on narrow viewports) with the pane id
- * in `detail`; the layout tree's narrow overlays (tree/renderer.tsx) listen
- * and slide the pane over the grid.
- */
-export const PANE_TOGGLE_REVEAL_EVENT = 'fulilian:pane-toggle-reveal'
+// Kept as a stub module: pane visibility is user-controlled only — the narrow
+// breakpoint and its toggle-reveal event were removed with the auto-collapse
+// mechanism. pane-shell has no cross-surface exports left.
+export {}

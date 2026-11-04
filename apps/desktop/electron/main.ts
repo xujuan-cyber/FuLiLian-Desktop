@@ -408,6 +408,7 @@ import {
   bindGeometryPersistence,
   computeWindowOptions,
   debounce,
+  minWidthForDisplay,
   sanitizeWindowState,
   MIN_HEIGHT as WINDOW_MIN_HEIGHT,
   MIN_WIDTH as WINDOW_MIN_WIDTH
@@ -13892,12 +13893,46 @@ function closeQuickEntryWindow() {
   quickEntryWindow = null
 }
 
+// Cross-display minWidth sync: re-derive the quarter-workArea floor whenever
+// the main window lands on a DIFFERENT display. move/moved fire continuously
+// mid-drag (and `moved` only on macOS/Windows), so the display-id guard is the
+// dedupe — same-display moves never re-set the constraint.
+let mainWindowMinWidthDisplayId: number | undefined
+
+function syncMainWindowMinWidth() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+
+  const display = screen.getDisplayMatching(mainWindow.getBounds()) ?? screen.getPrimaryDisplay()
+
+  if (display.id === mainWindowMinWidthDisplayId) {
+    return
+  }
+
+  mainWindowMinWidthDisplayId = display.id
+  mainWindow.setMinimumWidth(minWidthForDisplay(display))
+}
+
 function createWindow() {
   const icon = getAppIconPath()
   const savedWindowState = readWindowState()
+  // The main window's minimum width follows the display it lands on (a quarter
+  // of that display's work-area width): the saved position's display when
+  // restoring, else the primary. Cross-display moves re-derive it below via
+  // syncMainWindowMinWidth. Electron clamps a restored width below this floor
+  // up to it automatically at BrowserWindow construction.
+
+  const savedPoint =
+    savedWindowState && Number.isFinite(savedWindowState.x) && Number.isFinite(savedWindowState.y)
+      ? { x: savedWindowState.x, y: savedWindowState.y }
+      : null
+
+  const landingDisplay = (savedPoint ? screen.getDisplayNearestPoint(savedPoint) : null) ?? screen.getPrimaryDisplay()
+
   mainWindow = new BrowserWindow({
     ...computeWindowOptions(savedWindowState, screen.getAllDisplays()),
-    minWidth: WINDOW_MIN_WIDTH,
+    minWidth: minWidthForDisplay(landingDisplay),
     minHeight: WINDOW_MIN_HEIGHT,
     title: 'Fulilian',
     // Frameless title bar on every platform so the renderer can paint the
@@ -13924,6 +13959,12 @@ function createWindow() {
   })
 
   const createdMainWindow = mainWindow
+
+  // Track the window's display so the quarter-workArea minWidth follows it
+  // across monitors. Seeded with the landing display createWindow computed.
+  mainWindowMinWidthDisplayId = landingDisplay.id
+  createdMainWindow.on('move', syncMainWindowMinWidth)
+  createdMainWindow.on('moved', syncMainWindowMinWidth)
 
   // Chat-surface registration: see applyWindowTranslucency.
   translucencyBackedWindows.add(mainWindow)

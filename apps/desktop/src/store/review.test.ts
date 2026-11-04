@@ -35,7 +35,6 @@ import {
   revertReviewFile,
   selectReviewFile,
   stageReviewFile,
-  toggleReview,
   toggleReviewTreeMode,
   unstageReviewFile
 } from './review'
@@ -283,27 +282,6 @@ describe('view state', () => {
     revealReview('/tile-worktree', 'tile:project-b')
 
     expect($reviewScopeTarget.get()).toBe('tile:project-b')
-  })
-
-  it('narrow toggle re-homes the origin before showing the overlay', () => {
-    const originalMatchMedia = window.matchMedia
-
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: vi.fn(() => ({ matches: true }))
-    })
-
-    try {
-      stubReview()
-      openReview('/project-a', 'tile:project-a')
-
-      toggleReview('/project-b', 'tile:project-b')
-
-      expect($reviewScopeCwd.get()).toBe('/project-b')
-      expect($reviewScopeTarget.get()).toBe('tile:project-b')
-    } finally {
-      Object.defineProperty(window, 'matchMedia', { configurable: true, value: originalMatchMedia })
-    }
   })
 
   it('closeReview closes the pane, clears selection, and drops scope', () => {
