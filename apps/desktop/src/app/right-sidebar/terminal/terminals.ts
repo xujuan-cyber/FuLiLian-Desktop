@@ -15,10 +15,13 @@ export interface TerminalEntry {
   title: string
   auto: boolean
   /** Working directory, snapshotted once at creation. Terminals live outside
-   *  session/project state — the only thing they inherit is this initial cwd
-   *  (the project root if opened in one, else the backend's default). Switching
-   *  sessions never moves or recreates a terminal; at most it re-SELECTS a tab
-   *  already pointed at the session's cwd (see the $currentCwd listener). */
+   *  session/project state — they are HOME-rooted by default: an empty cwd is
+   *  resolved to the user's home directory by the main process
+   *  (`safeTerminalCwd` falls back to `app.getPath('home')`). Explicit cwd
+   *  callers (perf probe) may still anchor a tab anywhere. Switching sessions
+   *  never moves or recreates a terminal; at most it re-SELECTS a tab already
+   *  pointed at the session's cwd (see the $currentCwd listener) — an
+   *  empty-cwd tab never matches and is left alone. */
   cwd: string
   /** Last observed working directory of the live shell (tracked via the PTY
    *  cwd probe / OSC 7). Used to reopen the tab where the user last `cd`'d
@@ -160,10 +163,12 @@ export const $activeTerminal = computed(
 const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `term-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 
-/** Append a fresh terminal and focus it. Captures the current cwd once (its only
- *  tie to session/project state); pass an explicit cwd to override. Returns the
- *  id. */
-export function createTerminal(cwd: string = $currentCwd.get()): string {
+/** Append a fresh terminal and focus it. Defaults to an EMPTY cwd so the shell
+ *  boots in the user's home directory (the main process `safeTerminalCwd`
+ *  resolves '' to `app.getPath('home')`) — a project session must not drag
+ *  every new shell into the repo root. Pass an explicit cwd to anchor the tab
+ *  (perf probe). Returns the id. */
+export function createTerminal(cwd = ''): string {
   const id = newId()
   $terminals.set([...$terminals.get(), { id, title: 'Terminal', auto: true, cwd, kind: 'user' }])
   $activeTerminalId.set(id)

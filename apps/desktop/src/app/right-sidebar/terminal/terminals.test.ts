@@ -68,6 +68,16 @@ describe('terminal store persistence', () => {
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
+  it('defaults a new tab to an empty cwd — home-rooted via the main-process fallback, never the session cwd', async () => {
+    const { $terminals, createTerminal } = await loadTerminalStore()
+
+    // The mocked $currentCwd is '/workspace'; asserting '' proves the default
+    // no longer inherits the session/project cwd (shells boot in the user home).
+    const userId = createTerminal()
+
+    expect($terminals.get().find(term => term.id === userId)?.cwd).toBe('')
+  })
+
   it('tail-trims an oversized revive buffer to stay under the storage budget', async () => {
     const { $terminals, createTerminal, updateTerminalReviveBuffer } = await loadTerminalStore()
 
