@@ -12,7 +12,7 @@
  */
 
 import { useStore } from '@nanostores/react'
-import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { NARROW_OVERLAY_CLOSE_DELAY_MS } from '@/app/layout-constants'
 import { PaneTab, PaneTabLabel, PaneTabStrip } from '@/components/ui/pane-tab'
@@ -93,6 +93,55 @@ export function NarrowOverlays() {
       setReveal(current => (current?.pinned ? current : null))
     }, NARROW_OVERLAY_CLOSE_DELAY_MS)
   }
+
+  // A mouseleave with a null relatedTarget means the pointer left the DOCUMENT
+  // (crossed the window edge — second screen, taskbar), not that it moved into
+  // the main area: the user is still working the pane's zone and must not lose
+  // the overlay. Instead of scheduling the close, arm a ONE-SHOT re-entry
+  // listener: the first `pointerover` back inside the document decides —
+  // landing outside the panel/edge strips schedules the close, landing inside
+  // merely disarms. The listener is disarmed on every reveal change and on
+  // unmount, so it never leaks into the next reveal.
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const reentryHandlerRef = useRef<((event: PointerEvent) => void) | null>(null)
+
+  const disarmReentryClose = useCallback(() => {
+    if (reentryHandlerRef.current !== null) {
+      window.removeEventListener('pointerover', reentryHandlerRef.current)
+      reentryHandlerRef.current = null
+    }
+  }, [])
+
+  const armReentryClose = () => {
+    if (reentryHandlerRef.current !== null) {
+      return
+    }
+
+    const onReentry = (event: PointerEvent) => {
+      disarmReentryClose()
+
+      const target = event.target
+
+      if (!(target instanceof Node)) {
+        return
+      }
+
+      const panel = panelRef.current
+
+      const inZone =
+        (panel !== null && panel.contains(target)) ||
+        Array.from(document.querySelectorAll('[data-narrow-overlay-edge]')).some(strip => strip.contains(target))
+
+      if (!inZone) {
+        schedulePendingClose()
+      }
+    }
+
+    reentryHandlerRef.current = onReentry
+    window.addEventListener('pointerover', onReentry, { once: true })
+  }
+
+  useEffect(() => disarmReentryClose, [revealActive, disarmReentryClose])
 
   useEffect(() => cancelPendingClose, [])
 
@@ -315,9 +364,22 @@ export function NarrowOverlays() {
           data-glass-opaque=""
           data-narrow-overlay-panel=""
           onMouseEnter={cancelPendingClose}
-          // Only schedules the close — the grace window decides, and a pin
-          // (event reveal, drag) cancels it at fire time.
-          onMouseLeave={schedulePendingClose}
+          // Leaving INTO the window (relatedTarget set) schedules the close —
+          // the grace window decides, and a pin (event reveal, drag) cancels
+          // it at fire time. Leaving the WINDOW (relatedTarget null) instead
+          // arms the re-entry listener above. The NATIVE relatedTarget is
+          // read directly: React's synthetic one is unreliable here (it
+          // substitutes a truthy fallback when the pointer exits the document).
+          onMouseLeave={event => {
+            if (event.nativeEvent.relatedTarget === null) {
+              armReentryClose()
+
+              return
+            }
+
+            schedulePendingClose()
+          }}
+          ref={panelRef}
           style={{ width: `${Math.round(widthPxOf(revealed))}px` }}
         >
           {/* Zone-mates share the overlay through the zone's own tab strip
