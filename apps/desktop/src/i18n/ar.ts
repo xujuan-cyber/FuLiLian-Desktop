@@ -3442,6 +3442,8 @@ export const ar = defineLocale({
     terminalNew: 'طرفية جديدة',
     terminalCloseOthers: 'إغلاق الأخرى',
     terminalCloseAll: 'إغلاق الكل',
+    terminalRename: 'إعادة تسمية…',
+    terminalRenameTitle: 'إعادة تسمية الطرفية',
     addToChat: 'إضافة للمحادثة'
   },
   preview: {

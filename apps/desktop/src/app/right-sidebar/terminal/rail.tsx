@@ -1,4 +1,5 @@
 import { useStore } from '@nanostores/react'
+import { useState } from 'react'
 
 import { Codicon } from '@/components/ui/codicon'
 import {
@@ -17,6 +18,7 @@ import { $bindings } from '@/store/keybinds'
 
 import { setTerminalTakeover } from '../store'
 
+import { RenameTerminalDialog } from './rename-terminal-dialog'
 import {
   $activeTerminalId,
   $terminals,
@@ -109,60 +111,74 @@ interface TerminalRailItemProps {
 
 function TerminalRailItem({ active, canCloseOthers, index, term, toggleHint }: TerminalRailItemProps) {
   const { t } = useI18n()
+  const [renaming, setRenaming] = useState(false)
   const label = `${index + 1}. ${term.title}`
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <li className="relative flex w-full justify-center [-webkit-app-region:no-drag]">
-          {active && (
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-0.5 right-0 w-0.5 rounded-l-sm bg-(--ui-text-primary)"
-            />
-          )}
-          <Tip label={<TipHintLabel hint={toggleHint && formatCombo(toggleHint)} text={label} />} side="left">
-            <button
-              aria-label={label}
-              aria-selected={active}
-              className={cn(
-                'grid size-8 place-items-center rounded-lg transition-colors',
-                active
-                  ? 'bg-(--chrome-action-hover) text-foreground'
-                  : 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
-              )}
-              {...middleClickHandlers(() => closeTerminal(term.id))}
-              // ⌘-click closes (the pane-tab gesture); a plain click selects.
-              onClick={event => {
-                if (isMetaClose(event)) {
-                  closeTerminal(term.id)
-
-                  return
-                }
-
-                selectTerminal(term.id)
-              }}
-              role="tab"
-              type="button"
-            >
-              <Codicon
-                className={cn(term.kind === 'agent' && !active && 'text-primary')}
-                name={term.kind === 'agent' ? 'agent' : 'terminal'}
-                size="0.875rem"
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <li className="relative flex w-full justify-center [-webkit-app-region:no-drag]">
+            {active && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0.5 right-0 w-0.5 rounded-l-sm bg-(--ui-text-primary)"
               />
-            </button>
-          </Tip>
-        </li>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={() => closeTerminal(term.id)}>{t.common.close}</ContextMenuItem>
-        <ContextMenuItem disabled={!canCloseOthers} onSelect={() => closeOtherTerminals(term.id)}>
-          {t.rightSidebar.terminalCloseOthers}
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={closeAllTerminals}>{t.rightSidebar.terminalCloseAll}</ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onSelect={() => setTerminalTakeover(false)}>{t.rightSidebar.terminalHide}</ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+            )}
+            <Tip label={<TipHintLabel hint={toggleHint && formatCombo(toggleHint)} text={label} />} side="left">
+              <button
+                aria-label={label}
+                aria-selected={active}
+                className={cn(
+                  'grid size-8 place-items-center rounded-lg transition-colors',
+                  active
+                    ? 'bg-(--chrome-action-hover) text-foreground'
+                    : 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
+                )}
+                {...middleClickHandlers(() => closeTerminal(term.id))}
+                // ⌘-click closes (the pane-tab gesture); a plain click selects.
+                onClick={event => {
+                  if (isMetaClose(event)) {
+                    closeTerminal(term.id)
+
+                    return
+                  }
+
+                  selectTerminal(term.id)
+                }}
+                role="tab"
+                type="button"
+              >
+                <Codicon
+                  className={cn(term.kind === 'agent' && !active && 'text-primary')}
+                  name={term.kind === 'agent' ? 'agent' : 'terminal'}
+                  size="0.875rem"
+                />
+              </button>
+            </Tip>
+          </li>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          {/* Agent tabs are read-only mirrors whose title tracks the process
+              name, so renaming them would be overwritten — user tabs only. */}
+          {term.kind === 'user' && (
+            <ContextMenuItem onSelect={() => setRenaming(true)}>{t.rightSidebar.terminalRename}</ContextMenuItem>
+          )}
+          <ContextMenuItem onSelect={() => closeTerminal(term.id)}>{t.common.close}</ContextMenuItem>
+          <ContextMenuItem disabled={!canCloseOthers} onSelect={() => closeOtherTerminals(term.id)}>
+            {t.rightSidebar.terminalCloseOthers}
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={closeAllTerminals}>{t.rightSidebar.terminalCloseAll}</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onSelect={() => setTerminalTakeover(false)}>{t.rightSidebar.terminalHide}</ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      <RenameTerminalDialog
+        currentTitle={term.title}
+        onOpenChange={setRenaming}
+        open={renaming}
+        terminalId={term.id}
+      />
+    </>
   )
 }

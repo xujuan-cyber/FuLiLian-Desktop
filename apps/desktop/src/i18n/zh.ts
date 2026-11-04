@@ -3410,6 +3410,8 @@ export const zh: Translations = {
     terminalNew: '新建终端',
     terminalCloseOthers: '关闭其他',
     terminalCloseAll: '关闭全部',
+    terminalRename: '重命名…',
+    terminalRenameTitle: '重命名终端',
     addToChat: '添加到对话'
   },
 
