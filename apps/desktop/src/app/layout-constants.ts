@@ -35,9 +35,3 @@ export const MAIN_PANE_MIN_RATIO = 0.22
 export function sidebarCollapseThresholdPx(sidebarWidthPx: number): number {
   return Math.max(SIDEBAR_COLLAPSE_BREAKPOINT_PX, Math.ceil(sidebarWidthPx / (1 - MAIN_PANE_MIN_RATIO)))
 }
-
-// How long an un-pinned narrow overlay lingers after the pointer leaves it
-// before closing. The grace window is what keeps in-overlay interaction
-// (scrollbar, drag sash, slight pointer jitter at the border) from collapsing
-// the pane mid-use — hover-reveal without it reads as "unusable".
-export const NARROW_OVERLAY_CLOSE_DELAY_MS = 140

@@ -1,20 +1,20 @@
 /**
- * Narrow-viewport edge overlays — the tree's take on the app's hover-reveal
- * collapse. Collapsible panes leave the grid below the sidebar-collapse
- * breakpoint; an edge strip (hover) or PANE_TOGGLE_REVEAL_EVENT (⌘B / ⌘G /
- * titlebar toggles route here on narrow) slides the pane OVER the layout
- * instead of squeezing it. Event reveals pin; hover reveals follow the mouse
- * (with a close-delay grace window so in-overlay interaction survives).
+ * Narrow-viewport overlays — the tree's take on the app's sidebar-collapse
+ * breakpoint. Collapsible panes leave the grid below the breakpoint, and
+ * PANE_TOGGLE_REVEAL_EVENT (⌘B / ⌘G / titlebar toggles route here on narrow)
+ * slides the pane OVER the layout instead of squeezing it. Wake is explicit
+ * only — event reveals are pinned and NO pointer motion ever opens or closes
+ * the overlay (WorkBuddy-style: a click / keybind brings it up, a click on
+ * the scrim / Escape / re-toggle takes it down).
  *
- * The overlay floats over a scrim: clicking the scrim closes it, and its
- * inner edge carries a drag sash that writes the SAME pane-width override the
- * docked sidebar sash does — so narrow ↔ wide keeps one continuous width.
+ * The overlay floats over a scrim, and its inner edge carries a drag sash
+ * that writes the SAME pane-width override the docked sidebar sash does — so
+ * narrow ↔ wide keeps one continuous width.
  */
 
 import { useStore } from '@nanostores/react'
-import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 
-import { NARROW_OVERLAY_CLOSE_DELAY_MS } from '@/app/layout-constants'
 import { PaneTab, PaneTabLabel, PaneTabStrip } from '@/components/ui/pane-tab'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
@@ -67,83 +67,12 @@ export function NarrowOverlays() {
   const hiddenPanes = useStore($hiddenTreePanes)
   const paneStates = useStore($paneStates)
   const sidebarWidth = useStore($sidebarWidth)
-  const [reveal, setReveal] = useState<{ id: string; pinned: boolean } | null>(null)
+  const [reveal, setReveal] = useState<string | null>(null)
 
   // Own an Escape layer only while something is revealed, so Escape closes the
   // overlay only when it's the top layer (never under a dialog / edit mode).
   const revealActive = reveal !== null
   useEffect(() => (revealActive ? pushEscapeLayer(ESCAPE_PRIORITY.narrowOverlay) : undefined), [revealActive])
-
-  // Un-pinned (hover) reveals close on mouse-leave, but through a grace
-  // window: the pointer grazing the border, hitting the scrollbar, or crossing
-  // onto the drag sash must not kill the overlay mid-interaction.
-  const closeTimerRef = useRef<number | null>(null)
-
-  const cancelPendingClose = () => {
-    if (closeTimerRef.current !== null) {
-      clearTimeout(closeTimerRef.current)
-      closeTimerRef.current = null
-    }
-  }
-
-  const schedulePendingClose = () => {
-    cancelPendingClose()
-    closeTimerRef.current = window.setTimeout(() => {
-      closeTimerRef.current = null
-      setReveal(current => (current?.pinned ? current : null))
-    }, NARROW_OVERLAY_CLOSE_DELAY_MS)
-  }
-
-  // A mouseleave with a null relatedTarget means the pointer left the DOCUMENT
-  // (crossed the window edge — second screen, taskbar), not that it moved into
-  // the main area: the user is still working the pane's zone and must not lose
-  // the overlay. Instead of scheduling the close, arm a ONE-SHOT re-entry
-  // listener: the first `pointerover` back inside the document decides —
-  // landing outside the panel/edge strips schedules the close, landing inside
-  // merely disarms. The listener is disarmed on every reveal change and on
-  // unmount, so it never leaks into the next reveal.
-  const panelRef = useRef<HTMLDivElement | null>(null)
-  const reentryHandlerRef = useRef<((event: PointerEvent) => void) | null>(null)
-
-  const disarmReentryClose = useCallback(() => {
-    if (reentryHandlerRef.current !== null) {
-      window.removeEventListener('pointerover', reentryHandlerRef.current)
-      reentryHandlerRef.current = null
-    }
-  }, [])
-
-  const armReentryClose = () => {
-    if (reentryHandlerRef.current !== null) {
-      return
-    }
-
-    const onReentry = (event: PointerEvent) => {
-      disarmReentryClose()
-
-      const target = event.target
-
-      if (!(target instanceof Node)) {
-        return
-      }
-
-      const panel = panelRef.current
-
-      const inZone =
-        (panel !== null && panel.contains(target)) ||
-        Array.from(document.querySelectorAll('[data-narrow-overlay-edge]')).some(strip => strip.contains(target))
-
-      if (!inZone) {
-        schedulePendingClose()
-      }
-    }
-
-    reentryHandlerRef.current = onReentry
-    window.addEventListener('pointerover', onReentry, { once: true })
-  }
-
-  useEffect(() => disarmReentryClose, [revealActive, disarmReentryClose])
-
-  useEffect(() => cancelPendingClose, [])
 
   const inTree = useMemo(() => new Set(tree ? allPaneIds(tree) : []), [tree])
 
@@ -183,14 +112,14 @@ export function NarrowOverlays() {
       const mode = detail?.mode ?? 'toggle'
       setReveal(current => {
         if (mode === 'open') {
-          return { id: match.id, pinned: true }
+          return match.id
         }
 
         if (mode === 'close') {
-          return current?.id === match.id ? null : current
+          return current === match.id ? null : current
         }
 
-        return current?.id === match.id && current.pinned ? null : { id: match.id, pinned: true }
+        return current === match.id ? null : match.id
       })
     }
 
@@ -217,8 +146,7 @@ export function NarrowOverlays() {
   }
 
   const sideOf = (c: Contribution) => (paneChrome(c).placement === 'left' ? 'left' : 'right')
-  const revealed = reveal ? collapsibles.find(p => p.id === reveal.id) : undefined
-  const sides = [...new Set(collapsibles.map(sideOf))]
+  const revealed = reveal ? collapsibles.find(p => p.id === reveal) : undefined
 
   // The overlay's live width: its channel's override (written by THIS sash or
   // the docked one — one shared state, so narrow ↔ wide is continuous), else
@@ -241,8 +169,7 @@ export function NarrowOverlays() {
   // Drag the overlay's inner edge to resize. Writes go through the pane's
   // width channel per frame (rafCoalesce), the same `setPaneWidthOverride`
   // path the docked sash uses; the overlay width reads that store, so the
-  // panel tracks the pointer. A drag pins the reveal — the gesture must not
-  // race the delayed hover close.
+  // panel tracks the pointer.
   const startWidthDrag = (event: ReactPointerEvent<HTMLDivElement>, pane: Contribution) => {
     if (event.button !== 0) {
       return
@@ -267,7 +194,6 @@ export function NarrowOverlays() {
 
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
-    setReveal(current => (current ? { ...current, pinned: true } : current))
 
     const resize = rafCoalesce((width: number) => setPaneWidthOverride(channel, width))
     let done = false
@@ -314,37 +240,16 @@ export function NarrowOverlays() {
 
   return (
     <>
-      {/* Hover-intent strips on each edge that has a collapsed pane. Wide
-          enough (12px) to actually hit at the window edge; the overlay (z-40)
-          covers them while revealed, so they only START a reveal. */}
-      {sides.map(side => (
-        <div
-          className={cn('absolute inset-y-0 z-30 w-3', side === 'left' ? 'left-0' : 'right-0')}
-          data-narrow-overlay-edge={side}
-          key={side}
-          onMouseEnter={() => {
-            const first = collapsibles.find(p => sideOf(p) === side)
-
-            if (first) {
-              cancelPendingClose()
-              setReveal(current => (current?.pinned ? current : { id: first.id, pinned: false }))
-            }
-          }}
-        />
-      ))}
-
       {/* Scrim between the layout and the overlay: makes "this is modal"
-          legible and gives the pinned overlay a plain click-to-close, which
-          it previously lacked (only Escape / re-toggle worked). Same z-30
-          rung as the strips but rendered AFTER them, so it covers them while
-          staying under the z-40 overlay. */}
+          legible and gives the overlay a plain click-to-close. Pointer
+          motion never opens or closes the reveal — only this scrim, Escape,
+          or re-firing the toggle event do. */}
       {reveal && (
         <div
           aria-hidden
           className="absolute inset-0 z-30 bg-black/25"
           data-narrow-overlay-scrim=""
           onPointerDown={() => {
-            cancelPendingClose()
             setReveal(null)
           }}
         />
@@ -363,23 +268,6 @@ export function NarrowOverlays() {
           // through text. Contract: `[data-glass-opaque]` in styles.css.
           data-glass-opaque=""
           data-narrow-overlay-panel=""
-          onMouseEnter={cancelPendingClose}
-          // Leaving INTO the window (relatedTarget set) schedules the close —
-          // the grace window decides, and a pin (event reveal, drag) cancels
-          // it at fire time. Leaving the WINDOW (relatedTarget null) instead
-          // arms the re-entry listener above. The NATIVE relatedTarget is
-          // read directly: React's synthetic one is unreliable here (it
-          // substitutes a truthy fallback when the pointer exits the document).
-          onMouseLeave={event => {
-            if (event.nativeEvent.relatedTarget === null) {
-              armReentryClose()
-
-              return
-            }
-
-            schedulePendingClose()
-          }}
-          ref={panelRef}
           style={{ width: `${Math.round(widthPxOf(revealed))}px` }}
         >
           {/* Zone-mates share the overlay through the zone's own tab strip
@@ -395,8 +283,7 @@ export function NarrowOverlays() {
                   onPointerDown={event => {
                     if (event.button === 0) {
                       event.preventDefault()
-                      cancelPendingClose()
-                      setReveal(current => ({ id: pane.id, pinned: current?.pinned ?? false }))
+                      setReveal(pane.id)
                     }
                   }}
                 >

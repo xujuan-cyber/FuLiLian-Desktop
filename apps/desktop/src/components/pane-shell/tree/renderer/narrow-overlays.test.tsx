@@ -1,7 +1,6 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { NARROW_OVERLAY_CLOSE_DELAY_MS } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { registry } from '@/contrib/registry'
 import { $paneStates, clearPaneWidthOverride, setPaneWidthOverride } from '@/store/panes'
@@ -55,7 +54,6 @@ afterEach(() => {
   clearPaneWidthOverride('sessions')
   clearPaneWidthOverride('bots')
   clearPaneWidthOverride('chat-sidebar')
-  vi.useRealTimers()
   disposers.splice(0).forEach(dispose => dispose())
 })
 
@@ -103,9 +101,6 @@ describe('narrow overlay of a stacked zone', () => {
 // dismissible via a scrim, survive in-overlay interaction, and drag-resize
 // through the SAME width channel the docked sidebar sash writes.
 
-const edgeStrip = (side: 'left' | 'right') =>
-  document.querySelector<HTMLElement>(`[data-narrow-overlay-edge="${side}"]`)
-
 const overlayPanel = () => document.querySelector<HTMLElement>('[data-narrow-overlay-panel]')
 
 const overlaySash = () => document.querySelector<HTMLElement>('[data-narrow-overlay-sash]')
@@ -143,177 +138,86 @@ describe('narrow overlay scrim (F1)', () => {
   })
 })
 
-describe('narrow overlay interaction (F2)', () => {
-  it('exposes a hover hit strip at least 12px wide', () => {
+// WorkBuddy-style explicit wake: pointer motion NEVER opens or closes the
+// overlay. The only open path is PANE_TOGGLE_REVEAL_EVENT ('open'/'toggle',
+// from ⌘B / ⌘G / titlebar buttons); the only close paths are the scrim, the
+// Escape layer, and re-firing the toggle. The old hover edge-strip and
+// mouse-leave close chains are gone.
+describe('narrow overlay explicit wake (R1/R4)', () => {
+  const fireToggle = (id: string, mode: 'close' | 'open' | 'toggle') => {
+    act(() => {
+      window.dispatchEvent(new CustomEvent(PANE_TOGGLE_REVEAL_EVENT, { detail: { id, mode } }))
+    })
+  }
+
+  it('renders no edge hover strips anywhere in the document', () => {
     render(<NarrowOverlays />)
 
-    // jsdom does no layout, so assert the Tailwind width class (w-3 = 12px).
-    expect(edgeStrip('left')?.className).toMatch(/w-3\b/)
+    revealPane('sessions')
+
+    // The wake surface is the event (⌘B/⌘G/titlebar) only — no hover strip.
+    expect(document.querySelectorAll('[data-narrow-overlay-edge]')).toHaveLength(0)
   })
 
-  it('keeps an un-pinned overlay up while the pointer is inside and only closes after it leaves', () => {
-    vi.useFakeTimers()
+  it("reveals via 'toggle' and closes via a second 'toggle'", () => {
     const { getByTestId, queryByTestId } = render(<NarrowOverlays />)
 
-    // Hover reveal (un-pinned) through the edge strip.
-    act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
-    })
+    fireToggle('sessions', 'toggle')
     expect(getByTestId('sessions-body')).toBeTruthy()
+    expect(document.querySelector('[data-narrow-overlay-scrim]')).toBeTruthy()
 
-    // Moving within the overlay (incl. entering it from the strip) keeps it up.
-    act(() => {
-      fireEvent.mouseEnter(overlayPanel()!)
-    })
-    expect(getByTestId('sessions-body')).toBeTruthy()
-
-    // Leaving the overlay INTO the window (relatedTarget = an element under
-    // the layout, here the scrim) does NOT close it immediately — only after
-    // the grace window, so scrollbar/jitter cannot kill it mid-interaction.
-    act(() => {
-      fireEvent.mouseLeave(overlayPanel()!, {
-        relatedTarget: document.querySelector('[data-narrow-overlay-scrim]')
-      })
-    })
-    expect(queryByTestId('sessions-body')).toBeTruthy()
-
-    act(() => {
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    })
+    fireToggle('sessions', 'toggle')
     expect(queryByTestId('sessions-body')).toBeNull()
+    expect(document.querySelector('[data-narrow-overlay-scrim]')).toBeNull()
   })
-})
 
-// E3 ground truth: a mouseleave with relatedTarget === null means the pointer
-// left the DOCUMENT (window edge → second screen / taskbar), not that it
-// moved into the main area. The overlay must stay up; the pointer's first
-// re-entry into the document decides (outside the panel/edge strips → close,
-// inside → keep).
-describe('narrow overlay pointer leaving the window (E3)', () => {
-  it('keeps an un-pinned overlay up when the pointer leaves the window (R1)', () => {
-    vi.useFakeTimers()
+  it("honours explicit 'open' then 'close' intents", () => {
     const { getByTestId, queryByTestId } = render(<NarrowOverlays />)
 
-    act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
-    })
+    fireToggle('sessions', 'close')
+    // 'close' on an already-hidden pane is a no-op, not a flip.
+    expect(queryByTestId('sessions-body')).toBeNull()
+
+    fireToggle('sessions', 'open')
     expect(getByTestId('sessions-body')).toBeTruthy()
 
-    act(() => {
-      fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: null })
-    })
-    act(() => {
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    })
-
-    expect(queryByTestId('sessions-body')).toBeTruthy()
-  })
-
-  it('closes after re-entering the document outside the overlay zone, keeps it when re-entering the panel (R3)', () => {
-    vi.useFakeTimers()
-    const { getByTestId, queryByTestId } = render(<NarrowOverlays />)
-
-    act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
-    })
-    act(() => {
-      fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: null })
-    })
-
-    // First re-entry lands INSIDE the panel subtree → keep the overlay up.
-    act(() => {
-      fireEvent.pointerOver(getByTestId('sessions-body'))
-    })
-    act(() => {
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    })
-    expect(queryByTestId('sessions-body')).toBeTruthy()
-
-    // Leave the window again, re-enter over the scrim (main area) → grace close.
-    act(() => {
-      fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: null })
-    })
-    act(() => {
-      fireEvent.pointerOver(document.querySelector('[data-narrow-overlay-scrim]')!)
-    })
-    act(() => {
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    })
+    fireToggle('sessions', 'close')
     expect(queryByTestId('sessions-body')).toBeNull()
   })
 
-  it('keeps the overlay up when re-entry lands on the edge strip (R3 zone includes strips)', () => {
-    vi.useFakeTimers()
-    const { getByTestId, queryByTestId } = render(<NarrowOverlays />)
+  it('never closes on pointer motion — mouse-leave is not a close path', () => {
+    const { getByTestId } = render(<NarrowOverlays />)
 
+    revealPane('sessions')
+
+    // Leaving INTO the window and leaving the WINDOW (relatedTarget null)
+    // must both leave the overlay untouched — no grace timer, no re-entry
+    // listener, nothing.
     act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
+      fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: document.body })
     })
+    expect(getByTestId('sessions-body')).toBeTruthy()
+
     act(() => {
       fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: null })
     })
-    act(() => {
-      fireEvent.pointerOver(edgeStrip('left')!)
-    })
-    act(() => {
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    })
+    expect(getByTestId('sessions-body')).toBeTruthy()
 
-    expect(queryByTestId('sessions-body')).toBeTruthy()
+    // Real timers would only fire a stale grace timer if one existed; the
+    // overlay is still up either way because no timer is ever scheduled.
     expect(getByTestId('sessions-body')).toBeTruthy()
   })
 
-  it('disarms the re-entry listener when the reveal is cleared (no leak into the next reveal)', () => {
-    vi.useFakeTimers()
+  it('closes via the Escape layer', () => {
     const { getByTestId, queryByTestId } = render(<NarrowOverlays />)
 
-    act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
-    })
-    act(() => {
-      fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: null })
-    })
+    revealPane('sessions')
+    expect(getByTestId('sessions-body')).toBeTruthy()
 
-    // Escape clears the reveal → the armed listener must go with it.
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     })
     expect(queryByTestId('sessions-body')).toBeNull()
-
-    // Re-reveal: a leaked listener from the previous reveal would schedule a
-    // close on this pointerover and kill the overlay after the grace window.
-    act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
-    })
-    expect(getByTestId('sessions-body')).toBeTruthy()
-    act(() => {
-      fireEvent.pointerOver(document.body)
-    })
-    act(() => {
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    })
-    expect(queryByTestId('sessions-body')).toBeTruthy()
-  })
-
-  it('disarms the re-entry listener on unmount', () => {
-    vi.useFakeTimers()
-    const { getByTestId, unmount } = render(<NarrowOverlays />)
-
-    act(() => {
-      fireEvent.mouseEnter(edgeStrip('left')!)
-    })
-    act(() => {
-      fireEvent.mouseLeave(overlayPanel()!, { relatedTarget: null })
-    })
-    unmount()
-
-    // A leaked listener (or stray timer) would fire into an unmounted tree.
-    expect(() => {
-      act(() => {
-        fireEvent.pointerOver(document.body)
-      })
-      vi.advanceTimersByTime(NARROW_OVERLAY_CLOSE_DELAY_MS + 10)
-    }).not.toThrow()
   })
 })
 
