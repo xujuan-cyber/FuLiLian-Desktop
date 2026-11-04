@@ -207,7 +207,8 @@ const SIDEBAR_NAV_ICONS = {
   cron: 'watch',
   messaging: 'comment-discussion',
   settings: 'settings-gear',
-  skills: 'symbol-misc'
+  skills: 'symbol-misc',
+  terminal: 'terminal'
 } as const
 
 const icon = (name: string) => (props: { className?: string }) => <Codicon name={name} {...props} />
@@ -217,7 +218,7 @@ const icon = (name: string) => (props: { className?: string }) => <Codicon name=
 // surfaces stay out, everything else folds into one "More" row (collapsed by
 // default, see $sidebarNavMoreOpen). Settings is not listed here because the
 // window titlebar already carries a permanent "open settings" button.
-const PRIMARY_NAV_IDS: ReadonlySet<string> = new Set(['agents', 'skills', 'connectors'])
+const PRIMARY_NAV_IDS: ReadonlySet<string> = new Set(['agents', 'skills', 'connectors', 'terminal'])
 
 // Synthetic row id for the "More" toggle. Never collides with a real nav id.
 const MORE_NAV_ID = 'nav-more'
@@ -354,6 +355,15 @@ export function ChatSidebar({
         icon: icon(SIDEBAR_NAV_ICONS.connectors),
         label: s.nav.connectors,
         route: CONNECTORS_ROUTE
+      },
+      {
+        // The terminal is a pane, not a page: no route, the click toggles the
+        // pane's visibility (same source as the statusbar pill / Ctrl+`).
+        id: 'terminal',
+        icon: icon(SIDEBAR_NAV_ICONS.terminal),
+        action: 'reveal-terminal',
+        keybindActionId: 'view.showTerminal',
+        label: s.nav.terminal
       },
       {
         id: 'artifacts',

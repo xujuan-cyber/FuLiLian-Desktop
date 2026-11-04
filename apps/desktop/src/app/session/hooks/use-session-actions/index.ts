@@ -4,7 +4,7 @@ import type { NavigateFunction } from 'react-router'
 
 import { NO_PROJECT_ID } from '@/app/chat/sidebar/projects/workspace-groups'
 import { graftRefreshedTailOntoBackfill } from '@/app/chat/transcript-backfill'
-import { revealTreePane } from '@/components/pane-shell/tree/store'
+import { revealTreePane, togglePaneVisible } from '@/components/pane-shell/tree/store'
 import { setWorkspaceScope } from '@/components/pane-shell/workspace-scope'
 import {
   deleteSession,
@@ -668,6 +668,14 @@ export function useSessionActions({
       if (item.action === 'new-session') {
         setWorkspaceScope('sessions')
         startFreshSessionDraft()
+
+        return
+      }
+
+      // Terminal nav row: a pane toggle, not a page — same source as the
+      // statusbar pill and the Ctrl+` keybind.
+      if (item.action === 'reveal-terminal') {
+        togglePaneVisible('terminal')
 
         return
       }

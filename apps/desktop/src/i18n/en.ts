@@ -2463,6 +2463,7 @@ export const en: Translations = {
       agents: 'Agents',
       skills: 'Capabilities',
       connectors: 'Connectors',
+      terminal: 'Terminal',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
       commandCenter: 'Command Center',

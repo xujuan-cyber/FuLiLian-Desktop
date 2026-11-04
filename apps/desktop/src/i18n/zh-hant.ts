@@ -2547,6 +2547,7 @@ export const zhHant = defineLocale({
       agents: '智慧體',
       skills: '技能與工具',
       connectors: '連接器',
+      terminal: '終端機',
       messaging: '訊息平台',
       artifacts: '成品',
       commandCenter: '命令中心',

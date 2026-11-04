@@ -2581,6 +2581,7 @@ export const ar = defineLocale({
       'new-session': 'جلسة جديدة',
       skills: 'المهارات',
       connectors: 'الموصلات',
+      terminal: 'طرفية',
       messaging: 'المراسلة',
       artifacts: 'العناصر',
       chat: 'المحادثة',

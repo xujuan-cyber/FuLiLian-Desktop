@@ -2613,6 +2613,7 @@ export const ja = defineLocale({
       agents: 'エージェント',
       skills: 'スキルとツール',
       connectors: 'コネクタ',
+      terminal: 'ターミナル',
       messaging: 'メッセージング',
       artifacts: 'アーティファクト',
       commandCenter: 'コマンドセンター',

@@ -2553,6 +2553,7 @@ export const zh: Translations = {
       agents: '智能体',
       skills: '技能与工具',
       connectors: '连接器',
+      terminal: '终端',
       messaging: '消息平台',
       artifacts: '产物',
       commandCenter: '命令中心',
