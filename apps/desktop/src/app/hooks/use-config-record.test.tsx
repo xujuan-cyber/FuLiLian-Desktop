@@ -25,6 +25,7 @@ describe('useFulilianConfigRecord caching (P4-A)', () => {
   it('treats the record as fresh for 60s and does not revalidate on remount', async () => {
     getFulilianConfigRecord.mockResolvedValue({ agent: {} })
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     )

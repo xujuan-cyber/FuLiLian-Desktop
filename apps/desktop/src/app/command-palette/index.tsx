@@ -1,9 +1,10 @@
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, type ReactNode, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import { searchSessions } from '@/api/sessions'
 import {
   HUD_HEADING,
   HUD_ITEM,
@@ -17,7 +18,6 @@ import { codiconIcon } from '@/components/ui/codicon'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { HighlightMatches } from '@/components/ui/highlight-matches'
 import { KbdCombo, KbdGroup } from '@/components/ui/kbd'
-import { searchSessions } from '@/api/sessions'
 import { getFulilianConfigRecord, listAllProfileSessions } from '@/fulilian'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { type Translations, useI18n } from '@/i18n'
@@ -30,9 +30,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clipboard,
   Clock,
   Cpu,
-  Clipboard,
   Download,
   Egg,
   FileText,
@@ -455,6 +455,7 @@ export function buildSessionSearchGroups({
   // title/preview rows above.
   const remoteItems = remote.map(result => {
     const startedAt = result.session_started
+
     const age = !startedAt
       ? undefined
       : (() => {
@@ -1592,6 +1593,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     // excerpt label, relative-age detail — led by the same status dot. The
     // dot resolves the live state from the stored id alone.
     const localIds = new Set(sessions.map(session => session.id))
+
     const remoteHits = (sessionSearchQuery.data?.results ?? [])
       .filter(hit => !localIds.has(hit.session_id))
       .slice(0, REMOTE_ROOT_LIMIT)
@@ -1601,6 +1603,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         heading: t.commandCenter.sessionSearchRemote,
         items: remoteHits.map(hit => {
           const startedAt = hit.session_started
+
           const age = !startedAt
             ? undefined
             : (() => {

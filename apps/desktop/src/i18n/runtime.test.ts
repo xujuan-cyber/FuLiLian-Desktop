@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { fieldCopyForSchemaKey } from '@/app/settings/field-copy'
 
-import { loadAllTranslations, getTranslations, TRANSLATIONS } from './catalog'
-import { setRuntimeI18nLocale, translateNow } from './runtime'
+import { getTranslations, loadAllTranslations, TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE } from './languages'
+import { setRuntimeI18nLocale, translateNow } from './runtime'
 import { zh } from './zh'
 
 describe('desktop i18n runtime translator', () => {

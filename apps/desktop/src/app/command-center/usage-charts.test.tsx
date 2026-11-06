@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { AnalyticsDailyEntry, AnalyticsModelEntry } from '@/types/fulilian'
 
-import { ModelDistributionBar, UsageTrendChart, modelShares } from './usage-charts'
+import { ModelDistributionBar, modelShares, UsageTrendChart } from './usage-charts'
 
 function modelEntry(model: string, input: number, output: number, cost = 0): AnalyticsModelEntry {
   return { estimated_cost: cost, input_tokens: input, model, output_tokens: output, sessions: 1 } as AnalyticsModelEntry

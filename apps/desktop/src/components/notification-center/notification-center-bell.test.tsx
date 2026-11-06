@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '@/i18n'
 import { clearNotificationCenter, ingestNotificationEntry, markNotificationRead } from '@/store/notification-center'
 import { $quickCaptureNotes } from '@/store/quick-capture-inbox'
-import { $unreadFinishedSessionIds, $cronSessions } from '@/store/session'
+import { $cronSessions, $unreadFinishedSessionIds } from '@/store/session'
 
 import { NotificationCenterBell } from './notification-center-bell'
 

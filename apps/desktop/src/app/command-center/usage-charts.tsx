@@ -39,6 +39,7 @@ export function UsageTrendChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
     () => columns.reduce((acc, column) => Math.max(acc, column.input + column.output), 1),
     [columns]
   )
+
   const slot = columns.length > 0 ? TREND_VIEW_WIDTH / columns.length : TREND_VIEW_WIDTH
   // A thin gutter between columns; at 90 days the bar body still reads.
   const gap = Math.min(4, slot * 0.25)

@@ -1,5 +1,5 @@
-import { type CapabilityPreset, isCapabilityPreset, presetToolsets } from '@/lib/personalities'
 import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
+import { type CapabilityPreset, isCapabilityPreset, presetToolsets } from '@/lib/personalities'
 
 // Phase-13 capability presets, client side.
 //

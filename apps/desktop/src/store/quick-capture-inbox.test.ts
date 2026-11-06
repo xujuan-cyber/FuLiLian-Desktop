@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   $quickCaptureNotes,
-  QUICK_CAPTURE_INBOX_LIMIT,
-  QUICK_CAPTURE_INBOX_STORAGE_KEY,
   appendQuickCaptureNote,
   clearQuickCaptureNotes,
-  loadQuickCaptureNotes
+  loadQuickCaptureNotes,
+  QUICK_CAPTURE_INBOX_LIMIT,
+  QUICK_CAPTURE_INBOX_STORAGE_KEY
 } from './quick-capture-inbox'
 
 describe('quick capture inbox', () => {

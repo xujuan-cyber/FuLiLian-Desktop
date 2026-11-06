@@ -3,21 +3,20 @@ import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 
-import { Globe, LayoutDashboard, MessageCircle, Pencil } from '@/lib/icons'
-import { Kbd, KbdCombo } from '@/components/ui/kbd'
-import { Codicon } from '@/components/ui/codicon'
-import { useI18n } from '@/i18n'
 import { SETTINGS_ROUTE } from '@/app/routes'
-import {
-  type KeybindGroupId,
-  type ResolvedKeybindRow,
-  KEYBIND_GROUP_ORDER,
-  keybindSheetRows,
-  setKeybindsSheetOpen,
-  $keybindsSheetOpen
-} from '@/store/keybinds-registry'
-
+import { Codicon } from '@/components/ui/codicon'
+import { Kbd, KbdCombo } from '@/components/ui/kbd'
+import { useI18n } from '@/i18n'
+import { Globe, LayoutDashboard, MessageCircle, Pencil } from '@/lib/icons'
 import type { IconComponent } from '@/lib/icons'
+import {
+  $keybindsSheetOpen,
+  KEYBIND_GROUP_ORDER,
+  type KeybindGroupId,
+  keybindSheetRows,
+  type ResolvedKeybindRow,
+  setKeybindsSheetOpen
+} from '@/store/keybinds-registry'
 
 // Step 16 · T9 (方案 §3-T9, 预览 08-keybinds-help.png): the ? cheat sheet — a
 // read-only four-card overlay over the SAME registry the keybinds settings
@@ -126,7 +125,7 @@ function SheetGroup({ group, rows }: { group: KeybindGroupId; rows: ResolvedKeyb
   const Icon = GROUP_ICONS[group]
 
   return (
-    <section className="py-2" data-slot="keybinds-sheet-group" data-group={group}>
+    <section className="py-2" data-group={group} data-slot="keybinds-sheet-group">
       <h3 className="flex items-center gap-1.5 pb-1 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
         <Icon className="size-3.5 shrink-0" />
         <span className="min-w-0 truncate">{k.groups[group]}</span>

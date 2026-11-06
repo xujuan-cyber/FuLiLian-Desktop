@@ -28,9 +28,8 @@ import {
   setSessionStalled
 } from '@/store/session-states'
 
-import { refreshActiveProfileAfterBoot } from '../refresh-active-profile-after-boot'
-
 import type { ClientSessionState } from '../../types'
+import { refreshActiveProfileAfterBoot } from '../refresh-active-profile-after-boot'
 import type { GatewayRequester } from '../types'
 
 interface ActiveTranscriptSession {

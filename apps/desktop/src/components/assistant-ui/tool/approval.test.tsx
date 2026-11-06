@@ -211,6 +211,7 @@ describe('approval strip keyboard (T9: strip-focused Y/A/N)', () => {
 
     // The strip disappears once the approval resolves; re-arm for A and N.
     setRequest('chmod -R 777 /tmp/x')
+
     const second = await waitFor(() => {
       const el = document.querySelector('[data-slot="tool-approval-inline"]')
 
@@ -225,6 +226,7 @@ describe('approval strip keyboard (T9: strip-focused Y/A/N)', () => {
     })
 
     setRequest('chmod -R 777 /tmp/x')
+
     const third = await waitFor(() => {
       const el = document.querySelector('[data-slot="tool-approval-inline"]')
 

@@ -1,15 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { $cronSessions, $unreadFinishedSessionIds, $sessions } from './session'
-import { clearAllSessionStates, publishSessionState } from './session-states'
-import { $trayCounts } from './tray-state'
 import {
   $centerGroups,
   $notificationCenterReadIds,
   $notificationCenterUnread,
   $notificationEntries,
-  automationRowsFrom,
   approvalRowsFrom,
+  automationRowsFrom,
   centerGroups,
   clearNotificationCenter,
   groupForNotifyKind,
@@ -17,10 +14,13 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   NOTIFICATION_CENTER_LIMIT,
+  type NotificationCenterEntry,
   systemRowsFrom,
-  updateProgressToEntry,
-  type NotificationCenterEntry
+  updateProgressToEntry
 } from './notification-center'
+import { $cronSessions, $sessions, $unreadFinishedSessionIds } from './session'
+import { clearAllSessionStates, publishSessionState } from './session-states'
+import { $trayCounts } from './tray-state'
 
 const entry = (id: string, group: NotificationCenterEntry['group'], at = 1_000): NotificationCenterEntry => ({
   at,

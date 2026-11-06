@@ -274,6 +274,7 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
         return (result as unknown as Promise<unknown>).then(
           value => {
             record()
+
             return value
           },
           error => {
@@ -284,6 +285,7 @@ export function createBootTiming({ now = () => performance.now(), sink }: BootTi
       }
 
       record()
+
       return result
     }
   }

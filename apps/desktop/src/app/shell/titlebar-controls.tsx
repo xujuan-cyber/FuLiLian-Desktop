@@ -3,6 +3,7 @@ import { type ComponentProps, type MouseEvent, type ReactNode, useEffect, useSta
 import { useLocation, useNavigate } from 'react-router'
 
 import { hudTargetSessionId } from '@/app/hud/handoff'
+import { NotificationCenterBell } from '@/components/notification-center'
 import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { resetLayoutTree } from '@/components/pane-shell/tree/store'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,6 @@ import {
   togglePanesFlipped,
   toggleSidebarOpen
 } from '@/store/layout'
-import { NotificationCenterBell } from '@/components/notification-center'
 import { $unreadSessionCount } from '@/store/session-dot-state'
 
 import { appViewForPath, isOverlayView } from '../routes'

@@ -190,6 +190,7 @@ describe('quickComposerReducer', () => {
       { draft: 'first', type: 'edit' },
       { type: 'submit' }
     ]).state
+
     const { sent, state } = run([{ type: 'shown' }], afterSubmit)
 
     expect(sent).toEqual([])

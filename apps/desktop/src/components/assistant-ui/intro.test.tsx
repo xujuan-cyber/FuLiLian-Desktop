@@ -37,6 +37,7 @@ describe('Intro (v3 empty state: left axis greeting, lede, quick chips, entry ca
     // Every text node lives under the single content column, and no element in
     // the block re-centres its own copy or floats a paragraph with mx-auto.
     expect(root.querySelector('.v3-column')).toBeTruthy()
+
     for (const node of Array.from(root.querySelectorAll('*'))) {
       const className = node.getAttribute('class') ?? ''
       expect(className).not.toContain('text-center')
