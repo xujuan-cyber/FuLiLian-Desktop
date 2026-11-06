@@ -33,13 +33,14 @@ import {
   setToolsetEnabled
 } from '@/fulilian'
 import type { DesktopRosterAgent } from '@/global'
-import { useI18n } from '@/i18n'
+import { type Translations, useI18n } from '@/i18n'
 import { isDesktopToolsetVisible } from '@/lib/desktop-toolsets'
 import { compactNumber } from '@/lib/format'
 import { queryClient } from '@/lib/query-client'
 import { invalidateSlashCompletions } from '@/lib/slash-completion-cache'
 import { normalize } from '@/lib/text'
 import { useStoreSelector } from '@/lib/use-session-slice'
+import { cn } from '@/lib/utils'
 import { $gateway, activeGatewayConnectionId } from '@/store/gateway'
 import { notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
@@ -60,7 +61,7 @@ import {
   MasterDetail,
   ToolChip
 } from '../master-detail'
-import { PanelEmpty, PanelPill } from '../overlays/panel'
+import { PANEL_TITLE_CLASS, PanelEmpty, PanelPill } from '../overlays/panel'
 import { PageSearchShell } from '../page-search-shell'
 import { SETTINGS_ROUTE } from '../routes'
 import { ComputerUsePanel } from '../settings/computer-use-panel'
@@ -120,22 +121,25 @@ const usageOf = (skill: SkillInfo): number => (typeof skill.usage === 'number' ?
 
 const categoryFor = (skill: SkillInfo): string => asText(skill.category) || 'general'
 
-// Row subtitle: category, with non-default origins badged.
-function skillSubtitle(skill: SkillInfo): React.ReactNode {
+// Row subtitle: category, with non-default origins badged. The provenance
+// labels come from the SAME `t.skills.provenance` map the detail pane's pill
+// reads (index.tsx SkillDetail), so the "learned"/"hub" tag never drifts
+// between the list row and the pane — it used to be two hardcoded English
+// literals here and a translated pill there.
+function skillSubtitle(skill: SkillInfo, provenance: Translations['skills']['provenance']): React.ReactNode {
   const category = prettyName(categoryFor(skill))
-  const provenance = skill.provenance
 
   return (
     <>
       <span className="truncate">{category}</span>
-      {provenance === 'agent' && (
+      {skill.provenance === 'agent' && (
         <Badge className="shrink-0 normal-case" variant="default">
-          learned
+          {provenance.agent}
         </Badge>
       )}
-      {provenance === 'hub' && (
+      {skill.provenance === 'hub' && (
         <Badge className="shrink-0 normal-case" variant="muted">
-          hub
+          {provenance.hub}
         </Badge>
       )}
     </>
@@ -669,7 +673,7 @@ export function SkillsView({
       }
       id="skill-editor"
       onClose={() => setSkillEditor(null)}
-      title={<span className="text-[0.68rem] font-normal text-muted-foreground/60">{skillEditor.name}/SKILL.md</span>}
+      title={<span className="text-[length:var(--ui-type-meta)] font-normal text-muted-foreground/60">{skillEditor.name}/SKILL.md</span>}
     >
       <Suspense fallback={null}>
         <CodeEditor
@@ -761,9 +765,14 @@ export function SkillsView({
   const profileScopeSelector =
     scopeOptions.length > 1 ? (
       <div className="flex items-center gap-2 border-b border-(--ui-stroke-secondary) px-3 py-2">
-        <span className="text-[0.7rem] font-medium text-(--ui-text-tertiary)">{t.skills.configuringProfile}</span>
+        <span className="shrink-0 text-[length:var(--ui-type-meta)] font-medium text-(--ui-text-tertiary)">
+          {t.skills.configuringProfile}
+        </span>
+        {/* Shrink-to-fit, not fixed: `w-56` overflowed the header on a narrow
+            window. Grows into the free row space but never past the old 14rem
+            cap, so wide layouts look unchanged. */}
         <Select onValueChange={changeScope} value={scopeSelectValue}>
-          <SelectTrigger className="h-7 w-56 text-xs">
+          <SelectTrigger className="h-7 min-w-0 max-w-56 flex-1 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -862,7 +871,7 @@ export function SkillsView({
                         meta={usageOf(skill) > 0 ? `×${compactNumber(usageOf(skill))}` : undefined}
                         onSelect={() => setSelectedSkill(skill.name)}
                         onToggle={enabled => void handleToggleSkill(skill, enabled)}
-                        subtitle={skillSubtitle(skill)}
+                        subtitle={skillSubtitle(skill, t.skills.provenance)}
                         title={skill.name}
                         toggleLabel={skill.name}
                       />
@@ -993,7 +1002,7 @@ function DetailHeader({
   return (
     <header>
       <div className="flex min-h-6 flex-wrap items-center gap-2">
-        <h3 className="min-w-0 truncate text-[0.9375rem] font-semibold tracking-tight">{title}</h3>
+        <h3 className={cn('min-w-0 truncate', PANEL_TITLE_CLASS)}>{title}</h3>
         {pills}
       </div>
       <p className="mt-1 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)">
@@ -1102,8 +1111,13 @@ function SkillDetail({
       {parsed && parsed.meta.length > 0 && (
         <div className="grid gap-1 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-3">
           {parsed.meta.map(([key, value]) => (
-            <div className="flex gap-2 text-[0.68rem] leading-4" key={key}>
-              <span className="w-24 shrink-0 font-medium text-(--ui-text-tertiary)">{key}</span>
+            // Stack key over value below `md` (the pane is ~2/3 of the window
+            // there): the fixed `w-24` key column plus a long value pushed this
+            // row ~60px past the pane's right edge at 543px viewport — measured,
+            // not assumed (`15-skills-narrow.png`). From `md` up it is the same
+            // two-column row as before.
+            <div className="grid min-w-0 grid-cols-1 gap-x-2 gap-y-0.5 text-[length:var(--ui-type-meta)] leading-4 md:grid-cols-[6rem_minmax(0,1fr)]" key={key}>
+              <span className="truncate font-medium text-(--ui-text-tertiary)">{key}</span>
               <span className="min-w-0 whitespace-pre-wrap break-words text-(--ui-text-secondary)">{value}</span>
             </div>
           ))}
@@ -1113,7 +1127,7 @@ function SkillDetail({
         <CountSkeleton />
       ) : parsed ? (
         <pre
-          className="overflow-auto whitespace-pre-wrap wrap-break-word rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-3 font-mono text-[0.68rem] leading-relaxed"
+          className="overflow-auto whitespace-pre-wrap wrap-break-word rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-3 font-mono text-[length:var(--ui-type-meta)] leading-relaxed"
           data-selectable-text="true"
         >
           {parsed.body.trim() || t.skills.noDescription}

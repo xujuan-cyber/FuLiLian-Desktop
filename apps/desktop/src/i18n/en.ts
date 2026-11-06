@@ -1210,6 +1210,7 @@ export const en: Translations = {
       nameRequiredTitle: 'Name required',
       nameRequiredMessage: 'Give this MCP server a config key.',
       objectRequired: 'Server config must be a JSON object',
+      docUnnamedServer: 'Wrap the server in {"mcpServers": {"name": …}} so it has a name',
       invalidJson: 'Invalid MCP JSON',
       saveFailed: 'Save failed',
       removeFailed: 'Remove failed',
@@ -1569,6 +1570,8 @@ export const en: Translations = {
       pickerHide: 'Hide the hub browser',
       pickerHint: 'Hit "+ Add to this Agent" on any skill — it installs and appears in the list above.',
       loadFailed: 'Skill hub failed to load',
+      loadFailedHint: 'The hub is an online page — check your connection and try again.',
+      retry: 'Retry',
       previewFailed: 'Skill preview failed',
       scanFailed: 'Security scan failed',
       searchFailed: 'Hub search failed'

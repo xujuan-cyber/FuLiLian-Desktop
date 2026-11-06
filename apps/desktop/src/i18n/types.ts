@@ -1079,6 +1079,7 @@ export interface Translations {
       nameRequiredTitle: string
       nameRequiredMessage: string
       objectRequired: string
+      docUnnamedServer: string
       invalidJson: string
       saveFailed: string
       removeFailed: string
@@ -1410,6 +1411,8 @@ export interface Translations {
       pickerHide: string
       pickerHint: string
       loadFailed: string
+      loadFailedHint: string
+      retry: string
       previewFailed: string
       scanFailed: string
       searchFailed: string

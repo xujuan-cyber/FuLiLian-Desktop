@@ -49,7 +49,7 @@ import { $activeSessionId } from '@/store/session'
 import { fulilianConfigCacheWriter, useFulilianConfigRecord } from '../hooks/use-config-record'
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { DetailPane, ICON_BUTTON, MASTER_DETAIL_WIDE_COLS } from '../master-detail'
-import { PanelAddButton, PanelEmpty } from '../overlays/panel'
+import { PANEL_TITLE_CLASS, PanelAddButton, PanelEmpty } from '../overlays/panel'
 import { prettyName } from '../settings/helpers'
 import { useDeepLinkHighlight } from '../settings/use-deep-link-highlight'
 
@@ -62,18 +62,53 @@ const STARTER_ENTRY = { command: 'npx', args: ['-y', '@modelcontextprotocol/serv
 const pretty = (value: unknown) => JSON.stringify(value, null, 2)
 const wrapDoc = (entries: McpServers) => pretty({ mcpServers: entries })
 
+/** Error codes `parseServersDoc` throws so callers can localize them. The code
+ *  alone must never surface: `readableError` shows a SHORT `err.message`
+ *  verbatim, so every user-facing catch runs the error through
+ *  `mcpDocErrorText` first (see `saveDoc`). */
+export const MCP_DOC_INVALID_JSON = 'mcp-doc-invalid-json'
+export const MCP_DOC_OBJECT_REQUIRED = 'mcp-doc-object-required'
+export const MCP_DOC_UNNAMED_SERVER = 'mcp-doc-unnamed-server'
+
+/** Map a `parseServersDoc` failure to a localized sentence. Anything else
+ *  (a genuine backend error) passes through with its own message intact. */
+export function mcpDocErrorText(err: unknown, m: Translations['settings']['mcp']): string {
+  const code = err instanceof Error ? err.message : ''
+
+  if (code === MCP_DOC_INVALID_JSON) {
+    return m.invalidJson
+  }
+
+  if (code === MCP_DOC_OBJECT_REQUIRED) {
+    return m.objectRequired
+  }
+
+  if (code === MCP_DOC_UNNAMED_SERVER) {
+    return m.docUnnamedServer
+  }
+
+  return err instanceof Error ? err.message : String(err)
+}
+
 /** Accepts `{"mcpServers": {...}}` (ecosystem), a bare name→config map, or throws. */
 function parseServersDoc(raw: string): McpServers {
-  const parsed = JSON.parse(raw) as unknown
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    // V8's own syntax message is English and leaks editor jargon; code it.
+    throw new Error(MCP_DOC_INVALID_JSON)
+  }
 
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Expected a JSON object')
+    throw new Error(MCP_DOC_OBJECT_REQUIRED)
   }
 
   const doc = parsed as Record<string, unknown>
 
   if (isServerShape(doc)) {
-    throw new Error('Wrap the server in {"mcpServers": {"name": …}} so it has a name')
+    throw new Error(MCP_DOC_UNNAMED_SERVER)
   }
 
   const wrapper = doc.mcpServers ?? doc.mcp_servers
@@ -151,10 +186,15 @@ function statusOf(server: Record<string, unknown>, probe: Probe | undefined): Se
   return NEEDS_AUTH_RE.test(probe.error ?? '') ? 'needs-auth' : 'error'
 }
 
+// Status colors come from the semantic tokens (`--dt-success/warning/destructive`
+// via the `bg-success`/`bg-warning`/`bg-destructive` utilities) rather than the
+// raw Tailwind palette: a theme switch or a contrast retint must carry the probe
+// state with it. `probing`/`off`/`unknown` stay neutral ink — they describe
+// "no signal yet", not a health verdict, so they must NOT read as success/warn.
 const STATUS_DOT: Record<ServerStatus, string> = {
-  ok: 'bg-emerald-500',
-  error: 'bg-red-500',
-  'needs-auth': 'bg-amber-500',
+  ok: 'bg-success',
+  error: 'bg-destructive',
+  'needs-auth': 'bg-warning',
   probing: 'animate-pulse bg-foreground/40',
   off: 'bg-foreground/20',
   unknown: 'bg-foreground/20'
@@ -965,7 +1005,9 @@ export function McpTab({ gateway, profile }: { gateway: FulilianGateway | null; 
     try {
       entries = parseServersDoc(draft)
     } catch (err) {
-      notifyError(err, m.invalidJson)
+      // Localize before notifyError: it shows a short message verbatim, so the
+      // raw code would otherwise reach the toast.
+      notifyError(new Error(mcpDocErrorText(err, m)), m.invalidJson)
 
       return
     }
@@ -1071,7 +1113,7 @@ export function McpTab({ gateway, profile }: { gateway: FulilianGateway | null; 
                   lands on the exact line the sort link occupies in the
                   Skills/Tools views. */}
               <div className="mb-1 flex h-6 shrink-0 items-center pl-2 pr-1">
-                <span className="flex-1 text-[0.72rem] font-medium text-(--ui-text-tertiary)">{m.tabServers}</span>
+                <span className="flex-1 text-[length:var(--ui-type-sm)] font-medium text-(--ui-text-tertiary)">{m.tabServers}</span>
                 <McpImportButton disabled={profilePending} onImport={importServers} />
               </div>
               {names.length === 0 ? (
@@ -1121,7 +1163,7 @@ export function McpTab({ gateway, profile }: { gateway: FulilianGateway | null; 
               {(catalogQuery.isLoading || availableCatalog.length > 0) && (
                 <>
                   <div className="mb-1 mt-3 flex h-6 shrink-0 items-center border-t border-(--ui-stroke-quaternary) pl-2 pr-1 pt-2">
-                    <span className="text-[0.72rem] font-medium text-(--ui-text-tertiary)">{m.tabCatalog}</span>
+                    <span className="text-[length:var(--ui-type-sm)] font-medium text-(--ui-text-tertiary)">{m.tabCatalog}</span>
                   </div>
                   <McpCatalog
                     entries={availableCatalog}
@@ -1155,7 +1197,7 @@ export function McpTab({ gateway, profile }: { gateway: FulilianGateway | null; 
             setDirty(true)
           }}
           onCursorChange={setCursor}
-          onFormatJsonError={error => notifyError(new Error(error), m.invalidJson)}
+          onFormatJsonError={error => notifyError(new Error(mcpDocErrorText(error, m)), m.invalidJson)}
           onSave={() => void saveDoc()}
           remountKey={docVersion}
           trailing={
@@ -1170,7 +1212,7 @@ export function McpTab({ gateway, profile }: { gateway: FulilianGateway | null; 
               {(['stdio', 'agent'] as const).map(kind => (
                 <TextTab
                   active={logSource === kind}
-                  className="h-5 px-0.5 text-[0.65rem]"
+                  className="h-5 px-0.5 text-[length:var(--ui-type-meta)]"
                   key={kind}
                   onClick={() => setLogSource(kind)}
                 >
@@ -1182,7 +1224,7 @@ export function McpTab({ gateway, profile }: { gateway: FulilianGateway | null; 
           defaultHeight={176}
           id="mcp-logs"
           title={
-            <span className="text-[0.68rem] font-normal text-muted-foreground/60">
+            <span className="text-[length:var(--ui-type-meta)] font-normal text-muted-foreground/60">
               {selected && savedEntry ? selected : m.allServers}
             </span>
           }
@@ -1270,11 +1312,11 @@ function ServerConfig({
         </Tip>
         <McpAvatar className="mt-2.5" name={name} status={status} />
         <div className="min-w-0 flex-1 pt-1">
-          <h3 className="min-w-0 truncate text-[0.9375rem] font-semibold tracking-tight">{prettyName(name)}</h3>
-          <p className="mt-0.5 truncate text-[0.68rem] text-(--ui-text-tertiary)">
+          <h3 className={cn('min-w-0 truncate', PANEL_TITLE_CLASS)}>{prettyName(name)}</h3>
+          <p className="mt-0.5 truncate text-[length:var(--ui-type-meta)] text-(--ui-text-tertiary)">
             {typeof entry.url === 'string' ? entry.url : [entry.command, ...((entry.args as string[]) ?? [])].join(' ')}
           </p>
-          {summary && <p className="mt-0.5 text-[0.68rem] text-(--ui-text-tertiary)">{summary}</p>}
+          {summary && <p className="mt-0.5 text-[length:var(--ui-type-meta)] text-(--ui-text-tertiary)">{summary}</p>}
         </div>
         {saved && (
           // Direct row children (no wrapper): the icons↔switch gap must be the
@@ -1311,7 +1353,7 @@ function ServerConfig({
           </Button>
         </div>
       )}
-      {!saved && <p className="mt-3 text-[0.68rem] text-muted-foreground/60">{m.unsavedConnect}</p>}
+      {!saved && <p className="mt-3 text-[length:var(--ui-type-meta)] text-muted-foreground/60">{m.unsavedConnect}</p>}
 
       {status === 'probing' && <PageLoader className="min-h-24" label={t.skills.loading} />}
 
@@ -1331,7 +1373,7 @@ function ServerConfig({
               <button
                 aria-pressed={on}
                 className={cn(
-                  'rounded-md px-1.5 py-0.5 font-mono text-[0.65rem] text-(--ui-text-tertiary) hover:text-foreground',
+                  'rounded-md px-1.5 py-0.5 font-mono text-[length:var(--ui-type-meta)] text-(--ui-text-tertiary) hover:text-foreground',
                   saved ? 'cursor-pointer' : 'cursor-default',
                   on ? 'bg-(--ui-bg-quinary)' : 'line-through opacity-70'
                 )}
@@ -1467,7 +1509,7 @@ function McpImportButton({ disabled, onImport }: { disabled: boolean; onImport: 
       open={open}
     >
       <PopoverTrigger asChild>
-        <Button className="h-5 px-1 text-[0.68rem]" disabled={disabled} size="xs" variant="text">
+        <Button className="h-5 px-1 text-[length:var(--ui-type-meta)]" disabled={disabled} size="xs" variant="text">
           <Codicon name="clippy" size="0.75rem" />
           {m.importButton}
         </Button>
@@ -1477,7 +1519,7 @@ function McpImportButton({ disabled, onImport }: { disabled: boolean; onImport: 
           <Textarea
             aria-label={m.importButton}
             autoFocus
-            className="max-h-40 min-h-20 font-mono text-[0.68rem]"
+            className="max-h-40 min-h-20 font-mono text-[length:var(--ui-type-meta)]"
             onChange={event => setText(event.currentTarget.value)}
             placeholder={m.importPlaceholder}
             value={text}
@@ -1486,8 +1528,8 @@ function McpImportButton({ disabled, onImport }: { disabled: boolean; onImport: 
             <div className="flex max-h-40 flex-col gap-1 overflow-y-auto">
               {entries.map((entry, index) => (
                 <div className="rounded-md bg-(--ui-bg-tertiary) px-2 py-1.5" key={`${entry.name}-${index}`}>
-                  <span className="block truncate text-[0.72rem] font-medium text-foreground/85">{entry.name}</span>
-                  <span className="block truncate font-mono text-[0.62rem] text-muted-foreground/60">
+                  <span className="block truncate text-[length:var(--ui-type-sm)] font-medium text-foreground/85">{entry.name}</span>
+                  <span className="block truncate font-mono text-[length:var(--ui-type-label)] text-muted-foreground/60">
                     {typeof entry.config.url === 'string'
                       ? entry.config.url
                       : [entry.config.command, ...((entry.config.args as string[]) ?? [])].join(' ')}
@@ -1496,7 +1538,7 @@ function McpImportButton({ disabled, onImport }: { disabled: boolean; onImport: 
               ))}
             </div>
           ) : (
-            text.trim() && <p className="px-0.5 text-[0.62rem] text-muted-foreground/60">{m.importNoMatch}</p>
+            text.trim() && <p className="px-0.5 text-[length:var(--ui-type-label)] text-muted-foreground/60">{m.importNoMatch}</p>
           )}
           <div className="flex justify-end">
             <Button disabled={!entries} onClick={confirm} size="xs">
@@ -1513,7 +1555,7 @@ function McpImportButton({ disabled, onImport }: { disabled: boolean; onImport: 
 // catalog's flat row treatment.
 function CatalogTag({ children }: { children: string }) {
   return (
-    <span className="rounded bg-(--ui-bg-tertiary) px-1.5 py-0.5 text-[0.6rem] text-(--ui-text-secondary)">
+    <span className="rounded bg-(--ui-bg-tertiary) px-1.5 py-0.5 text-[length:var(--ui-type-label)] text-(--ui-text-secondary)">
       {children}
     </span>
   )
@@ -1616,7 +1658,7 @@ function McpCatalog({
               />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-[0.78rem] font-medium text-foreground/85">
+                  <span className="truncate text-[length:var(--ui-type-sm)] font-medium text-foreground/85">
                     {prettyName(entry.name)}
                   </span>
                   <CatalogTag>{entry.transport}</CatalogTag>
@@ -1624,17 +1666,17 @@ function McpCatalog({
                   {entry.auth_type === 'api_key' && <CatalogTag>API key</CatalogTag>}
                   {entry.needs_install && !entry.installed && <CatalogTag>{m.catalogNeedsInstall}</CatalogTag>}
                   {entry.installed && (
-                    <span className="text-[0.6rem] text-emerald-400">
+                    <span className="text-[length:var(--ui-type-label)] text-success">
                       {entry.enabled ? m.catalogEnabled : m.catalogInstalled}
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 line-clamp-2 text-[0.68rem] text-muted-foreground/70">{entry.description}</p>
+                <p className="mt-0.5 line-clamp-2 text-[length:var(--ui-type-meta)] text-(--ui-text-tertiary)">{entry.description}</p>
                 {envOpenFor === entry.name && entry.required_env.length > 0 && (
                   <div className="mt-2 grid gap-2">
                     {entry.required_env.map(env => (
                       <label className="grid gap-1" key={env.name}>
-                        <span className="text-[0.62rem] text-muted-foreground">
+                        <span className="text-[length:var(--ui-type-label)] text-muted-foreground">
                           {env.prompt || env.name}
                           {env.required ? ' *' : ''}
                         </span>
@@ -1829,7 +1871,7 @@ function McpRow({
           <span className="flex min-w-0 items-center gap-1.5">
             <span
               className={cn(
-                'min-w-0 truncate text-[0.78rem]',
+                'min-w-0 truncate text-[length:var(--ui-type-sm)]',
                 enabled ? 'font-medium text-foreground/85' : 'font-normal text-muted-foreground/60'
               )}
             >
@@ -1839,12 +1881,12 @@ function McpRow({
                 never a dialog. Shown only when the overlay KNOWS both halves:
                 nonzero schema cost and zero 30-day uses. */}
             {unused && (
-              <span className="shrink-0 rounded bg-(--ui-bg-tertiary) px-1 py-px text-[0.58rem] font-normal text-muted-foreground/60">
+              <span className="shrink-0 rounded bg-(--ui-bg-tertiary) px-1 py-px text-[length:var(--ui-type-label)] font-normal text-muted-foreground/60">
                 {m.unusedPill}
               </span>
             )}
           </span>
-          <span className="block truncate text-[0.62rem] text-muted-foreground/50">{statusText}</span>
+          <span className="block truncate text-[length:var(--ui-type-label)] text-muted-foreground/50">{statusText}</span>
         </span>
       </button>
       <ServerIconActions

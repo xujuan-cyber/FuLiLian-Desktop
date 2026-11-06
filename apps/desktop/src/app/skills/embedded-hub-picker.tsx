@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { memo, type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Codicon } from '@/components/ui/codicon'
 import type { ProfileScope } from '@/fulilian'
 import { useI18n } from '@/i18n'
 import { Loader2 } from '@/lib/icons'
@@ -81,6 +82,35 @@ export const EmbeddedHubPicker = memo(function EmbeddedHubPicker({
   const open = height > HUB_COLLAPSED_PX
   const [dragging, setDragging] = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
+
+  // The hub is a CROSS-ORIGIN docs site: when the network drops (offline,
+  // GitHub unreachable, ERR_CONNECTION_RESET) the frame fires neither `load`
+  // nor a readable `error` — it just stays blank forever, which read as "the
+  // hub is empty". Arm a one-shot timeout instead: any `load` disarms it, and
+  // only a still-unloaded frame past the deadline flips to the failure card.
+  // `reloadKey` remounts the iframe for Retry (a plain src reassign on an
+  // already-failed frame may not refetch).
+  const [hubFailed, setHubFailed] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+  const HUB_LOAD_TIMEOUT_MS = 12_000
+
+  useEffect(() => {
+    if (!open) {
+      return undefined
+    }
+
+    setHubFailed(false)
+    // A frame cached from a previous good load is already `complete`; don't
+    // punish it with the timeout. `open` gates the effect so a collapsed hub
+    // never counts down.
+    const timer = window.setTimeout(() => setHubFailed(true), HUB_LOAD_TIMEOUT_MS)
+
+    return () => window.clearTimeout(timer)
+  }, [open, reloadKey])
+
+  const retryHub = () => {
+    setReloadKey(key => key + 1)
+  }
 
   // Top-edge sash: dragging UP grows the hub (shrinking the skills list above,
   // which is the flex-1 sibling). Same gesture as DetailPane / the shell's
@@ -191,7 +221,7 @@ export const EmbeddedHubPicker = memo(function EmbeddedHubPicker({
         />
       </div>
       <div className="flex shrink-0 items-center justify-between px-3 py-1.5">
-        <span className="text-[0.7rem] font-medium text-(--ui-text-tertiary)">{h.pickerTitle}</span>
+        <span className="text-[length:var(--ui-type-meta)] font-medium text-(--ui-text-tertiary)">{h.pickerTitle}</span>
         <div className="flex items-center gap-1">
           <Button disabled={updating} onClick={updateAll} size="xs" variant="text">
             {updating && <Loader2 className="size-3 animate-spin" />}
@@ -224,24 +254,41 @@ export const EmbeddedHubPicker = memo(function EmbeddedHubPicker({
               width: '100%'
             }}
           >
-            <iframe
-              sandbox="allow-scripts allow-same-origin"
-              src={HUB_PICKER_URL}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                height: '133.34%',
-                // While the sash drags, the cross-origin iframe must not eat
-                // the pointermove stream.
-                pointerEvents: dragging ? 'none' : 'auto',
-                transform: 'scale(0.75)',
-                transformOrigin: 'top left',
-                width: '133.34%'
-              }}
-              title={h.pickerTitle}
-            />
+            {hubFailed ? (
+              <div className="grid h-full place-items-center px-6 text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <Codicon className="text-muted-foreground/50" name="cloud-offline" size="1.25rem" />
+                  <p className="text-sm font-medium text-foreground/90">{h.loadFailed}</p>
+                  <p className="max-w-xs text-xs leading-relaxed text-muted-foreground/70">{h.loadFailedHint}</p>
+                  <Button onClick={retryHub} size="xs" variant="text">
+                    <Codicon name="refresh" size="0.75rem" />
+                    {h.retry}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <iframe
+                key={reloadKey}
+                onError={() => setHubFailed(true)}
+                onLoad={() => setHubFailed(false)}
+                sandbox="allow-scripts allow-same-origin"
+                src={HUB_PICKER_URL}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  height: '133.34%',
+                  // While the sash drags, the cross-origin iframe must not eat
+                  // the pointermove stream.
+                  pointerEvents: dragging ? 'none' : 'auto',
+                  transform: 'scale(0.75)',
+                  transformOrigin: 'top left',
+                  width: '133.34%'
+                }}
+                title={h.pickerTitle}
+              />
+            )}
           </div>
-          <p className="shrink-0 px-1 text-[0.65rem] leading-4 text-(--ui-text-quaternary)">{h.pickerHint}</p>
+          <p className="shrink-0 px-1 text-[length:var(--ui-type-meta)] leading-4 text-(--ui-text-quaternary)">{h.pickerHint}</p>
         </div>
       )}
     </section>

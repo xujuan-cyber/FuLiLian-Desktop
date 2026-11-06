@@ -1318,6 +1318,7 @@ export const zh: Translations = {
       nameRequiredTitle: '需要名称',
       nameRequiredMessage: '请为此 MCP 服务器提供配置键。',
       objectRequired: '服务器配置必须是 JSON 对象',
+      docUnnamedServer: '请把服务器包在 {"mcpServers": {"名称": …}} 里，这样它才有名字',
       invalidJson: 'MCP JSON 无效',
       saveFailed: '保存失败',
       removeFailed: '移除失败',
@@ -1670,6 +1671,8 @@ export const zh: Translations = {
       pickerHide: '隐藏技能中心浏览器',
       pickerHint: '点击任意技能上的“+ Add to this Agent”即可安装，安装后会出现在上方列表中。',
       loadFailed: '技能中心加载失败',
+      loadFailedHint: '技能中心是在线页面，请检查网络后重试。',
+      retry: '重试',
       previewFailed: '技能预览失败',
       scanFailed: '安全扫描失败',
       searchFailed: '技能中心搜索失败'
