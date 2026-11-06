@@ -45,7 +45,8 @@ import {
   rootChildSide,
   shownPaneIds,
   subtreeGone,
-  type TrackContext
+  type TrackContext,
+  yieldingFloor
 } from './track-model'
 import { TreeNode } from './tree-node'
 
@@ -530,6 +531,32 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
   const growable = tracks.map((_, i) => i).filter(i => !tracks[i].collapsed && !tracks[i].minimized)
   const allFixed = growable.length > 0 && growable.every(i => tracks[i].track !== null)
 
+  // THE YIELDING FLOOR (narrow-window overflow guard, horizontal rows only):
+  // when this row's floors sum past its width, each fixed zone's floor yields
+  // rightmost-first (see yieldingFloor in track-model). Per child, the floors
+  // that must NOT yield before it: flex floors (the main zone stays readable
+  // — product ruling) and minimized rails (fixed 1.75rem strips) never yield,
+  // and a fixed zone reserves the fixed floors to its LEFT, which yield after
+  // it — so the row's relaxed floors telescope to at most its width. Vertical
+  // splits keep their authored floors.
+  const reservedFloors: string[][] = []
+
+  if (horizontal) {
+    const inflexible = tracks.flatMap(t =>
+      t.collapsed ? [] : t.minimized ? [MINIMIZED_TRACK] : t.track === null && t.sizing?.minWidth ? [t.sizing.minWidth] : []
+    )
+
+    const leftFixed: string[] = []
+
+    for (const t of tracks) {
+      reservedFloors.push(t.track === null ? [] : [...inflexible, ...leftFixed])
+
+      if (!t.collapsed && !t.minimized && t.track !== null && t.sizing?.minWidth) {
+        leftFixed.push(t.sizing.minWidth)
+      }
+    }
+  }
+
   // Only an uncapped fixed track may absorb leftover. A maxWidth/maxHeight
   // sidebar (review, files, sessions) must keep that clamp — otherwise ⌘G
   // balloons the rail and sash-remembered sizes become a flex-basis that
@@ -599,9 +626,10 @@ export function TreeSplit({ node, root, rootRow }: { node: SplitNode; root?: boo
                       flex: track ? `${absorbs ? 1 : 0} 1 ${track}` : `${grow(i)} ${grow(i)} 0px`,
                       // Pane-declared clamps apply along THIS split's axis only
                       // (a rail's width clamp shouldn't constrain its height).
-                      // The absorber is uncapped by selection, so dropping its
-                      // max is a no-op; capped tracks always keep theirs.
-                      minWidth: (horizontal && sizing?.minWidth) || 0,
+                      // The floor yields rightmost-first when the row's floors
+                      // exceed the container (yieldingFloor); wide windows
+                      // resolve it to the authored floor unchanged.
+                      minWidth: (horizontal && yieldingFloor(sizing?.minWidth, reservedFloors[i])) || 0,
                       maxWidth: horizontal && !absorbs ? sizing?.maxWidth : undefined,
                       minHeight: (!horizontal && sizing?.minHeight) || 0,
                       maxHeight: horizontal || absorbs ? undefined : sizing?.maxHeight

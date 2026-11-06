@@ -185,6 +185,45 @@ export const cssMax = (values: (string | null | undefined)[]): string | undefine
 export const MINIMIZED_TRACK = '1.75rem'
 
 /**
+ * THE YIELDING FLOOR — the narrow-window overflow guard for horizontal rows.
+ *
+ * A fixed zone renders `flex: 0 1 <basis>` floored by its min-width. When a
+ * row's floors (fixed + flex) sum past the container, flexbox cannot shrink
+ * below them and the row overflows the window — at the 400px minimum window
+ * the three default columns (sidebar 180 + main 22vw + files 160) overflow
+ * by 28px with the right rail clipped and NO scrollbar (the split fills the
+ * window exactly, so nothing scrolls). Floors must yield.
+ *
+ * Instead of measuring the container in JS (a ResizeObserver churning React
+ * state on every window drag), each fixed zone's floor relaxes to a pure CSS
+ * expression: `min(<floor>, calc(100% - <reserved>))`. The browser resolves
+ * `100%` against THIS split's width, so the guard is live across resizes and
+ * only bites when the floors actually exceed the container — on a wide window
+ * `calc(100% - reserved)` resolves ABOVE the floor and min() returns the
+ * authored floor (wide layouts are untouched, pixel-for-pixel). `reserved`
+ * lists every floor that must NOT yield before this one: flex floors (the
+ * main zone stays readable — product ruling), minimized rails (fixed strips)
+ * and the fixed floors to this zone's LEFT, which yield after it. The row
+ * therefore yields RIGHTMOST-FIRST and the relaxed floors telescope to at
+ * most the container width — zero horizontal overflow at any width. A calc
+ * resolving negative clamps to 0 in CSS, so no NaN and no negative track.
+ */
+export function yieldingFloor(
+  floor: string | undefined,
+  reserved: readonly (string | null | undefined)[]
+): string | undefined {
+  if (!floor) {
+    return undefined
+  }
+
+  const kept = reserved.filter((value): value is string => Boolean(value))
+
+  // Nothing to reserve against: keep the authored string (min() with 100%
+  // would be a no-op — emitting it would needlessly churn inline styles).
+  return kept.length === 0 ? floor : `min(${floor}, calc(100% - ${kept.join(' - ')}))`
+}
+
+/**
  * In an all-fixed split, the last uncapped track may absorb leftover space
  * (terminal/logs stacked at 38vh with nothing else to fill the column). A
  * CAPPED track must never be the absorber: review/files declare maxWidth
