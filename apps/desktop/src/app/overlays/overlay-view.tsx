@@ -16,6 +16,21 @@ import { cn } from '@/lib/utils'
 // Main content sits *under* the X (top-right) and keeps its own taller pad.
 export const OVERLAY_TOP_CLEARANCE = 'pt-[calc(var(--titlebar-height)/2-0.4375rem)]'
 
+// Shared card insets. Before this pair of constants the three overlay card
+// families each spelled their own horizontal gutter — Panel `px-4 sm:px-5`,
+// OverlayMain an inline `clamp(0.8333rem,2.6667vw,2.6667rem)`, Dialog `px-6` —
+// so the page's left edge visibly jogged as you moved between them.
+//
+// They converge to ONE responsive clamp, but the clamp's midpoint follows the
+// pane, not the viewport: the settings split-main is full-bleed and can afford
+// a wide gutter, while Panel wraps content that is already width-capped, so a
+// viewport-relative 2.67vw would pad a 42rem card by ~38px and read as a
+// regression. Same shape, two scales — the divergence is now a named,
+// documented decision rather than three hand-typed arbitrary values.
+export const OVERLAY_CARD_INSET_X = 'px-[clamp(0.8333rem,2.6667vw,2.6667rem)]'
+export const OVERLAY_CARD_INSET_X_COMPACT = 'px-4 sm:px-5'
+export const OVERLAY_CARD_INSET_B = 'pb-4'
+
 interface OverlayViewProps {
   children: ReactNode
   onClose: () => void

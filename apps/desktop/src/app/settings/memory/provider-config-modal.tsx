@@ -44,6 +44,33 @@ function groupFields(fields: MemoryProviderField[]): [string, MemoryProviderFiel
   return groups
 }
 
+// Inline field validation. Before this the modal accepted any draft and only
+// surfaced a problem as a save-time toast, so a typo in a numeric budget or a
+// malformed JSON block looked identical to a valid value until the round-trip
+// failed. Empty is always valid here (the backend owns defaults, and a blank
+// secret means "keep the stored one").
+function fieldError(field: MemoryProviderField, value: string): null | string {
+  const raw = value.trim()
+
+  if (raw === '') {
+    return null
+  }
+
+  if (field.kind === 'number' && Number.isNaN(Number(raw))) {
+    return 'Enter a number.'
+  }
+
+  if (field.kind === 'json') {
+    try {
+      JSON.parse(raw)
+    } catch {
+      return 'Enter valid JSON.'
+    }
+  }
+
+  return null
+}
+
 export function ProviderConfigModal({
   config,
   profile = null,
@@ -64,6 +91,10 @@ export function ProviderConfigModal({
   const [seeded, setSeeded] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
+  // Recomputed per render (the form is small) so the Save button reflects the
+  // live draft without a second, drift-prone error-state store.
+  const hasErrors = config.fields.some(field => fieldError(field, values[field.key] ?? '') !== null)
+
   // Reseed on open so edits never start from a stale prior-session snapshot.
   useEffect(() => {
     if (open) {
@@ -74,6 +105,12 @@ export function ProviderConfigModal({
   }, [open, config])
 
   const save = async () => {
+    // Inline validation is the gate: a malformed draft never reaches the
+    // round-trip, so the user sees the problem at the field, not in a toast.
+    if (config.fields.some(field => fieldError(field, values[field.key] ?? '') !== null)) {
+      return
+    }
+
     // Untouched keys stay unsubmitted; runtime defaults still own their values.
     const edited = Object.fromEntries(Object.entries(values).filter(([key, value]) => value !== seeded[key]))
 
@@ -120,25 +157,35 @@ export function ProviderConfigModal({
         <div className="min-w-0">
           {groupFields(config.fields).map(([group, fields]) => (
             <section className="mt-6 first:mt-2" key={group}>
-              <h3 className="border-b border-(--ui-accent-secondary)/30 pb-1.5 font-mono text-[0.68rem] uppercase tracking-wide text-(--ui-accent-secondary)">
+              <h3 className="border-b border-(--ui-accent-secondary)/30 pb-1.5 font-mono text-[length:var(--ui-type-meta)] uppercase tracking-wide text-(--ui-accent-secondary)">
                 {group}
               </h3>
               <div className="pl-1">
-                {fields.map(field => (
-                  <div className="border-b border-border/40 last:border-b-0" key={field.key}>
-                    <ListRow
-                      action={
-                        <FieldControl
-                          field={field}
-                          onChange={value => setValues(current => ({ ...current, [field.key]: value }))}
-                          value={values[field.key] ?? ''}
-                        />
-                      }
-                      description={field.description}
-                      title={<FieldTitle field={field} />}
-                    />
-                  </div>
-                ))}
+                {fields.map(field => {
+                  const error = fieldError(field, values[field.key] ?? '')
+
+                  return (
+                    <div className="border-b border-border/40 last:border-b-0" key={field.key}>
+                      <ListRow
+                        action={
+                          <FieldControl
+                            field={field}
+                            invalid={error !== null}
+                            onChange={value => setValues(current => ({ ...current, [field.key]: value }))}
+                            value={values[field.key] ?? ''}
+                          />
+                        }
+                        description={
+                          <>
+                            {field.description}
+                            {error ? <span className="mt-1 block text-destructive">{error}</span> : null}
+                          </>
+                        }
+                        title={<FieldTitle field={field} />}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             </section>
           ))}
@@ -150,7 +197,11 @@ export function ProviderConfigModal({
               Cancel
             </Button>
           </DialogClose>
-          <Button disabled={saving} onClick={() => void save()} size="sm">
+          <Button
+            disabled={saving || hasErrors}
+            onClick={() => void save()}
+            size="sm"
+          >
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save />}
             Save changes
           </Button>

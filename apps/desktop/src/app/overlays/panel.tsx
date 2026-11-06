@@ -9,7 +9,7 @@ import { Tip } from '@/components/ui/tooltip'
 import { translateNow } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-import { OVERLAY_TOP_CLEARANCE, OverlayView } from './overlay-view'
+import { OVERLAY_CARD_INSET_B, OVERLAY_CARD_INSET_X_COMPACT, OVERLAY_TOP_CLEARANCE, OverlayView } from './overlay-view'
 
 // Overlay "panel" primitive — the centered, capped card + framed chrome lifted
 // straight from the trace / agents overlay so every non-settings overlay (cron,
@@ -49,7 +49,13 @@ export function Panel({
       closeLabel={closeLabel}
       // Header title rides up next to the floating close button — see
       // OVERLAY_TOP_CLEARANCE, the shared clearance every overlay column uses.
-      contentClassName={cn('flex h-full min-h-0 flex-col px-4 pb-4 sm:px-5', OVERLAY_TOP_CLEARANCE, contentClassName)}
+      contentClassName={cn(
+        'flex h-full min-h-0 flex-col',
+        OVERLAY_CARD_INSET_X_COMPACT,
+        OVERLAY_CARD_INSET_B,
+        OVERLAY_TOP_CLEARANCE,
+        contentClassName
+      )}
       onClose={onClose}
       rootClassName={cn('flex h-full w-full flex-col', className)}
     >
@@ -65,6 +71,13 @@ interface PanelHeaderProps {
   title: ReactNode
 }
 
+// The one spec for a title that lives INSIDE an overlay panel — the shared
+// PanelHeader and each detail pane's own <h3> (profiles / cron / webhooks).
+// Those details used to spell `text-[0.95rem]` while the header said `text-sm`,
+// so switching panes shifted the heading size. Radix Dialog titles are a
+// different context and keep their own `text-xl` (see updates-overlay).
+export const PANEL_TITLE_CLASS = 'text-sm font-semibold tracking-tight text-foreground'
+
 export function PanelHeader({ actions, subtitle, title }: PanelHeaderProps) {
   return (
     // The overlay's close (X) is absolutely positioned at right-3 and costs no
@@ -73,7 +86,7 @@ export function PanelHeader({ actions, subtitle, title }: PanelHeaderProps) {
     // the right whenever actions are present.
     <header className={cn('mb-3 flex shrink-0 items-start justify-between gap-3', actions ? 'pr-8' : undefined)}>
       <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <h2 className={PANEL_TITLE_CLASS}>{title}</h2>
         {subtitle ? <p className="truncate text-xs text-muted-foreground/80">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-1.5">{actions}</div> : null}
@@ -143,7 +156,7 @@ export function PanelList({
 
 interface PanelListRowProps {
   active: boolean
-  // Leading status dot color class (e.g. 'bg-emerald-500'); omit for none.
+  // Leading status dot color class (e.g. 'bg-success'); omit for none.
   dotClassName?: string
   // Leading codicon glyph name (used when there's no lead/dot).
   icon?: string
@@ -183,7 +196,7 @@ export function PanelListRow({
   const row = (
     <div
       className={cn(
-        'group/row row-hover relative flex h-7 w-full items-center rounded-md text-[0.78rem] hover:text-foreground',
+        'group/row row-hover relative flex h-7 w-full items-center rounded-md text-[length:var(--ui-type-sm)] hover:text-foreground',
         active ? 'bg-(--ui-row-active-background) text-foreground' : 'text-(--ui-text-secondary)'
       )}
       data-panel-row={rowKey}
@@ -200,7 +213,11 @@ export function PanelListRow({
           ) : null)}
         <span className="min-w-0 flex-1 truncate font-medium text-foreground/85">{title}</span>
       </RowButton>
-      {meta ? <span className="shrink-0 pr-2 text-[0.62rem] tabular-nums text-muted-foreground/45">{meta}</span> : null}
+      {meta ? (
+        <span className="shrink-0 pr-2 text-[length:var(--ui-type-label)] tabular-nums text-muted-foreground/45">
+          {meta}
+        </span>
+      ) : null}
       {menuItems ? (
         <div className="shrink-0 pr-1">
           <PanelRowMenu items={menuItems} label={menuLabel} />
@@ -309,7 +326,12 @@ export function PanelEmpty({ action, description, icon = 'inbox', title }: Panel
 
 export function PanelSectionLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('text-[0.6rem] font-medium uppercase tracking-wider text-muted-foreground/50', className)}>
+    <div
+      className={cn(
+        'text-[length:var(--ui-type-label)] font-medium uppercase tracking-wider text-muted-foreground/50',
+        className
+      )}
+    >
       {children}
     </div>
   )
@@ -323,7 +345,7 @@ export interface PanelMetaRow {
 
 export function PanelMeta({ className, rows }: { className?: string; rows: PanelMetaRow[] }) {
   return (
-    <dl className={cn('grid grid-cols-[5rem_1fr] gap-x-2 gap-y-1 text-[0.7rem]', className)}>
+    <dl className={cn('grid grid-cols-[5rem_1fr] gap-x-2 gap-y-1 text-[length:var(--ui-type-meta)]', className)}>
       {rows.map((row, i) => (
         <div className="contents" key={typeof row.label === 'string' ? row.label : i}>
           <dt className="truncate text-muted-foreground/55">{row.label}</dt>
@@ -340,7 +362,7 @@ export function PanelBlock({ children, className }: { children: ReactNode; class
   return (
     <pre
       className={cn(
-        'max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-foreground/5 p-2.5 text-[0.68rem] leading-relaxed text-foreground/80',
+        'max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-foreground/5 p-2.5 text-[length:var(--ui-type-meta)] leading-relaxed text-foreground/80',
         className
       )}
     >
@@ -351,24 +373,23 @@ export function PanelBlock({ children, className }: { children: ReactNode; class
 
 export type PanelPillTone = 'bad' | 'good' | 'muted' | 'warn'
 
-const PILL_TONE: Record<PanelPillTone, string> = {
+// Single source of truth for status-pill tones. Messaging's platform chips
+// (`messaging/index.tsx`) imported a byte-for-byte copy of this table before;
+// it now reads this export, so the warn rung is tokenised in exactly one place
+// instead of drifting between the two. Shape is shared separately via
+// PILL_BASE so both surfaces keep the same full-round pill silhouette.
+export const PILL_TONE: Record<PanelPillTone, string> = {
   bad: 'bg-destructive/10 text-destructive',
   good: 'bg-primary/10 text-primary',
   muted: 'bg-foreground/10 text-muted-foreground',
-  warn: 'bg-amber-500/10 text-amber-600 dark:text-amber-300'
+  warn: 'bg-warning/10 text-warning'
 }
 
+const PILL_BASE =
+  'inline-flex items-center rounded-full px-1.5 py-0.5 text-[length:var(--ui-type-label)] font-medium capitalize'
+
 export function PanelPill({ children, tone = 'muted' }: { children: ReactNode; tone?: PanelPillTone }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-1.5 py-0.5 text-[0.62rem] font-medium capitalize',
-        PILL_TONE[tone]
-      )}
-    >
-      {children}
-    </span>
-  )
+  return <span className={cn(PILL_BASE, PILL_TONE[tone])}>{children}</span>
 }
 
 // Self-describing centered "+" that sits as the LAST item in a PanelList. The

@@ -122,12 +122,12 @@ export function KeybindSettings() {
       <div className="flex items-center justify-between gap-3 pb-3">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground">{k.title}</h2>
-          <p className="mt-0.5 text-[0.72rem] text-muted-foreground">
+          <p className="mt-0.5 text-[length:var(--ui-type-meta)] text-muted-foreground">
             {k.subtitle(openCombo ? formatCombo(openCombo) : '')}
           </p>
         </div>
         <button
-          className="flex shrink-0 items-center gap-1 rounded-md text-[0.72rem] text-muted-foreground hover:text-foreground"
+          className="flex shrink-0 items-center gap-1 rounded-md text-[length:var(--ui-type-meta)] text-muted-foreground hover:text-foreground"
           onClick={resetAllBindings}
           type="button"
         >
@@ -149,7 +149,7 @@ export function KeybindSettings() {
       {isSearching ? (
         <div className="px-2 py-1.5">
           {filteredActions?.length === 0 && filteredReadonly?.length === 0 && filteredFixed?.length === 0 ? (
-            <p className="px-2.5 py-4 text-center text-[0.82rem] text-muted-foreground">—</p>
+            <p className="px-2.5 py-4 text-center text-[length:var(--conversation-text-font-size)] text-muted-foreground">—</p>
           ) : (
             <>
               {filteredActions?.map(action => (
@@ -204,7 +204,7 @@ function CategoryHeader({ label, onToggle, open }: { label: string; onToggle: ()
       onClick={onToggle}
       type="button"
     >
-      <span className="min-w-0 truncate text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+      <span className="min-w-0 truncate text-[length:var(--ui-type-label)] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
         {label}
       </span>
       <DisclosureCaret
@@ -273,7 +273,7 @@ function KeybindRow({ action }: { action: KeybindActionMeta }) {
   return (
     <>
       <div className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1 transition-colors hover:bg-(--chrome-action-hover)">
-        <span className="min-w-0 flex-1 truncate text-[0.82rem] text-foreground/90">{label}</span>
+        <span className="min-w-0 flex-1 truncate text-[length:var(--conversation-text-font-size)] text-foreground/90">{label}</span>
 
         {conflictLabel && (
           <span className="flex size-4 items-center justify-center text-destructive" title={k.conflictWith(conflictLabel)}>
@@ -320,7 +320,7 @@ function KeybindRow({ action }: { action: KeybindActionMeta }) {
       {/* T9-1: the suggested free alternative renders under the red-flagged
           row (language copy via k.conflictSuggestion, chord via formatCombo). */}
       {conflictLabel && suggestion && (
-        <p className="ps-2.5 text-[0.68rem] text-destructive/80">{k.conflictSuggestion(formatCombo(suggestion))}</p>
+        <p className="ps-2.5 text-[length:var(--ui-type-meta)] text-destructive/80">{k.conflictSuggestion(formatCombo(suggestion))}</p>
       )}
     </>
   )
@@ -335,7 +335,7 @@ function ReadonlyRow({ shortcut }: { shortcut: KeybindReadonly }) {
 
   return (
     <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-1">
-      <span className="min-w-0 flex-1 truncate text-[0.82rem] text-foreground/75">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-[length:var(--conversation-text-font-size)] text-foreground/75">{label}</span>
       <div className="flex shrink-0 items-center gap-1">
         {shortcut.keys.map(key => (
           <KbdCombo combo={key} key={key} />
@@ -356,9 +356,9 @@ function FixedRow({ row }: { row: ResolvedKeybindRow }) {
 
   return (
     <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-1">
-      <span className="min-w-0 flex-1 truncate text-[0.82rem] text-foreground/75">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-[length:var(--conversation-text-font-size)] text-foreground/75">{label}</span>
       {row.status === 'reserved' && (
-        <span className="shrink-0 rounded-full border border-(--ui-stroke-tertiary) px-1.5 py-px text-[0.625rem] text-muted-foreground">
+        <span className="shrink-0 rounded-full border border-(--ui-stroke-tertiary) px-1.5 py-px text-[length:var(--ui-type-label)] text-muted-foreground">
           {k.sheet.reserved}
         </span>
       )}

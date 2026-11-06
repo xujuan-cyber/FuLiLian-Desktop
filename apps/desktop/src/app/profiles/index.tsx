@@ -18,6 +18,7 @@ import { $profileColors, profileLabel, refreshProfiles } from '@/store/profile'
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import {
   Panel,
+  PANEL_TITLE_CLASS,
   PanelAddButton,
   PanelBody,
   PanelDetail,
@@ -247,7 +248,7 @@ function ProfileDetail({ profile }: { profile: ProfileInfo }) {
       <header className="space-y-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-[0.95rem] font-semibold tracking-tight text-foreground">{profileLabel(profile)}</h3>
+            <h3 className={PANEL_TITLE_CLASS}>{profileLabel(profile)}</h3>
             {profile.is_default && <PanelPill tone="good">{p.defaultBadge}</PanelPill>}
             {profile.has_env && <PanelPill tone="muted">.env</PanelPill>}
           </div>

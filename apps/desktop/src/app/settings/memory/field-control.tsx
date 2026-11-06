@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tip } from '@/components/ui/tooltip'
 import { Check, Info } from '@/lib/icons'
+import { cn } from '@/lib/utils'
 import type { MemoryProviderField } from '@/types/fulilian'
 
 import { CONTROL_TEXT } from '../constants'
@@ -30,11 +31,15 @@ export function FieldTitle({ field }: { field: MemoryProviderField }) {
 // Values are edited as strings; the backend coerces them to native types.
 export function FieldControl({
   field,
+  invalid,
   value,
   onChange,
   onCommit
 }: {
   field: MemoryProviderField
+  // Paints the control's border red when the modal's inline validation rejects
+  // the current draft; the message itself renders under the row description.
+  invalid?: boolean
   value: string
   onChange: (value: string) => void
   // Present on autosaving surfaces: discrete controls commit on change, text-like
@@ -47,6 +52,7 @@ export function FieldControl({
   }
 
   const commitDraft = onCommit ? () => onCommit(value) : undefined
+  const inputClass = cn(FIELD_INPUT, invalid && 'border-destructive/60 focus-visible:border-destructive')
 
   if (field.kind === 'bool') {
     return <Switch checked={value === 'true'} onCheckedChange={checked => set(checked ? 'true' : 'false')} />
@@ -55,7 +61,7 @@ export function FieldControl({
   if (field.kind === 'number') {
     return (
       <Input
-        className={FIELD_INPUT}
+        className={inputClass}
         inputMode="numeric"
         onBlur={commitDraft}
         onChange={event => onChange(event.target.value)}
@@ -69,7 +75,7 @@ export function FieldControl({
   if (field.kind === 'json') {
     return (
       <Textarea
-        className={FIELD_INPUT}
+        className={inputClass}
         onBlur={commitDraft}
         onChange={event => onChange(event.target.value)}
         placeholder={field.placeholder}
@@ -100,7 +106,7 @@ export function FieldControl({
     return (
       <div className="flex flex-col gap-1">
         <Input
-          className={`w-full ${FIELD_INPUT}`}
+          className={cn('w-full', inputClass)}
           onBlur={commitDraft}
           onChange={event => onChange(event.target.value)}
           placeholder={field.is_set ? 'Leave blank to keep current value' : field.placeholder}
@@ -108,7 +114,7 @@ export function FieldControl({
           value={value}
         />
         {field.is_set && (
-          <span className="inline-flex items-center gap-1 self-start font-mono text-[0.65rem] text-(--ui-text-tertiary)">
+          <span className="inline-flex items-center gap-1 self-start font-mono text-[length:var(--ui-type-meta)] text-(--ui-text-tertiary)">
             <Check className="size-3 text-(--ui-accent-secondary)" />
             set
           </span>
@@ -119,7 +125,7 @@ export function FieldControl({
 
   return (
     <Input
-      className={FIELD_INPUT}
+      className={inputClass}
       onBlur={commitDraft}
       onChange={event => onChange(event.target.value)}
       placeholder={field.placeholder}

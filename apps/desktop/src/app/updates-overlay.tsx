@@ -250,7 +250,11 @@ function IdleView({
         <DialogDescription className="text-center text-sm">{body}</DialogDescription>
       </div>
 
-      <div className="grid gap-3">
+      {/* Cap + scroll (2.6/J): a release with dozens of commits used to push the
+          install buttons off the bottom of the dialog. `max-h-64` keeps the
+          list to a readable window and scrolls inside it; the sibling log box
+          at :419 uses the same intent at a smaller `max-h-24`. */}
+      <div className="grid max-h-64 gap-3 overflow-y-auto overscroll-contain">
         {groups.map(group => (
           <div key={group.id}>
             <p className="text-[0.625rem] font-semibold uppercase tracking-wide text-muted-foreground">{group.label}</p>

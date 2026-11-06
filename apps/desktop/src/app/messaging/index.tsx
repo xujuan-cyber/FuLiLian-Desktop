@@ -34,6 +34,7 @@ import { runGatewayRestart } from '@/store/system-actions'
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
 import { DetailColumn, ListColumn, MasterDetail } from '../master-detail'
+import { PILL_TONE } from '../overlays/panel'
 import { PageSearchShell } from '../page-search-shell'
 import { CREDENTIAL_CONTROL_CLASS } from '../settings/credential-key-ui'
 import { ListRow } from '../settings/primitives'
@@ -47,13 +48,6 @@ interface MessagingViewProps extends React.ComponentProps<'section'> {
 }
 
 type EditMap = Record<string, Record<string, string>>
-
-const PILL_TONE: Record<StatusTone, string> = {
-  good: 'bg-primary/10 text-primary',
-  muted: 'bg-muted text-muted-foreground',
-  warn: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  bad: 'bg-destructive/10 text-destructive'
-}
 
 const stateLabel = (state: null | string | undefined, m: Translations['messaging']) =>
   state ? m.states[state] || state.replace(/_/g, ' ') : m.unknown

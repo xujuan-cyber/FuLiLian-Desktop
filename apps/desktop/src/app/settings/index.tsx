@@ -575,7 +575,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
             <Fragment key={group.id}>
               <div
                 aria-hidden
-                className="px-2 pb-1 pt-3 text-[10.5px] font-medium uppercase tracking-wider text-(--ui-text-tertiary)"
+                className="px-2 pb-1 pt-3 text-[length:var(--ui-type-label)] font-medium uppercase tracking-wider text-(--ui-text-tertiary)"
               >
                 {group.label}
               </div>

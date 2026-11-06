@@ -67,7 +67,7 @@ export function TerminalShellSetting() {
       below={
         <div className="mt-3 space-y-3">
           <div>
-            <p className="mb-1.5 px-0.5 text-[0.68rem] text-muted-foreground">{copy.localShellTitle}</p>
+            <p className="mb-1.5 px-0.5 text-[length:var(--ui-type-meta)] text-muted-foreground">{copy.localShellTitle}</p>
             <SegmentedControl
               onChange={id => {
                 triggerHaptic('selection')
@@ -79,26 +79,26 @@ export function TerminalShellSetting() {
           </div>
           {/* R-4: what actually runs, and where it lives. */}
           <div>
-            <p className="mb-1 px-0.5 text-[0.68rem] text-muted-foreground">{copy.effectiveShellTitle}</p>
+            <p className="mb-1 px-0.5 text-[length:var(--ui-type-meta)] text-muted-foreground">{copy.effectiveShellTitle}</p>
             <p className="px-0.5 text-xs text-foreground">{effectiveShell ?? '—'}</p>
             {resolved?.path ? (
-              <p className="mt-0.5 break-all px-0.5 font-mono text-[0.62rem] text-(--ui-text-tertiary)">
+              <p className="mt-0.5 break-all px-0.5 font-mono text-[length:var(--ui-type-label)] text-(--ui-text-tertiary)">
                 {resolved.path}
               </p>
             ) : null}
             {resolved?.degraded ? (
-              <p className="mt-1 px-0.5 text-[0.68rem] text-amber-700 dark:text-amber-300">
+              <p className="mt-1 px-0.5 text-[length:var(--ui-type-meta)] text-warning">
                 {copy.shellFallbackPwsh}
               </p>
             ) : null}
           </div>
           {/* N1: which side new sessions start on. */}
           <div>
-            <p className="mb-1 px-0.5 text-[0.68rem] text-muted-foreground">{copy.envSideTitle}</p>
+            <p className="mb-1 px-0.5 text-[length:var(--ui-type-meta)] text-muted-foreground">{copy.envSideTitle}</p>
             <p className="px-0.5 text-xs text-foreground">{copy.envSideWindows}</p>
           </div>
           {saveFailed ? (
-            <p className="px-0.5 text-[0.68rem] text-amber-700 dark:text-amber-300">{copy.saveFailed}</p>
+            <p className="px-0.5 text-[length:var(--ui-type-meta)] text-warning">{copy.saveFailed}</p>
           ) : null}
         </div>
       }

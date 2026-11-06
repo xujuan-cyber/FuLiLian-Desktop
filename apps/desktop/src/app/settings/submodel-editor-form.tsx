@@ -151,7 +151,7 @@ export function SubmodelEditorForm({
             placeholder="code-reviewer"
             value={value.id}
           />
-          <span className="text-[0.65rem] leading-snug">{m.fieldIdHint}</span>
+          <span className="text-[length:var(--ui-type-meta)] leading-snug">{m.fieldIdHint}</span>
         </label>
         <label className="grid gap-1.5 text-xs text-muted-foreground">
           {m.fieldName}
@@ -166,7 +166,7 @@ export function SubmodelEditorForm({
           onChange={event => patch({ description: event.target.value })}
           value={value.description}
         />
-        <span className="text-[0.65rem] leading-snug">{m.fieldDescriptionHint}</span>
+        <span className="text-[length:var(--ui-type-meta)] leading-snug">{m.fieldDescriptionHint}</span>
       </label>
 
       <div className="grid gap-1.5 text-xs text-muted-foreground">
@@ -175,7 +175,7 @@ export function SubmodelEditorForm({
           <div className="flex flex-wrap gap-1.5">
             {value.toolsets.map(toolset => (
               <span
-                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-(--ui-bg-tertiary) px-2 py-0.5 text-[0.7rem] text-foreground"
+                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-(--ui-bg-tertiary) px-2 py-0.5 text-[length:var(--ui-type-meta)] text-foreground"
                 key={toolset}
               >
                 {toolset}
@@ -209,7 +209,7 @@ export function SubmodelEditorForm({
             <option key={toolset} value={toolset} />
           ))}
         </datalist>
-        <span className="text-[0.65rem] leading-snug">{m.fieldToolsetsHint}</span>
+        <span className="text-[length:var(--ui-type-meta)] leading-snug">{m.fieldToolsetsHint}</span>
       </div>
 
       <label className="grid gap-1.5 text-xs text-muted-foreground">
@@ -219,7 +219,7 @@ export function SubmodelEditorForm({
           placeholder="provider:model"
           value={value.model}
         />
-        <span className="text-[0.65rem] leading-snug">{m.fieldModelHint}</span>
+        <span className="text-[length:var(--ui-type-meta)] leading-snug">{m.fieldModelHint}</span>
       </label>
 
       <div className="grid gap-1.5 text-xs text-muted-foreground">

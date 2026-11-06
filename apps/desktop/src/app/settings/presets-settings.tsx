@@ -82,7 +82,7 @@ export function PresetsSettings() {
         <p className="max-w-2xl text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)">
           {copy.subtitle}
         </p>
-        <p className="text-[0.68rem] text-muted-foreground/60">{copy.applyNote}</p>
+        <p className="text-[length:var(--ui-type-meta)] text-muted-foreground/60">{copy.applyNote}</p>
       </header>
 
       <div className="mb-3 flex items-center gap-2">
@@ -97,7 +97,7 @@ export function PresetsSettings() {
             {copy.none}
           </Button>
         ) : (
-          <span className="shrink-0 text-[0.68rem] text-muted-foreground/60">{copy.none}</span>
+          <span className="shrink-0 text-[length:var(--ui-type-meta)] text-muted-foreground/60">{copy.none}</span>
         )}
       </div>
 
@@ -164,14 +164,14 @@ function PresetCardTile({
       </span>
 
       <span className="mt-auto grid gap-1">
-        <span className="font-mono text-[0.68rem] text-muted-foreground/60">{card.id}</span>
-        <span className="font-mono text-[0.66rem] text-muted-foreground/45">
+        <span className="font-mono text-[length:var(--ui-type-meta)] text-muted-foreground/60">{card.id}</span>
+        <span className="font-mono text-[length:var(--ui-type-label)] text-muted-foreground/45">
           {copy.toolsetCount(card.toolsets.length)}
         </span>
         <span className="flex flex-wrap gap-1">
           {card.toolsets.map(name => (
             <span
-              className="rounded-[3px] border border-(--ui-stroke-tertiary) px-1 py-px font-mono text-[0.6rem] text-muted-foreground/55"
+              className="rounded-[3px] border border-(--ui-stroke-tertiary) px-1 py-px font-mono text-[length:var(--ui-type-label)] text-muted-foreground/55"
               key={name}
             >
               {name}

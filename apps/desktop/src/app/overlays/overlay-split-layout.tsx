@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { PAGE_MAX_W } from '../layout-constants'
 
-import { OVERLAY_TOP_CLEARANCE } from './overlay-view'
+import { OVERLAY_CARD_INSET_X, OVERLAY_TOP_CLEARANCE } from './overlay-view'
 
 // The wide rail and the narrow dropdown swap at exactly the width where
 // OverlaySplitLayout drops to a single column, so the rail never stacks.
@@ -90,7 +90,8 @@ export function OverlayMain({ children, className }: OverlayMainProps) {
         // top clearance, the bottom gutter, and the horizontal clamp gutter
         // (inlined from PAGE_INSET_X so only overlay panes tighten, not the
         // shared page gutter). Narrow top drops toward the OverlayNav bar.
-        'mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-transparent pb-2 pt-[calc((var(--titlebar-height)/2+1rem)*2/3)] max-[47.5rem]:pt-[calc(0.5rem*2/3)] px-[clamp(0.8333rem,2.6667vw,2.6667rem)]',
+        'mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-transparent pb-2 pt-[calc((var(--titlebar-height)/2+1rem)*2/3)] max-[47.5rem]:pt-[calc(0.5rem*2/3)]',
+        OVERLAY_CARD_INSET_X,
         PAGE_MAX_W,
         className
       )}

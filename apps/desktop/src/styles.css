@@ -450,6 +450,13 @@
     --ui-text-secondary: color-mix(in srgb, var(--ui-base) 74%, transparent);
     --ui-text-tertiary: color-mix(in srgb, var(--ui-base) 54%, transparent);
     --ui-text-quaternary: color-mix(in srgb, var(--ui-base) 36%, transparent);
+    /* Semantic danger ink for the `--ui-*` consumers (plugin rows, session
+       tiles). Maps the appearance-aware `--dt-destructive` rather than the
+       `--ui-red` palette swatch above, so inline errors follow the same red as
+       `text-destructive` on every skin and both appearances resolve from one
+       line. `--dt-destructive` is redeclared in `.dark`, so no dark duplicate
+       is needed here. */
+    --ui-danger: var(--dt-destructive);
     /* Transcript scaffolding — thinking headers, settled tool runs, the live
        activity ticker. One colour for all of them (see `ScaffoldRow`), pitched
        between the secondary and tertiary greys those lines used to pick
@@ -611,6 +618,16 @@
     --conversation-text-font-size: calc(0.875rem * var(--ui-text-scale, 1));
     --conversation-tool-font-size: calc(0.75rem * var(--ui-text-scale, 1));
     --conversation-caption-font-size: calc(0.8125rem * var(--ui-text-scale, 1));
+    /* Workbench "type rung" ladder for the compact chrome that does not read at
+       transcript scale — overlay panels, settings rows, field hints. Before it
+       existed these surfaces spelled 0.6/0.62/0.64/0.65/0.66/0.68/0.72/0.78rem
+       inline (11 distinct values for 3 real tiers). Each rung keeps the pixel
+       size the majority of its call sites already used, so converging is a
+       rounding, not a redesign, and each rides `--ui-text-scale` so the
+       Appearance text-size control still scales overlay chrome. */
+    --ui-type-label: calc(0.625rem * var(--ui-text-scale, 1)); /* 10px · uppercase section labels, pills */
+    --ui-type-meta: calc(0.6875rem * var(--ui-text-scale, 1)); /* 11px · hints, mono blocks, meta grids */
+    --ui-type-sm: calc(0.75rem * var(--ui-text-scale, 1)); /* 12px · compact list rows */
     --conversation-line-height: 1.375rem;
     --conversation-caption-line-height: 1rem;
     --conversation-turn-gap: 0.375rem;

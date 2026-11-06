@@ -401,11 +401,11 @@ export function SubmodelsSettings() {
                       </div>
                     )}
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-mono text-[0.7rem]">{profile.model || m.inheritModel}</span>
+                      <span className="font-mono text-[length:var(--ui-type-meta)]">{profile.model || m.inheritModel}</span>
                       {(profile.toolsets?.length ?? 0) > 0 && <span>{profile.toolsets?.join(', ')}</span>}
                     </div>
                     {profile.valid === false && (profile.errors?.length ?? 0) > 0 && (
-                      <div className="mt-1 text-[0.65rem] text-destructive">{m.invalidHint} {profile.errors?.join('; ')}</div>
+                      <div className="mt-1 text-[length:var(--ui-type-meta)] text-destructive">{m.invalidHint} {profile.errors?.join('; ')}</div>
                     )}
                   </div>
                   <div className="flex items-center gap-2 sm:justify-end">
@@ -498,7 +498,7 @@ export function SubmodelsSettings() {
             <DialogDescription>{m.importDesc}</DialogDescription>
           </DialogHeader>
           <Textarea
-            className="min-h-40 font-mono text-[0.7rem]"
+            className="min-h-40 font-mono text-[length:var(--ui-type-meta)]"
             onChange={event => setImportText(event.target.value)}
             value={importText}
           />

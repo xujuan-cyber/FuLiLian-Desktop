@@ -339,7 +339,7 @@ function UsageBar({ bar, fallbackLabel }: { bar?: BillingUsageRowView['bar']; fa
 function UsageRow({ row }: { row: BillingUsageRowView }) {
   return (
     <div className="@container">
-      <div className="grid min-w-0 gap-2 py-3 @2xl:grid-cols-[minmax(0,180px)_minmax(0,1fr)_220px] @2xl:items-center @2xl:gap-4">
+      <div className="grid min-w-0 gap-2 py-3 @2xl:grid-cols-[minmax(0,180px)_minmax(0,1fr)_minmax(0,220px)] @2xl:items-center @2xl:gap-4">
         <div className="min-w-0">
           <div className="text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
             {row.title}
@@ -353,7 +353,14 @@ function UsageRow({ row }: { row: BillingUsageRowView }) {
         </div>
         <div
           className={cn(
-            'min-w-0 whitespace-nowrap text-[length:var(--conversation-text-font-size)] font-medium tabular-nums @2xl:w-[220px] @2xl:flex-none @2xl:text-right',
+            // No `whitespace-nowrap` + fixed `w-[220px]` (P2-7): a long
+            // "1,234,567 / 2,000,000" pair used to hold its one-line width and
+            // squeeze the middle bar column down to a stub. `minmax(0,220px)`
+            // on the track lets the value column yield, and dropping nowrap
+            // lets the label wrap onto a second line instead of overflowing.
+            // `tabular-nums` + right-align keep the digits columnar once they
+            // do fit.
+            'min-w-0 text-[length:var(--conversation-text-font-size)] font-medium tabular-nums @2xl:max-w-[220px] @2xl:justify-self-end @2xl:text-right',
             row.bar?.state === 'danger' ? 'text-destructive' : 'text-foreground'
           )}
         >

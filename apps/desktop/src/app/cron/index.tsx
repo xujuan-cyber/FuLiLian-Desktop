@@ -56,6 +56,7 @@ import { $profileScope, ALL_PROFILES } from '@/store/profile'
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import {
   Panel,
+  PANEL_TITLE_CLASS,
   PanelAction,
   PanelAddButton,
   PanelBlock,
@@ -803,7 +804,7 @@ function CronJobDetail({
       <header className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h3 className="text-[0.95rem] font-semibold tracking-tight text-foreground">{jobTitle(job)}</h3>
+            <h3 className={PANEL_TITLE_CLASS}>{jobTitle(job)}</h3>
             <PanelPill tone={STATE_TONE[state] ?? 'muted'}>{c.states[state] ?? state}</PanelPill>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">

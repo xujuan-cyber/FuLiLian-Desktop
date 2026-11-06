@@ -40,7 +40,7 @@ import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 
 import { CONTROL_TEXT } from './constants'
 import { getNested, setNested } from './helpers'
-import { ListRow, Pill, SectionHeading } from './primitives'
+import { CollapsibleError, ListRow, Pill, SectionHeading } from './primitives'
 import { useDeepLinkHighlight } from './use-deep-link-highlight'
 
 // Skeleton mirror of the Model settings DOM so the page keeps its shape while
@@ -169,7 +169,7 @@ function StaleAuxWarning({ applying, onReset, slots, taskLabel }: StaleAuxWarnin
   const names = slots.map(slot => taskLabel(slot.task)).join(', ')
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
       <AlertTriangle className="size-3.5 shrink-0" />
       <span className="grow">
         {slots.length} auxiliary task{slots.length === 1 ? '' : 's'} ({names}) still run on{' '}
@@ -914,7 +914,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
             )}
           </div>
         )}
-        {error && <div className="mt-2 text-xs text-destructive">{error}</div>}
+        {error && <CollapsibleError className="mt-2" message={error} />}
         {switchStaleAux.length > 0 && (
           <div className="mt-2">
             <StaleAuxWarning
@@ -1037,7 +1037,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
                     )
                   }
                   description={
-                    <span className="font-mono text-[0.68rem]">
+                    <span className="font-mono text-[length:var(--ui-type-meta)]">
                       {isAuto ? m.autoUseMain : `${current.provider} · ${current.model || m.providerDefault}`}
                     </span>
                   }
@@ -1243,7 +1243,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
                 }
                 className={cn(slot.enabled === false && 'opacity-60')}
                 description={
-                  <span className="font-mono text-[0.68rem]">
+                  <span className="font-mono text-[length:var(--ui-type-meta)]">
                     {slot.provider} · {slot.model || m.model}
                   </span>
                 }
@@ -1320,7 +1320,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
                 </div>
               }
               description={
-                <span className="font-mono text-[0.68rem]">
+                <span className="font-mono text-[length:var(--ui-type-meta)]">
                   {currentMoaPreset.aggregator.provider} · {currentMoaPreset.aggregator.model}
                 </span>
               }

@@ -229,7 +229,7 @@ export const SettingsSearchField = forwardRef<SettingsSearchFieldHandle, { class
                   <Icon className="size-3.5 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs text-foreground">{entry.label}</span>
-                    <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">{entry.context}</span>
+                    <span className="block truncate text-[length:var(--ui-type-meta)] text-(--ui-text-tertiary)">{entry.context}</span>
                   </span>
                 </div>
               )

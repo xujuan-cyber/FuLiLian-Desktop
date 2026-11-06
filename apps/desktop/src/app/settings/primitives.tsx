@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import { translateNow } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import type { IconComponent } from '@/lib/icons'
+import { AlertTriangle, type IconComponent } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
 import { PAGE_INSET_X } from '../layout-constants'
@@ -26,6 +27,41 @@ const PILL_VARIANT = { muted: 'muted', primary: 'default', warn: 'warn' } as con
 
 export function Pill({ tone = 'muted', children }: { tone?: keyof typeof PILL_VARIANT; children: ReactNode }) {
   return <Badge variant={PILL_VARIANT[tone]}>{children}</Badge>
+}
+
+// Collapsible error surface for settings pages. Raw IPC failures ("Error
+// invoking remote method …") run to several hundred characters and used to be
+// dumped inline as a bare red line (e.g. model-settings' config load), which
+// stretched the whole page and buried every control below it. Collapsed it
+// shows one truncated line; expanded the full text scrolls inside a capped,
+// break-all box so a wall of JSON can never overflow the pane horizontally.
+// Distinct from `components/ui/error-state.tsx`'s ErrorBanner (always-open,
+// single-line) — that primitive is left untouched per the UI-primitive
+// "reuse, never modify" rule.
+export function CollapsibleError({ className, message }: { className?: string; message: string }) {
+  return (
+    <details
+      className={cn(
+        'group/err rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-[length:var(--conversation-caption-font-size)] text-destructive',
+        className
+      )}
+      data-slot="settings-error-banner"
+    >
+      <summary className="flex cursor-pointer list-none select-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+        <span className="min-w-0 flex-1 truncate group-open/err:whitespace-normal group-open/err:[overflow:visible]">
+          {message}
+        </span>
+        <span className="shrink-0 text-(--ui-text-tertiary) group-open/err:hidden">{translateNow('common.expand')}</span>
+        <span className="hidden shrink-0 text-(--ui-text-tertiary) group-open/err:inline">
+          {translateNow('common.collapse')}
+        </span>
+      </summary>
+      <div className="mt-2 max-h-40 overflow-y-auto overscroll-contain">
+        <p className="font-mono text-[length:var(--ui-type-meta)] leading-relaxed whitespace-pre-wrap break-all">{message}</p>
+      </div>
+    </details>
+  )
 }
 
 export function SectionHeading({
@@ -145,7 +181,11 @@ export function ListRow({
               {description}
             </div>
           )}
-          {hint && <div className="mt-1 block font-mono text-[0.68rem] text-muted-foreground/45">{hint}</div>}
+          {hint && (
+            <div className="mt-1 block font-mono text-[length:var(--ui-type-meta)] text-muted-foreground/45">
+              {hint}
+            </div>
+          )}
           {below}
         </div>
         {action && <div className={cn('min-w-0', !wide && '@2xl:justify-self-end')}>{action}</div>}

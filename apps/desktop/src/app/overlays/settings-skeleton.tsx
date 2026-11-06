@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 import { OverlaySidebar, OverlaySplitLayout } from './overlay-split-layout'
+import { OVERLAY_CARD_INSET_X } from './overlay-view'
 
 // Suspense fallback for the lazily-loaded SettingsView (step 17 · P3a).
 //
@@ -80,7 +81,12 @@ export function SettingsSkeleton() {
               <Skeleton className="mt-auto h-5 w-20" />
             </OverlaySidebar>
 
-            <div className="min-h-0 flex-1 overflow-hidden px-[clamp(0.8333rem,2.6667vw,2.6667rem)] pb-2 pt-[calc((var(--titlebar-height)/2+1rem)*2/3)] max-[47.5rem]:pt-[calc(0.5rem*2/3)]">
+            <div
+              className={cn(
+                'min-h-0 flex-1 overflow-hidden pb-2 pt-[calc((var(--titlebar-height)/2+1rem)*2/3)] max-[47.5rem]:pt-[calc(0.5rem*2/3)]',
+                OVERLAY_CARD_INSET_X
+              )}
+            >
               <Bar className="h-7 w-48" />
               <Bar className="mt-6 h-32 w-full" />
               <Bar className="mt-4 h-32 w-full" />
